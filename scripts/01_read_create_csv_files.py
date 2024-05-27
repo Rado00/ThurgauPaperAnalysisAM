@@ -4,7 +4,6 @@ import sys
 import matsim
 import logging
 import configparser
-import pandas as pd
 
 if __name__ == '__main__':
     # Set up logging
