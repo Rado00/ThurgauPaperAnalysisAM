@@ -8,4 +8,5 @@
 #folders
 logs/
 plots/
+__pycache__/
 
