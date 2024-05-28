@@ -6,13 +6,11 @@ Date: 2024-05-28
 """
 
 # Import necessary libraries
-import os
-import sys
-import logging
-import numpy as np
-import configparser
-import pandas as pd
+from common import *
 
 
 if __name__ == '__main__':
-    print("This is the main script to do the tasks.")
+    setup_logging("01_tasks.log")
+
+    data_path, zone_name, scenario, csv_folder, output_folder, percentile = read_config()
+
