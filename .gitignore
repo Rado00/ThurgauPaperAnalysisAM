@@ -1,3 +1,11 @@
-# .ini files
+# files
 *.ini
 *.log
+*.png
+*.jpg
+*.jpeg
+
+#folders
+logs/
+plots/
+

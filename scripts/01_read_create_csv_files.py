@@ -6,8 +6,12 @@ import logging
 import configparser
 
 if __name__ == '__main__':
+    # Check there exists a logs folder
+    if not os.path.exists("logs"):
+        os.makedirs("logs")
+
     # Set up logging
-    logging.basicConfig(filename="01_read_create_csv_files.log",
+    logging.basicConfig(filename="logs\\01_read_create_csv_files.log",
                         level=logging.INFO,
                         format='%(levelname)s   %(asctime)s   %(message)s')
     logging.info("All setting of the logging is done")
@@ -67,6 +71,7 @@ if __name__ == '__main__':
     # Create the directory for the csv files is not exists
     if not os.path.exists(pre_processed_data_path):
         os.makedirs(pre_processed_data_path)
+        logging.info("Directory for csv files created successfully")
 
     # Create the csv files from the dataframes
     try:

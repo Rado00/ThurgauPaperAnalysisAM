@@ -6,8 +6,12 @@ import configparser
 import pandas as pd
 
 if __name__ == '__main__':
+    # Check there exists a logs folder
+    if not os.path.exists("logs"):
+        os.makedirs("logs")
+
     # Set up logging
-    logging.basicConfig(filename="02_read_csv_files.log",
+    logging.basicConfig(filename="logs\\02_read_csv_files.log",
                         level=logging.INFO,
                         format='%(levelname)s   %(asctime)s   %(message)s')
     logging.info("All setting of the logging is done")
@@ -57,4 +61,7 @@ if __name__ == '__main__':
     except Exception as e:
         logging.error("Error reading csv files: " + str(e))
         sys.exit()
+
+    # Filter out rows where 'SexLang' is 'unbekannt'
+    df_personen_geschlecht = df_personen_geschlecht[df_personen_geschlecht['SexLang'] != 'unbekannt']
 
