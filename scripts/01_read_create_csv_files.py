@@ -1,43 +1,15 @@
 # Import necessary libraries
-import os
-import sys
 import matsim
-import logging
-import configparser
+from common import *
 
 if __name__ == '__main__':
-    # Check there exists a logs folder
-    if not os.path.exists("logs"):
-        os.makedirs("logs")
+    setup_logging("01_read_create_csv_files.log")
 
-    # Set up logging
-    logging.basicConfig(filename="logs\\01_read_create_csv_files.log",
-                        level=logging.INFO,
-                        format='%(levelname)s   %(asctime)s   %(message)s')
-    logging.info("All setting of the logging is done")
-
-    directory = os.getcwd()
-    parent_directory = os.path.dirname(directory)
-
-    # read config file
-    try:
-        config = configparser.ConfigParser()
-        config_path = os.path.join(parent_directory, 'config/config.ini')
-        config.read(config_path)
-        data_path = config['config']['data_path']
-        zone_name = config['config']['zone_name']
-        scenario = config['config']['scenario']
-        csv_folder = config['config']['csv_folder']
-        output_folder = config['config']['output_folder']
-        percentile = config['config']['percentile']
-        logging.info("Config file read successfully")
-    except Exception as e:
-        logging.error("Error reading config file: " + str(e))
-        sys.exit()
+    data_path, zone_name, scenario, csv_folder, output_folder, percentile = read_config()
 
     # Create directory for the zone
-    scenario_path = os.path.join(data_path, zone_name, scenario, percentile)
-    output_folder_path = os.path.join(data_path, zone_name, output_folder)
+    scenario_path: str = os.path.join(data_path, zone_name, scenario, percentile)
+    output_folder_path: str = os.path.join(data_path, zone_name, output_folder)
 
     # Read the xml data with matsim library
     try:

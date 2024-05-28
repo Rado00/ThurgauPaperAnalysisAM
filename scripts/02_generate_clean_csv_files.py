@@ -162,10 +162,13 @@ def group_cars(value):
     else:
         return str(value_int)
 
+
 # Function to create activity chains
 def create_activity_chain_mic(group):
-    chain = '-'.join(['H'] + [purpose[0] for purpose in group['purpose'].tolist()])  # Add 'H' at the start of each chain
+    chain = '-'.join(
+        ['H'] + [purpose[0] for purpose in group['purpose'].tolist()])  # Add 'H' at the start of each chain
     return pd.Series({'activity_chain': chain})
+
 
 # Function to create uppercase activity chains
 def create_activity_chain_syn(group):
@@ -311,12 +314,12 @@ if __name__ == '__main__':
 
     # Remove rows where 'type' is 'Home' and both 'end_time' and 'start_time' are not NaN
     df_activity_synt_1 = df_activity_synt[~(
-                (df_activity_synt['type'] == 'Home') & (df_activity_synt['end_time'].notna()) & (
-            df_activity_synt['start_time'].notna()))]
+            (df_activity_synt['type'] == 'Home') & (df_activity_synt['end_time'].notna()) & (
+        df_activity_synt['start_time'].notna()))]
     # Remove rows where 'type' is 'Home' and both 'end_time' and 'start_time' are not NaN
     df_activity_sim_1 = df_activity_sim[~(
-                (df_activity_sim['type'] == 'Home') & (df_activity_sim['end_time'].notna()) & (
-            df_activity_sim['start_time'].notna()))]
+            (df_activity_sim['type'] == 'Home') & (df_activity_sim['end_time'].notna()) & (
+        df_activity_sim['start_time'].notna()))]
 
     df_activity_chains_mic = df_trips_mic.groupby(['person_id']).apply(create_activity_chain_mic).reset_index()
     df_activity_chains_sim = df_activity_sim.groupby(['plan_id']).apply(create_activity_chain_syn).reset_index()
