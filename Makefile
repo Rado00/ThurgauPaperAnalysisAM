@@ -12,3 +12,9 @@ pull:
 	git pull
 	@echo "Pulled the changes from the repository successfully"
 
+install:
+	@echo "Installing the required packages"
+	pip install -r requirements.txt
+	@echo "Installed the required packages successfully"
+
+
