@@ -9,7 +9,7 @@ from plotly.subplots import make_subplots
 warnings.filterwarnings('ignore')
 
 if __name__ == '__main__':
-    setup_logging("01_read_create_csv_files.log")
+    setup_logging("03_plot_the_clean_csv_files.log")
 
     data_path, zone_name, scenario, csv_folder, output_folder, percentile, clean_csv_folder = read_config()
 

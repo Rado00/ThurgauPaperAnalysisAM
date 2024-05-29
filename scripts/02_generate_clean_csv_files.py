@@ -176,7 +176,7 @@ def create_activity_chain_syn(group):
 
 
 if __name__ == '__main__':
-    setup_logging("01_read_create_csv_files.log")
+    setup_logging("02_generate_clean_csv_files.log")
 
     data_path, zone_name, scenario, csv_folder, output_folder, percentile, clean_csv_folder = read_config()
 

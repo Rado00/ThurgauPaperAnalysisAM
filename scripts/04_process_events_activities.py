@@ -7,7 +7,7 @@ import geopandas as gpd
 from collections import defaultdict
 
 if __name__ == '__main__':
-    setup_logging("01_read_create_csv_files.log")
+    setup_logging("04_process_events_activities.log")
 
     data_path, zone_name, scenario, csv_folder, output_folder, percentile, clean_csv_folder = read_config()
 
