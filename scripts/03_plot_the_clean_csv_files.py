@@ -736,7 +736,7 @@ if __name__ == '__main__':
         height=600
     )
 
-    # Show the figure
+    # TODO for showing the figure just uncomment the following line
     # fig.show()
 
     # Save the figure as an image with higher resolution
