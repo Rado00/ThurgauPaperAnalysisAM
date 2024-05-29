@@ -1,6 +1,8 @@
 # Import necessary libraries
 from common import *
 import pandas as pd
+import warnings
+warnings.filterwarnings('ignore')
 
 
 # Functions
@@ -176,7 +178,7 @@ def create_activity_chain_syn(group):
 if __name__ == '__main__':
     setup_logging("01_read_create_csv_files.log")
 
-    data_path, zone_name, scenario, csv_folder, output_folder, percentile = read_config()
+    data_path, zone_name, scenario, csv_folder, output_folder, percentile, clean_csv_folder = read_config()
 
     # Create directory for the zone
     scenario_path: str = os.path.join(data_path, zone_name, scenario, percentile)
@@ -310,17 +312,18 @@ if __name__ == '__main__':
     df_trips_mic = pd.merge(df_trips_mic, df_population_mic[['person_id', 'household_weight']], on='person_id',
                             how='left')
 
-    # df_trips_mic.to_csv(f'{data_folder_path}/synthetic/zurich_{pct}pct/trips_mic.csv', index=False)
-    # df_trips_synt.to_csv(f'{data_folder_path}/synthetic/zurich_{pct}pct/trips_synt.csv', index=False)
-    # df_trips_sim.to_csv(f'{data_folder_path}/synthetic/zurich_{pct}pct/trips_sim.csv', index=False)
-    #
-    # df_activity_chains_syn.to_csv(f'{data_folder_path}/synthetic/zurich_{pct}pct/activity_chains_syn.csv', index=False)
-    # df_activity_chains_sim.to_csv(f'{data_folder_path}/synthetic/zurich_{pct}pct/activity_chains_sim.csv', index=False)
-    # df_activity_chains_mic.to_csv(f'{data_folder_path}/synthetic/zurich_{pct}pct/activity_chains_mic.csv', index=False)
-    #
-    # df_population_mic.to_csv(f'{data_folder_path}/synthetic/zurich_{pct}pct/population_clean_mic.csv', index=False)
-    # df_persons_synt.to_csv(f'{data_folder_path}/synthetic/zurich_{pct}pct/population_clean_synth.csv', index=False)
-    # df_persons_sim.to_csv(f'{data_folder_path}/synthetic/zurich_{pct}pct/population_clean_sim.csv', index=False)
-    #
-    # df_legs_synt.to_csv(f'{data_folder_path}/synthetic/zurich_{pct}pct/legs_clean_synt.csv', index=False)
-    # df_legs_sim.to_csv(f'{data_folder_path}/synthetic/zurich_{pct}pct/legs_clean_sim.csv', index=False)
+    data_path_clean = os.path.join(data_path, zone_name, clean_csv_folder, percentile)
+    df_trips_mic.to_csv(f'{data_path_clean}\\trips_mic.csv', index=False)
+    df_trips_synt.to_csv(f'{data_path_clean}\\trips_synt.csv', index=False)
+    df_trips_sim.to_csv(f'{data_path_clean}\\trips_sim.csv', index=False)
+
+    df_activity_chains_syn.to_csv(f'{data_path_clean}\\activity_chains_syn.csv', index=False)
+    df_activity_chains_sim.to_csv(f'{data_path_clean}\\activity_chains_sim.csv', index=False)
+    df_activity_chains_mic.to_csv(f'{data_path_clean}\\activity_chains_mic.csv', index=False)
+
+    df_population_mic.to_csv(f'{data_path_clean}\\population_clean_mic.csv', index=False)
+    df_persons_synt.to_csv(f'{data_path_clean}\\population_clean_synth.csv', index=False)
+    df_persons_sim.to_csv(f'{data_path_clean}\\population_clean_sim.csv', index=False)
+
+    df_legs_synt.to_csv(f'{data_path_clean}\\legs_clean_synt.csv', index=False)
+    df_legs_sim.to_csv(f'{data_path_clean}\\legs_clean_sim.csv', index=False)

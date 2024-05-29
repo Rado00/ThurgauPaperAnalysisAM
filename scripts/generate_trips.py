@@ -179,7 +179,7 @@ def create_activity_chain(group):
 if __name__ == '__main__':
     setup_logging("01_read_create_csv_files.log")
 
-    data_path, zone_name, scenario, csv_folder, output_folder, percentile = read_config()
+    data_path, zone_name, scenario, csv_folder, output_folder, percentile, clean_csv_folder = read_config()
 
     directory = os.getcwd()
     parent_directory = os.path.dirname(directory)

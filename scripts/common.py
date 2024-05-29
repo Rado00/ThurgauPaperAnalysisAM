@@ -27,10 +27,11 @@ def read_config():
         zone_name = config['config']['zone_name']
         scenario = config['config']['scenario']
         csv_folder = config['config']['csv_folder']
-        output_folder = config['config']['output_folder']
+        sim_output_folder = config['config']['sim_output_folder']
         percentile = config['config']['percentile']
+        clean_csv_folder = config['config']['clean_csv_folder']
         logging.info("Config file read successfully")
-        return data_path, zone_name, scenario, csv_folder, output_folder, percentile
+        return data_path, zone_name, scenario, csv_folder, sim_output_folder, percentile, clean_csv_folder
     except Exception as e:
         logging.error("Error reading config file: " + str(e))
         sys.exit()
