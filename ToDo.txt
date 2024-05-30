@@ -1,4 +1,4 @@
 
-
-
+(Corrado) Find notes with things ToDo of January data analysis
+Add ReadingOutputs with DRT
 Check dataFunctions, like Shape Files in municipalities.py

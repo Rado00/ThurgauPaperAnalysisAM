@@ -214,6 +214,12 @@ if __name__ == '__main__':
     # Calculate percentage distribution based on weighted counts
     purpose_counts['Percentage'] = (purpose_counts['Weighted_Count'] / total_weight) * 100
 
+    # Standardize purpose labels for microcensus data
+    purpose_counts['Purpose'] = purpose_counts['Purpose'].str.lower()
+
+    # Standardize type labels for synthetic data
+    type_counts_synt['Type'] = type_counts_synt['Type'].str.lower()
+
     # Create a figure with subplots
     fig = go.Figure()
 
@@ -691,6 +697,13 @@ if __name__ == '__main__':
     # Group by purpose and sum the household weights for each purpose
     purpose_counts = df_trips_mic.groupby('purpose')['household_weight'].sum().reset_index()
     purpose_counts.columns = ['Purpose', 'Weighted_Count']
+
+    # Standardize purpose labels for microcensus data
+    purpose_counts['Purpose'] = purpose_counts['Purpose'].str.lower()
+
+    # Standardize type labels for synthetic data
+    type_counts_synt['Type'] = type_counts_synt['Type'].str.lower()
+    type_counts_sim['Type'] = type_counts_sim['Type'].str.lower()
 
     # Calculate the total weight
     total_weight = purpose_counts['Weighted_Count'].sum()
