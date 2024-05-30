@@ -1,4 +1,14 @@
+Analysis Freuenfeld SynPop vs Mikrozensus
+Analysis Freuenfeld Outputs vs Thurgau Outputs filtered in Freuenfeld
+
+Add ReadingOutputs with DRT
+
+
+Mode Share Graph with the cake in the smaller zones on the map
+Plot Densities
+Plot Line utilisation
 
 (Corrado) Find notes with things ToDo of January data analysis
-Add ReadingOutputs with DRT
 Check dataFunctions, like Shape Files in municipalities.py
+
+Think if/how to include the outside activities

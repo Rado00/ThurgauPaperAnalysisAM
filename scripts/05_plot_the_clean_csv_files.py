@@ -220,21 +220,38 @@ if __name__ == '__main__':
     # Standardize type labels for synthetic data
     type_counts_synt['Type'] = type_counts_synt['Type'].str.lower()
 
+    # Filter out the specified activities
+    excluded_activities = ['outside', 'freight_loading', 'freight_unloading', 'pt interaction']
+
+    # Filter and recompute percentages for synthetic data
+    filtered_type_counts_synt = type_counts_synt[~type_counts_synt['Type'].isin(excluded_activities)].copy()
+
+    # Recompute percentages
+    filtered_type_counts_synt['Percentage'] = (filtered_type_counts_synt['Count'] / filtered_type_counts_synt[
+        'Count'].sum()) * 100
+
+    # Filter and recompute percentages for microcensus data
+    filtered_purpose_counts = purpose_counts[~purpose_counts['Purpose'].isin(excluded_activities)].copy()
+
+    # Recompute percentages
+    filtered_purpose_counts['Percentage'] = (filtered_purpose_counts['Weighted_Count'] / filtered_purpose_counts[
+        'Weighted_Count'].sum()) * 100
+
     # Create a figure with subplots
     fig = go.Figure()
 
     # Add bars for synthetic activity types percentage
     fig.add_trace(go.Bar(
-        x=type_counts_synt['Type'],
-        y=type_counts_synt['Percentage'],
+        x=filtered_type_counts_synt['Type'],
+        y=filtered_type_counts_synt['Percentage'],
         name='Synthetic - Percentage',
         marker_color='blue'
     ))
 
     # Add bars for microcensus trip purposes percentage
     fig.add_trace(go.Bar(
-        x=purpose_counts['Purpose'],
-        y=purpose_counts['Percentage'],
+        x=filtered_purpose_counts['Purpose'],
+        y=filtered_purpose_counts['Percentage'],
         name='Microcensus - Percentage',
         marker_color='red'
     ))
@@ -711,29 +728,49 @@ if __name__ == '__main__':
     # Calculate percentage distribution based on weighted counts
     purpose_counts['Percentage'] = (purpose_counts['Weighted_Count'] / total_weight) * 100
 
+    # Filter out the specified activities
+    excluded_activities = ['outside', 'freight_loading', 'freight_unloading', 'pt interaction']
+
+    # Filter and recompute percentages for synthetic data
+    filtered_type_counts_synt = type_counts_synt[~type_counts_synt['Type'].isin(excluded_activities)].copy()
+    filtered_type_counts_sim = type_counts_sim[~type_counts_sim['Type'].isin(excluded_activities)].copy()
+
+    # Recompute percentages
+    filtered_type_counts_synt['Percentage'] = (filtered_type_counts_synt['Count'] / filtered_type_counts_synt[
+        'Count'].sum()) * 100
+    filtered_type_counts_sim['Percentage'] = (filtered_type_counts_sim['Count'] / filtered_type_counts_sim[
+        'Count'].sum()) * 100
+
+    # Filter and recompute percentages for microcensus data
+    filtered_purpose_counts = purpose_counts[~purpose_counts['Purpose'].isin(excluded_activities)].copy()
+
+    # Recompute percentages
+    filtered_purpose_counts['Percentage'] = (filtered_purpose_counts['Weighted_Count'] / filtered_purpose_counts[
+        'Weighted_Count'].sum()) * 100
+
     # Create a figure with subplots
     fig = go.Figure()
 
     # Add bars for synthetic activity types percentage
     fig.add_trace(go.Bar(
-        x=type_counts_synt['Type'],
-        y=type_counts_synt['Percentage'],
+        x=filtered_type_counts_synt['Type'],
+        y=filtered_type_counts_synt['Percentage'],
         name='Synthetic - Percentage',
         marker_color='blue'
     ))
 
     # Add bars for synthetic activity types percentage
     fig.add_trace(go.Bar(
-        x=type_counts_sim['Type'],
-        y=type_counts_sim['Percentage'],
+        x=filtered_type_counts_sim['Type'],
+        y=filtered_type_counts_sim['Percentage'],
         name='Simulation - Percentage',
         marker_color='green'
     ))
 
     # Add bars for microcensus trip purposes percentage
     fig.add_trace(go.Bar(
-        x=purpose_counts['Purpose'],
-        y=purpose_counts['Percentage'],
+        x=filtered_purpose_counts['Purpose'],
+        y=filtered_purpose_counts['Percentage'],
         name='Microcensus - Percentage',
         marker_color='red'
     ))
