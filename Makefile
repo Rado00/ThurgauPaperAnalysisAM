@@ -17,4 +17,11 @@ install:
 	pip install -r requirements.txt
 	@echo "Installed the required packages successfully"
 
+pippo:
+	@echo "Creating the requirements.txt file"
+	pip freeze > requirements.txt
+	@echo "Enter your commit message: "
+	@powershell -Command "$$msg = Read-Host 'Enter commit message'; git add .; git commit -m $$msg; git push"
+	@echo "Pushed the changes to the repository successfully"
+
 
