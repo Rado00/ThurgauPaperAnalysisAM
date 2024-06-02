@@ -17,7 +17,9 @@ if __name__ == '__main__':
 
     directory = os.getcwd()
     parent_directory = os.path.dirname(directory)
-    plots_directory = os.path.join(parent_directory, 'plots')
+    plots_directory = os.path.join(parent_directory, f'plots\\plots_{zone_name}')
+    if not os.path.exists(plots_directory):
+        os.makedirs(plots_directory)
 
     # Read the clean csv files
     data_path_clean = os.path.join(data_path, zone_name, clean_csv_folder, percentile)

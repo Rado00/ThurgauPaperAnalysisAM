@@ -1,8 +1,13 @@
-Analysis Freuenfeld SynPop vs Mikrozensus
+
+Thurgau Microcensus filter not working 
+
+
 Analysis Freuenfeld Outputs vs Thurgau Outputs filtered in Freuenfeld
 
 Add ReadingOutputs with DRT
 
+GitHub push
+Rename Plots Folder
 
 Mode Share Graph with the cake in the smaller zones on the map
 Plot Densities
