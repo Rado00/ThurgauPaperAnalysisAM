@@ -12,7 +12,7 @@ import numpy as np
 import pyproj
 from shapely.geometry import Point
 
-from ThurgauPaperAnalysisAM.scripts.common import read_config, setup_logging
+from common import *
 
 # Get the path to the current script folder
 current_script_folder = os.getcwd()
@@ -29,18 +29,17 @@ import dataFunctions.constants as c
 if __name__ == '__main__':
     setup_logging("02_microcensus_trips_filter.log")
 
-    data_path, zone_name, scenario, csv_folder, output_folder, percentile, clean_csv_folder = read_config()
-    shapeFileName = "Frauenfeld_proj.shp"
+    data_path, zone_name, scenario, csv_folder, output_folder, percentile, clean_csv_folder, shapeFileName = read_config()
+    zone_path = os.path.join(data_path, zone_name)
 
 
 def execute(path):
-    data_folder_path = path
 
     # Specify encoding
     encoding = "latin1"
 
-    df_mz_trips = pd.read_csv(f"{data_folder_path}/microzensus/wege.csv", encoding=encoding)
-    df_mz_stages = pd.read_csv(f"{data_folder_path}/microzensus/etappen.csv", encoding=encoding)
+    df_mz_trips = pd.read_csv(f"{path}\\microzensus\\wege.csv", encoding=encoding)
+    df_mz_stages = pd.read_csv(f"{path}\\microzensus\\etappen.csv", encoding=encoding)
 
     df_mz_trips = df_mz_trips[[
         "HHNR", "WEGNR", "f51100", "f51400", "wzweck1", "wzweck2", "wmittel",
@@ -172,7 +171,7 @@ def execute(path):
     print("  Removed %d persons with trips not starting at home location" % (before_length - after_length,))
 
     # Parking cost
-    df_mz_stages = pd.read_csv(f"{data_folder_path}/microzensus/etappen.csv", encoding="latin1")
+    df_mz_stages = pd.read_csv(f"{path}\\microzensus\\etappen.csv", encoding="latin1")
 
     df_cost = pd.DataFrame(df_mz_stages[["HHNR", "WEGNR", "f51330"]], copy=True)
     df_cost.columns = ["person_id", "trip_id", "parking_cost"]
@@ -187,11 +186,11 @@ def execute(path):
 
     return df_mz_trips
 
-trips = execute(data_path)
+trips = execute(zone_path)
 
 # Load geographic data from a shapefile
-shapefile_path = data_folder_path + 'ShapeFiles//' + shapeFileName  # please replace with your shapefile path
-gdf = gpd.read_file(shapefile_path)
+shapefile_path = os.path.join(zone_path, f"ShapeFiles\\{shapeFileName}")  # please replace with your shapefile path
+gdf = gpd.read_file(shapefile_path, engine="pyogrio")
 
 area_polygon = gdf.iloc[0]['geometry']
 
@@ -213,7 +212,7 @@ def create_activity_chain(group):
 # Create activity chains
 df_activity_chains =  filtered_trips.groupby(['person_id']).apply(create_activity_chain).reset_index()
 
-filtered_trips.to_csv(data_path + '/microzensus/trips.csv')
+filtered_trips.to_csv(zone_path + '\\microzensus\\trips.csv')
 df_mz_trips = filtered_trips
 
 #####DISPLAY DATA
@@ -228,7 +227,7 @@ mode_counts.columns = ['Mode', 'Count']
 fig1 = px.bar(mode_counts, x='Mode', y='Count', title='Mode Share Distribution - Total Counts',
               labels={'Count': 'Total Count', 'Mode': 'Mode of Transportation'})
 fig1.update_layout(width=600, height=600)
-fig1.show()
+# fig1.show()
 
 # Calculate percentage distribution for each mode
 mode_counts['Percentage'] = (mode_counts['Count'] / mode_counts['Count'].sum()) * 100
@@ -237,7 +236,7 @@ mode_counts['Percentage'] = (mode_counts['Count'] / mode_counts['Count'].sum()) 
 fig2 = px.bar(mode_counts, x='Mode', y='Percentage', title='Mode Share Distribution - Percentage',
               labels={'Percentage': 'Percentage (%)', 'Mode': 'Mode of Transportation'})
 fig2.update_layout(width=600, height=600)
-fig2.show()
+# fig2.show()
 
 
 # Convert seconds to datetime and resample times to 15-minute bins
@@ -268,7 +267,7 @@ fig.update_yaxes(range=[0, time_counts['Count'].max()])
 
 # Show plot
 fig.update_layout(width=1200, height=600)
-fig.show()
+# fig.show()
 
 
 # Capitalize and remove underscores from purpose names
@@ -282,7 +281,11 @@ purpose_counts.columns = ['Purpose', 'Count']
 fig1 = px.bar(purpose_counts, x='Purpose', y='Count', title='Purpose Distribution - Total Counts',
               labels={'Count': 'Total Count', 'Purpose': 'Purpose'})
 fig1.update_layout(width=600, height=600)
-fig1.show()
+# fig1.show()
+directory = os.getcwd()
+parent_directory = os.path.dirname(directory)
+plots_directory = os.path.join(parent_directory, f'plots\\plots_{zone_name}')
+fig1.write_image(f"{plots_directory}\\purpose_distribution_Total_microcensus.png", scale=4)
 
 # Calculate percentage distribution for each purpose
 purpose_counts['Percentage'] = (purpose_counts['Count'] / purpose_counts['Count'].sum()) * 100
@@ -291,7 +294,9 @@ purpose_counts['Percentage'] = (purpose_counts['Count'] / purpose_counts['Count'
 fig2 = px.bar(purpose_counts, x='Purpose', y='Percentage', title='Purpose Distribution - Percentage',
               labels={'Percentage': 'Percentage (%)', 'Purpose': 'Purpose'})
 fig2.update_layout(width=600, height=600)
-fig2.show()
+# fig2.show()
+
+fig2.write_image(f"{plots_directory}\\purpose_distribution_pct_microcensus.png", scale=4)
 
 print(df_activity_chains.activity_chain.nunique())
 
@@ -307,5 +312,5 @@ chain_counts.columns = ['Activity Chain', 'Count']
 fig = px.bar(chain_counts, x='Activity Chain', y='Count', title='Activity Chain Distribution - Total Counts',
              labels={'Count': 'Total Count', 'Activity Chain': 'Activity Chain'})
 fig.update_layout(width=1600, height=800)
-fig.show()
-
+# fig.show()
+fig.write_image(f"{plots_directory}\\activity_chain_distribution_Total_microcensus.png", scale=4)

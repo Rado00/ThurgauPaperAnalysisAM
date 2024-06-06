@@ -11,7 +11,7 @@ warnings.filterwarnings('ignore')
 if __name__ == '__main__':
     setup_logging("05_plot_the_clean_csv_files.log")
 
-    data_path, zone_name, scenario, csv_folder, output_folder, percentile, clean_csv_folder = read_config()
+    data_path, zone_name, scenario, csv_folder, output_folder, percentile, clean_csv_folder, shapeFileName = read_config()
 
     pre_processed_data_path = os.path.join(data_path, zone_name, csv_folder, percentile)
 

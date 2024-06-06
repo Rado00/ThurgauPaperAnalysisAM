@@ -178,7 +178,7 @@ def create_activity_chain_syn(group):
 if __name__ == '__main__':
     setup_logging("04_generate_clean_csv_files.log")
 
-    data_path, zone_name, scenario, csv_folder, output_folder, percentile, clean_csv_folder = read_config()
+    data_path, zone_name, scenario, csv_folder, output_folder, percentile, clean_csv_folder, shapeFileName = read_config()
 
     # Create directory for the zone
     scenario_path: str = os.path.join(data_path, zone_name, scenario, percentile)

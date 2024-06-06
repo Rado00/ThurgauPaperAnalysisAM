@@ -30,8 +30,9 @@ def read_config():
         sim_output_folder = config['config']['sim_output_folder']
         percentile = config['config']['percentile']
         clean_csv_folder = config['config']['clean_csv_folder']
+        shapeFileName = config['config']['shapeFileName']
         logging.info("Config file read successfully")
-        return data_path, zone_name, scenario, csv_folder, sim_output_folder, percentile, clean_csv_folder
+        return data_path, zone_name, scenario, csv_folder, sim_output_folder, percentile, clean_csv_folder, shapeFileName
     except Exception as e:
         logging.error("Error reading config file: " + str(e))
         sys.exit()
