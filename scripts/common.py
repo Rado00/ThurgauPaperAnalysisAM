@@ -15,13 +15,13 @@ def setup_logging(log_filename):
     logging.info("All setting of the logging is done")
 
 
-def read_config():
+def read_config(path='config.ini'):
     directory = os.getcwd()
     parent_directory = os.path.dirname(directory)
 
     try:
         config = configparser.ConfigParser()
-        config_path = os.path.join(parent_directory, 'config/config.ini')
+        config_path = os.path.join(parent_directory, f'config/{path}')
         config.read(config_path)
         data_path = config['config']['data_path']
         zone_name = config['config']['zone_name']
