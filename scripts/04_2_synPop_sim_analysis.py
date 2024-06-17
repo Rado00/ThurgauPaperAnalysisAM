@@ -15,7 +15,8 @@ import warnings
 warnings.filterwarnings('ignore')
 
 
-def process_activities(dataframe, zone_shapefile):
+# FUNCTION THAT SELECTS ACTIVITIES THAT ARE INSIDE THE ZONE
+def filter_activities_in_the_zone(dataframe, zone_shapefile):
     # Create a GeoDataFrame from the dataframe
     geometry = [Point(xy) for xy in zip(dataframe['x'], dataframe['y'])]
     geo_df = gpd.GeoDataFrame(dataframe, geometry=geometry)
@@ -35,7 +36,7 @@ def process_activities(dataframe, zone_shapefile):
 if __name__ == '__main__':
     setup_logging("04_2_synPop_sim_analysis.log")
 
-    data_path, zone_name, scenario, csv_folder, output_folder, percentile, clean_csv_folder, shapeFileName = read_config('config_1.ini')
+    data_path, zone_name, scenario, csv_folder, output_folder, percentile, clean_csv_folder, shapeFileName = read_config()
 
     output_data_path = os.path.join(data_path, zone_name, output_folder)
 
@@ -44,26 +45,40 @@ if __name__ == '__main__':
     except Exception as e:
         logging.error("Error loading simulation data: " + str(e))
         sys.exit()
-#
-#     try:
-#         # Load the shapefile
-#         shape_file_path = os.path.join(data_path, zone_name, "ShapeFiles", shapeFileName)
-#         shape = gpd.read_file(shape_file_path)
-#
-#         # Process activities to find those within the shape
-#         selected_ids = process_activities(plans_sim.activities, shape)
-#
-#         # Save the resulting DataFrame to a new CSV file
-#         selected_ids.to_csv('Frauenfeld_Activities.csv', index=False)
-#     except Exception as e:
-#         logging.error("Error processing simulation data: " + str(e))
-#         sys.exit()
+
+# COMMENT IT IF YOU HAVE THE FILTERED CSV FILE AND YOU ONLY WANT TO CHANGE PLOTS
+    try:
+        # Load the shapefile
+        shape_file_path = os.path.join(data_path, zone_name, "ShapeFiles", shapeFileName)
+        shape = gpd.read_file(shape_file_path)
+
+        # Process activities to find those within the shape
+        activitiesInTheZone = filter_activities_in_the_zone(plans_sim.activities, shape)
+
+        unique_plan_ids = activitiesInTheZone['plan_id'].unique()
+
+        all_activities = plans_sim.activities
+    
+        # Filter the activities for the unique plan IDs
+        activitiesOfPlansThatPassInTheZone = all_activities[all_activities['plan_id'].isin(unique_plan_ids)]
+
+        # COMMENT IF YOU WANT ONLY THE ACTIVITIES THAT ARE INSIDE THE ZONE
+        activitiesOfPlansThatPassInTheZone.to_csv('Plans_has_at_least_one_activity_Frauenfeld.csv', index=False)
+
+    # UNCOMMENT IF YOU WANT ONLY THE ACTIVITIES THAT ARE INSIDE THE ZONE
+        # Save the resulting DataFrame to a new CSV file
+        # activitiesInTheZone.to_csv('Frauenfeld_Activities.csv', index=False)
+
+
+    except Exception as e:
+        logging.error("Error processing simulation data: " + str(e))
+        sys.exit()
 
     # Frauenfeld Activities Data Analysis
     # Load the data
-    Frauenfeld_Activities_df = pd.read_csv('Frauenfeld_Activities.csv')
+    # activitiesInTheZone = pd.read_csv('Frauenfeld_Activities.csv')
+    activitiesInTheZone = pd.read_csv('Plans_has_at_least_one_activity_Frauenfeld.csv')
 
-    """
     directory = os.getcwd()
     parent_directory = os.path.dirname(directory)
     plots_directory = os.path.join(parent_directory, f'plots\\plots_{zone_name}')
@@ -72,7 +87,7 @@ if __name__ == '__main__':
         os.makedirs(plots_directory)
         logging.info("Directory for plots created successfully")
 
-    nan_counts = Frauenfeld_Activities_df.isna().sum()
+    nan_counts = activitiesInTheZone.isna().sum()
 
     # Define colors for the bars
     colors = ['#FF6F61', '#6B5B95', '#88B04B', '#F7CAC9']
@@ -101,7 +116,7 @@ if __name__ == '__main__':
     plt.savefig(f'{plots_directory}\\nan_values.png')
     # plt.show()
 
-    sizes = [Frauenfeld_Activities_df.shape[0], plans_sim.activities.shape[0]]
+    sizes = [activitiesInTheZone.shape[0], plans_sim.activities.shape[0]]
     labels = ['Frauenfeld', 'Thurgau']
     colors = ['#ff9999', '#66b3ff']
 
@@ -147,8 +162,8 @@ if __name__ == '__main__':
     # Plot
     sns.set(style="whitegrid")
     fig, ax = plt.subplots(figsize=(12, 8))
-    activity_types = Frauenfeld_Activities_df['type'].unique()
-    activity_types_values = Frauenfeld_Activities_df['type'].value_counts()
+    activity_types = activitiesInTheZone['type'].unique()
+    activity_types_values = activitiesInTheZone['type'].value_counts()
     bars = ax.bar(activity_types, activity_types_values, color=sns.color_palette("pastel"))
 
     # Labels and title
@@ -172,19 +187,6 @@ if __name__ == '__main__':
     plt.tight_layout()
     plt.savefig(f'{plots_directory}\\Type _of_activities.png')
     # plt.show()
-    """
-
-    unique_plan_ids = Frauenfeld_Activities_df['plan_id'].unique()
-
-    all_activities = plans_sim.activities
-
-    # Filter the activities for the unique plan IDs
-    Activities_Frauenfeld = all_activities[all_activities['plan_id'].isin(unique_plan_ids)]
-
-    Activities_Frauenfeld.to_csv('Plans_has_at_least_one_activity_Frauenfeld.csv', index=False)
-
-
-
 
 
 
