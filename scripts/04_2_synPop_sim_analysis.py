@@ -63,6 +63,7 @@ if __name__ == '__main__':
     # Load the data
     Frauenfeld_Activities_df = pd.read_csv('Frauenfeld_Activities.csv')
 
+    """
     directory = os.getcwd()
     parent_directory = os.path.dirname(directory)
     plots_directory = os.path.join(parent_directory, f'plots\\plots_{zone_name}')
@@ -171,6 +172,19 @@ if __name__ == '__main__':
     plt.tight_layout()
     plt.savefig(f'{plots_directory}\\Type _of_activities.png')
     # plt.show()
+    """
+
+    unique_plan_ids = Frauenfeld_Activities_df['plan_id'].unique()
+
+    all_activities = plans_sim.activities
+
+    # Filter the activities for the unique plan IDs
+    Activities_Frauenfeld = all_activities[all_activities['plan_id'].isin(unique_plan_ids)]
+
+    Activities_Frauenfeld.to_csv('Plans_has_at_least_one_activity_Frauenfeld.csv', index=False)
+
+
+
 
 
 
