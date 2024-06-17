@@ -116,8 +116,10 @@ if __name__ == '__main__':
     plt.savefig(f'{plots_directory}\\nan_values.png')
     # plt.show()
 
-    sizes = [activitiesInTheZone.shape[0], plans_sim.activities.shape[0]]
-    labels = ['Frauenfeld', 'Thurgau']
+    aiz = activitiesInTheZone.shape[0] # Number of activities in the zone
+    ap = plans_sim.activities.shape[0] # Number of activities in the simulation
+    sizes = [aiz, ap-aiz]
+    labels = ['Inside Frauenfeld', 'Outside Frauenfeld']
     colors = ['#ff9999', '#66b3ff']
 
     # Explode the first slice slightly
