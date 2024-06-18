@@ -36,8 +36,8 @@ import dataFunctions.utils
 if __name__ == '__main__':
     setup_logging("01_microcensus_population_filter.log")
 
-data_path, zone_name, scenario, csv_folder, output_folder, percentile, clean_csv_folder, shapeFileName = read_config()
-zone_path = os.path.join(data_path, zone_name)
+data_path, simulation_zone_name, scenario, sim_output_folder, percentile, analysis_zone_name, csv_folder, clean_csv_folder, shapeFileName = read_config()
+analysis_zone_path = os.path.join(data_path, analysis_zone_name)
 
 #PREPARE DATA & DEFINE FUNCTIONS
 def configure(context):
@@ -267,14 +267,14 @@ def execute_household(path):
 
 
 #######RUN PREPARATION AND MERGE
-df_mz_persons = execute_person(zone_path)
-df_mz_households = execute_household(zone_path)
+df_mz_persons = execute_person(analysis_zone_path)
+df_mz_households = execute_household(analysis_zone_path)
 
 df = pd.merge(df_mz_persons, df_mz_households, on='person_id', how='left')
 
 #### Filter Data for Scenario
 # Load geographic data from a shapefile
-shapefile_path = os.path.join(zone_path, f"ShapeFiles\\{shapeFileName}")  # please replace with your shapefile path
+shapefile_path = os.path.join(analysis_zone_path, f"ShapeFiles\\{shapeFileName}")  # please replace with your shapefile path
 
 
 gdf = gpd.read_file(shapefile_path, engine="pyogrio")
@@ -298,7 +298,7 @@ gdf_points = gpd.GeoDataFrame(df, geometry='home_point', crs=gdf.crs)
 df = gdf_points[gdf_points['home_point'].within(area_polygon)]
 df = pd.DataFrame(df.drop(columns='home_point'))
 
-df.to_csv(zone_path + '\\microzensus\\population.csv')
+df.to_csv(analysis_zone_path + '\\microzensus\\population.csv')
 
 
 ####PLOT DATA
@@ -361,5 +361,5 @@ fig.update_layout(
 # Show the figure
 directory = os.getcwd()
 parent_directory = os.path.dirname(directory)
-plots_directory = os.path.join(parent_directory, f'plots\\plots_{zone_name}')
+plots_directory = os.path.join(parent_directory, f'plots\\plots_{analysis_zone_name}')
 fig.write_image(f"{plots_directory}\\microcensus_population_plots.png", scale=4)

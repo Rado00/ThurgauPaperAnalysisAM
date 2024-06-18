@@ -11,18 +11,18 @@ warnings.filterwarnings('ignore')
 if __name__ == '__main__':
     setup_logging("05_plot_the_clean_csv_files.log")
 
-    data_path, zone_name, scenario, csv_folder, output_folder, percentile, clean_csv_folder, shapeFileName = read_config()
+    data_path, simulation_zone_name, scenario, sim_output_folder, percentile, analysis_zone_name, csv_folder, clean_csv_folder, shapeFileName = read_config()
 
-    pre_processed_data_path = os.path.join(data_path, zone_name, csv_folder, percentile)
+    pre_processed_data_path = os.path.join(data_path, analysis_zone_name, csv_folder, percentile)
 
     directory = os.getcwd()
     parent_directory = os.path.dirname(directory)
-    plots_directory = os.path.join(parent_directory, f'plots\\plots_{zone_name}')
+    plots_directory = os.path.join(parent_directory, f'plots\\plots_{analysis_zone_name}')
     if not os.path.exists(plots_directory):
         os.makedirs(plots_directory)
 
     # Read the clean csv files
-    data_path_clean = os.path.join(data_path, zone_name, clean_csv_folder, percentile)
+    data_path_clean = os.path.join(data_path, analysis_zone_name, clean_csv_folder, percentile)
     df_trips_mic = pd.read_csv(f'{data_path_clean}\\trips_mic.csv')
     df_trips_synt = pd.read_csv(f'{data_path_clean}\\trips_synt.csv')
     df_trips_sim = pd.read_csv(f'{data_path_clean}\\trips_sim.csv')

@@ -36,9 +36,9 @@ def filter_activities_in_the_zone(dataframe, zone_shapefile):
 if __name__ == '__main__':
     setup_logging("04_2_synPop_sim_analysis.log")
 
-    data_path, zone_name, scenario, csv_folder, output_folder, percentile, clean_csv_folder, shapeFileName = read_config()
+    data_path, simulation_zone_name, scenario, sim_output_folder, percentile, analysis_zone_name, csv_folder, clean_csv_folder, shapeFileName = read_config()
 
-    output_data_path = os.path.join(data_path, zone_name, output_folder)
+    output_data_path = os.path.join(data_path, simulation_zone_name, sim_output_folder)
 
     try:
         plans_sim = matsim.plan_reader_dataframe(os.path.join(output_data_path, "output_plans.xml.gz"))
@@ -49,7 +49,7 @@ if __name__ == '__main__':
 # COMMENT IT IF YOU HAVE THE FILTERED CSV FILE AND YOU ONLY WANT TO CHANGE PLOTS
     try:
         # Load the shapefile
-        shape_file_path = os.path.join(data_path, zone_name, "ShapeFiles", shapeFileName)
+        shape_file_path = os.path.join(data_path, analysis_zone_name, "ShapeFiles", shapeFileName)
         shape = gpd.read_file(shape_file_path)
 
         # Process activities to find those within the shape
@@ -81,7 +81,7 @@ if __name__ == '__main__':
 
     directory = os.getcwd()
     parent_directory = os.path.dirname(directory)
-    plots_directory = os.path.join(parent_directory, f'plots\\plots_{zone_name}')
+    plots_directory = os.path.join(parent_directory, f'plots\\plots_{analysis_zone_name}')
 
     if not os.path.exists(plots_directory):
         os.makedirs(plots_directory)
@@ -187,7 +187,7 @@ if __name__ == '__main__':
 
     # Improve layout
     plt.tight_layout()
-    plt.savefig(f'{plots_directory}\\Type _of_activities.png')
+    plt.savefig(f'{plots_directory}\\Type_of_activities.png')
     # plt.show()
 
 

@@ -23,16 +23,20 @@ def read_config(path='config.ini'):
         config = configparser.ConfigParser()
         config_path = os.path.join(parent_directory, f'config/{path}')
         config.read(config_path)
+
         data_path = config['config']['data_path']
-        zone_name = config['config']['zone_name']
+        simulation_zone_name = config['config']['simulation_zone_name']
         scenario = config['config']['scenario']
-        csv_folder = config['config']['csv_folder']
         sim_output_folder = config['config']['sim_output_folder']
         percentile = config['config']['percentile']
+
+        analysis_zone_name = config['config']['analysis_zone_name']
+        csv_folder = config['config']['csv_folder']
         clean_csv_folder = config['config']['clean_csv_folder']
         shapeFileName = config['config']['shapeFileName']
+
         logging.info("Config file read successfully")
-        return data_path, zone_name, scenario, csv_folder, sim_output_folder, percentile, clean_csv_folder, shapeFileName
+        return data_path, simulation_zone_name, scenario, sim_output_folder, percentile, analysis_zone_name, csv_folder, clean_csv_folder, shapeFileName
     except Exception as e:
         logging.error("Error reading config file: " + str(e))
         sys.exit()

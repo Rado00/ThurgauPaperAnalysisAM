@@ -29,8 +29,8 @@ import dataFunctions.constants as c
 if __name__ == '__main__':
     setup_logging("02_microcensus_trips_filter.log")
 
-    data_path, zone_name, scenario, csv_folder, output_folder, percentile, clean_csv_folder, shapeFileName = read_config()
-    zone_path = os.path.join(data_path, zone_name)
+    data_path, simulation_zone_name, scenario, sim_output_folder, percentile, analysis_zone_name, csv_folder, clean_csv_folder, shapeFileName = read_config()
+    analysis_zone_path = os.path.join(data_path, analysis_zone_name)
 
 
 def execute(path):
@@ -186,10 +186,10 @@ def execute(path):
 
     return df_mz_trips
 
-trips = execute(zone_path)
+trips = execute(analysis_zone_path)
 
 # Load geographic data from a shapefile
-shapefile_path = os.path.join(zone_path, f"ShapeFiles\\{shapeFileName}")  # please replace with your shapefile path
+shapefile_path = os.path.join(analysis_zone_path, f"ShapeFiles\\{shapeFileName}")  # please replace with your shapefile path
 gdf = gpd.read_file(shapefile_path, engine="pyogrio")
 
 area_polygon = gdf.iloc[0]['geometry']
@@ -212,7 +212,7 @@ def create_activity_chain(group):
 # Create activity chains
 df_activity_chains =  filtered_trips.groupby(['person_id']).apply(create_activity_chain).reset_index()
 
-filtered_trips.to_csv(zone_path + '\\microzensus\\trips.csv')
+filtered_trips.to_csv(analysis_zone_path + '\\microzensus\\trips.csv')
 df_mz_trips = filtered_trips
 
 #####DISPLAY DATA
@@ -284,7 +284,7 @@ fig1.update_layout(width=600, height=600)
 # fig1.show()
 directory = os.getcwd()
 parent_directory = os.path.dirname(directory)
-plots_directory = os.path.join(parent_directory, f'plots\\plots_{zone_name}')
+plots_directory = os.path.join(parent_directory, f'plots\\plots_{analysis_zone_name}')
 fig1.write_image(f"{plots_directory}\\purpose_distribution_Total_microcensus.png", scale=4)
 
 # Calculate percentage distribution for each purpose
