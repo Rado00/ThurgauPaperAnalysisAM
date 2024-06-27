@@ -24,3 +24,5 @@ O
 
 Opendata -PT coverage Thurgau
 Jan
+
+householdIncome nella mappa??? ; diviso per persone in ogni casa
