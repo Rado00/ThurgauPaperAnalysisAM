@@ -1,3 +1,4 @@
+import pandas as pd
 import geopandas as gpd
 import folium
 from folium.plugins import HeatMap
@@ -6,13 +7,16 @@ from folium.plugins import HeatMap
 gdf_path = "municipalities_gdf.geojson"
 municipalities_gdf = gpd.read_file(gdf_path)
 
+# Re-project to a projected CRS for accurate centroid calculation
+municipalities_gdf = municipalities_gdf.to_crs('EPSG:2056')
+
 # Create a folium map centered around Thurgau
 map_center = [47.5508, 9.0455]  # Approximate center of Thurgau
 m = folium.Map(location=map_center, zoom_start=12)
 
 # Add choropleth layer for population density
-folium.Choropleth(
-    geo_data=municipalities_gdf,
+choropleth = folium.Choropleth(
+    geo_data=municipalities_gdf.to_crs('EPSG:4326'),  # Re-project back to WGS84 for display
     name='choropleth',
     data=municipalities_gdf,
     columns=['gde_nr', 'population_density'],
@@ -23,13 +27,33 @@ folium.Choropleth(
     legend_name='Population Density'
 ).add_to(m)
 
-# Prepare data for heat map
-heat_data = [[point.y, point.x] for point in municipalities_gdf.geometry.centroid]
+# Load population data points
+population_csv = "./filtered_output_persons.csv"
+population_df = pd.read_csv(population_csv, dtype={'carAvail': str, 'hasLicense': str})
 
-# Add heat map layer
-HeatMap(heat_data, name='heatmap', radius=15).add_to(m)
+# Create a GeoDataFrame from the population data
+population_gdf = gpd.GeoDataFrame(
+    population_df,
+    geometry=gpd.points_from_xy(population_df.home_x, population_df.home_y),
+    crs='EPSG:2056'  # Assuming the coordinates are in CH1903+ / LV95
+)
 
-# Add layer control
+# Ensure the coordinate systems match
+population_gdf = population_gdf.to_crs('EPSG:4326')
+
+# Prepare data for heat map using home coordinates
+heat_data = [[point.y, point.x] for point in population_gdf.geometry]
+
+# Debug output: print first few heatmap data points
+print("First few heatmap data points:", heat_data[:5])
+
+# Create a feature group for the heatmap layer
+heatmap_group = folium.FeatureGroup(name='Heatmap').add_to(m)
+
+# Add the heatmap layer to the feature group
+HeatMap(heat_data, name='heatmap', radius=15, blur=10, max_zoom=1).add_to(heatmap_group)
+
+# Add layer control to toggle between choropleth and heat map
 folium.LayerControl().add_to(m)
 
 # Save the map as an HTML file
