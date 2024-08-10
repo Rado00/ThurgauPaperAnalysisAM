@@ -4,7 +4,6 @@ Analysis Freuenfeld Outputs(Sim) vs Thurgau Outputs filtered in Freuenfeld
 Add ReadingOutputs with DRT
 
 Mode Share Graph with the cake in the smaller zones on the map
-Plot Densities
 Plot O-D which zones?
 Plot Line utilisation
 
@@ -20,9 +19,3 @@ Figure 15: Variation of Waiting Times Over the Day
 DRT Fleet Occupation and Service Level Over Time
 O
 
-
-
-Opendata -PT coverage Thurgau
-Jan
-
-householdIncome nella mappa??? ; diviso per persone in ogni casa
