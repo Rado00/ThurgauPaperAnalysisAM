@@ -41,7 +41,10 @@ if __name__ == '__main__':
     output_data_path = os.path.join(data_path, zone_name, output_folder)
 
     try:
-        plans_sim = matsim.plan_reader_dataframe(os.path.join(output_data_path, "output_plans.xml.gz"))
+        events = matsim.event_reader(os.path.join(output_data_path, "output_events.xml.gz"))
+
+        # plans_sim = matsim.plan_reader_dataframe(os.path.join(output_data_path, "output_vehicles.xml.gz"))
+        print(events.head())
     except Exception as e:
         logging.error("Error loading simulation data: " + str(e))
         sys.exit()
