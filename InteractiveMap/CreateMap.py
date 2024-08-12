@@ -1,50 +1,55 @@
-import pandas as pd
 import geopandas as gpd
 import folium
+import warnings
+import numpy as np
 from folium.plugins import HeatMap
+from branca.colormap import linear
+import pandas as pd
+import matplotlib.pyplot as plt
+from io import BytesIO
+import base64
 
-# Load the saved GeoDataFrame
-gdf_path = "municipalities_gdf.geojson"
-municipalities_gdf = gpd.read_file(gdf_path)
+# Settings
+pd.set_option('display.max_columns', None)
+warnings.filterwarnings("ignore")
 
-# Ensure the GeoDataFrame has the necessary columns
-if 'population_density' not in municipalities_gdf.columns:
-    print("Error: 'population_density' column is missing in GeoDataFrame")
-else:
-    print("GeoDataFrame loaded successfully")
+# Load the shapefile
+shapefile_path = r".\weinfelden_zones\\Weinfelden_Zones.shp"
+gdf = gpd.read_file(shapefile_path)
+gdf = gdf[['Shape_Leng', 'Shape_Area', 'geometry']]
+gdf['car'] = np.random.randint(30, 40, gdf.shape[0])
+gdf['bus'] = np.random.randint(10, 50, gdf.shape[0])
+gdf['train'] = 100 - gdf['car'] - gdf['bus']
 
-# Re-project to a projected CRS for accurate centroid calculation
-municipalities_gdf = municipalities_gdf.to_crs('EPSG:2056')
+# Reproject to EPSG:4326
+gdf_4326 = gdf.to_crs(epsg=4326)
+print("Original CRS:", gdf_4326.crs)
 
-# Create a folium map centered around Thurgau
-map_center = [47.5508, 9.0455]  # Approximate center of Thurgau
-m = folium.Map(location=map_center, zoom_start=12)
+def embed_fig(fig):
+    """ Convert Matplotlib figure 'fig' into a <img> tag for HTML use using base64 encoding. """
+    buf = BytesIO()
+    fig.savefig(buf, format='png')
+    data = base64.b64encode(buf.getbuffer()).decode("ascii")
+    return f"<img src='data:image/png;base64,{data}'/>"
 
-# Define custom bins and colorscale for people per square kilometer (people/km²)
-bins = [0, 100, 200, 400, 600, 1000, 2000, 5000]  # Use a large number instead of infinity
-colorscale = 'YlOrRd'  # Using the same color scale
+# Create pie charts
+for idx, row in gdf_4326.iterrows():
+    fig, ax = plt.subplots(figsize=(1.2, 1.2))
+    labels = ['Car', 'Train', 'Bus']
+    sizes = [row['car'], row['train'], row['bus']]
+    ax.pie(sizes, labels=labels, autopct=lambda p: f'{p:.1f}%', startangle=90, textprops={'fontsize': 8})
+    ax.axis('equal')
+    plt.close(fig)
+    gdf_4326.at[idx, 'pie_chart'] = embed_fig(fig)
 
-# Temporarily fill NaN values for the choropleth layer creation
-choropleth_data = municipalities_gdf.copy()
-choropleth_data['population_density'] = choropleth_data['population_density'].fillna(-1)  # Use a value outside the normal range
+# Calculate centroid for map centering
+centroid = gdf_4326.geometry.centroid
+map_center = [centroid.y.mean(), centroid.x.mean()]
 
-# Add choropleth layer for population density
-choropleth = folium.Choropleth(
-    geo_data=choropleth_data.to_crs('EPSG:4326'),  # Re-project back to WGS84 for display
-    name='choropleth',
-    data=choropleth_data,
-    columns=['gde_nr', 'population_density'],
-    key_on='feature.properties.gde_nr',
-    fill_color=colorscale,
-    fill_opacity=0.7,
-    line_opacity=0.2,
-    legend_name='Population Density (people/km²)',
-    bins=bins,
-    reset=True
-).add_to(m)
+# Create the Folium map
+mymap = folium.Map(location=map_center, zoom_start=10, tiles='OpenStreetMap')
 
-# Load population data points with specified dtypes to avoid mixed type warnings
-population_csv = "./filtered_output_persons.csv"
+population_csv = "filtered_output_persons.csv"
 population_df = pd.read_csv(population_csv, dtype={
     'carAvail': str,
     'hasLicense': str,
@@ -72,38 +77,85 @@ population_gdf = population_gdf.to_crs('EPSG:4326')
 # Prepare data for heat map using home coordinates
 heat_data = [[point.y, point.x] for point in population_gdf.geometry]
 
-# Debug output: print first few heatmap data points
-print("First few heatmap data points:", heat_data[:5])
-
 # Create a feature group for the heatmap layer
-heatmap_group = folium.FeatureGroup(name='Heatmap').add_to(m)
+heatmap_group = folium.FeatureGroup(name='Heatmap').add_to(mymap)
 
 # Add the heatmap layer to the feature group
 HeatMap(heat_data, name='heatmap', radius=15, blur=10, max_zoom=1).add_to(heatmap_group)
 
-# Add layer control to toggle between choropleth and heat map
-folium.LayerControl().add_to(m)
+# Add additional tile layers with proper attributions
+folium.TileLayer('CartoDB positron', name='CartoDB Positron', attr="Map tiles by CartoDB, under CC BY 3.0. Data by OpenStreetMap, under ODbL.").add_to(mymap)
+folium.TileLayer(tiles='https://{s}.tiles.openrailwaymap.org/standard/{z}/{x}/{y}.png', name='OpenRailwayMap', attr="Map data: © OpenRailwayMap contributors").add_to(mymap)
 
-# Add custom legend with equal spacing
+# Color maps
+pop_colormap = linear.YlOrRd_09.scale(gdf_4326['car'].min(), gdf_4326['car'].max()).add_to(mymap)
+pop_colormap.caption = 'car'
+
+train_colormap = linear.YlOrRd_09.scale(gdf_4326['train'].min(), gdf_4326['train'].max()).add_to(mymap)
+train_colormap.caption = 'train'
+
+bus_colormap = linear.YlOrRd_09.scale(gdf_4326['bus'].min(), gdf_4326['bus'].max()).add_to(mymap)
+bus_colormap.caption = 'bus'
+
+def apply_style(feature, colormap, property_name):
+    return {
+        'fillColor': colormap(feature['properties'][property_name]),
+        'color': 'black',
+        'weight': 0.5,
+        'fillOpacity': 0.7
+    }
+
+# Add GeoJson layers with Pie Chart Popups
+features = ['car', 'train', 'bus']
+for feature in features:
+    if feature == 'car':
+        colormap = pop_colormap
+    elif feature == 'train':
+        colormap = train_colormap
+    else:
+        colormap = bus_colormap
+    folium.GeoJson(
+        gdf_4326.to_json(),
+        name=feature.capitalize(),
+        style_function=lambda x, colormap=colormap, property_name=feature: apply_style(x, colormap, property_name),
+        tooltip=folium.GeoJsonTooltip(fields=[feature]),
+        popup=folium.GeoJsonPopup(fields=['pie_chart'], labels=False)
+    ).add_to(mymap)
+
+# Custom CSS to hide default popup frame
+style = """
+<style>
+    .leaflet-popup-content-wrapper, .leaflet-popup-tip {
+        background: transparent;
+        box-shadow: none;
+        border: none;
+    }
+</style>
+"""
+mymap.get_root().html.add_child(folium.Element(style))
+
+# Custom HTML legend for population density
 legend_html = '''
 <div style="position: fixed; 
-            bottom: 50px; left: 50px; width: 200px; height: 200px; 
-            border:2px solid grey; z-index:9999; font-size:14px;
-            background-color:white; opacity: 0.9;">
-    &nbsp; <b>Population Density</b> (people/km²) <br>
-    &nbsp; <i>Color Scale</i> <br>
-    <div style="background-color:#ffffb2; width:20px; height:20px; display:inline-block"></div>&nbsp;0-100 <br>
-    <div style="background-color:#fecc5c; width:20px; height:20px; display:inline-block"></div>&nbsp;100-200 <br>
-    <div style="background-color:#fd8d3c; width:20px; height:20px; display:inline-block"></div>&nbsp;200-400 <br>
-    <div style="background-color:#f03b20; width:20px; height:20px; display:inline-block"></div>&nbsp;400-600 <br>
-    <div style="background-color:#bd0026; width:20px; height:20px; display:inline-block"></div>&nbsp;600-1000 <br>
-    <div style="background-color:#800026; width:20px; height:20px; display:inline-block"></div>&nbsp;1000-2000 <br>
-    <div style="background-color:#500026; width:20px; height:20px; display:inline-block"></div>&nbsp;2000+ <br>
+            bottom: 50px; left: 50px; width: 180px; height: 200px; 
+            background-color: white; z-index:9999; font-size:14px;
+            border:2px solid grey; padding: 10px;">
+<b>Population Density</b><br>
+(people/km²) <br>
+<i style="background: #ffffcc; width: 18px; height: 18px; float: left; opacity: 0.7;"></i> 0-100<br>
+<i style="background: #ffeda0; width: 18px; height: 18px; float: left; opacity: 0.7;"></i> 100-200<br>
+<i style="background: #feb24c; width: 18px; height: 18px; float: left; opacity: 0.7;"></i> 200-400<br>
+<i style="background: #fd8d3c; width: 18px; height: 18px; float: left; opacity: 0.7;"></i> 400-600<br>
+<i style="background: #fc4e2a; width: 18px; height: 18px; float: left; opacity: 0.7;"></i> 600-1000<br>
+<i style="background: #e31a1c; width: 18px; height: 18px; float: left; opacity: 0.7;"></i> 1000-2000<br>
+<i style="background: #bd0026; width: 18px; height: 18px; float: left; opacity: 0.7;"></i> 2000+<br>
 </div>
 '''
-m.get_root().html.add_child(folium.Element(legend_html))
+mymap.get_root().html.add_child(folium.Element(legend_html))
 
-# Save the map as an HTML file
-map_path = 'population_density_map.html'
-m.save(map_path)
-print(f"Map saved to {map_path}")
+# Add Layer control once
+folium.LayerControl().add_to(mymap)
+
+# Save and display the map
+mymap.save("map.html")
+mymap  # Display the map in a Jupyter Notebook
