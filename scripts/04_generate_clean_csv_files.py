@@ -178,13 +178,13 @@ def create_activity_chain_syn(group):
 if __name__ == '__main__':
     setup_logging("04_generate_clean_csv_files.log")
 
-    data_path, zone_name, scenario, csv_folder, output_folder, percentile, clean_csv_folder, shapeFileName = read_config()
+    data_path, simulation_zone_name, scenario, sim_output_folder, percentile, analysis_zone_name, csv_folder, clean_csv_folder, shapeFileName = read_config()
 
     # Create directory for the zone
-    scenario_path: str = os.path.join(data_path, zone_name, scenario, percentile)
-    output_folder_path: str = os.path.join(data_path, zone_name, output_folder)
+    scenario_path: str = os.path.join(data_path, simulation_zone_name, scenario, percentile)
+    output_folder_path: str = os.path.join(data_path, simulation_zone_name, sim_output_folder)
 
-    pre_processed_data_path = os.path.join(data_path, zone_name, csv_folder, percentile)
+    pre_processed_data_path = os.path.join(data_path, analysis_zone_name, csv_folder, percentile)
 
     # Read the csv files
     try:
@@ -202,7 +202,7 @@ if __name__ == '__main__':
         logging.error("Error reading csv files: " + str(e))
         sys.exit()
 
-    new_path = os.path.join(data_path, zone_name, 'microzensus')
+    new_path = os.path.join(data_path, analysis_zone_name, 'microzensus')
     try:
         df_population_mic = pd.read_csv(f"{new_path}\\population.csv")
         df_trips_mic = pd.read_csv(f"{new_path}\\trips.csv")
@@ -312,7 +312,7 @@ if __name__ == '__main__':
     df_trips_mic = pd.merge(df_trips_mic, df_population_mic[['person_id', 'household_weight']], on='person_id',
                             how='left')
 
-    data_path_clean = os.path.join(data_path, zone_name, clean_csv_folder, percentile)
+    data_path_clean = os.path.join(data_path, analysis_zone_name, clean_csv_folder, percentile)
     df_trips_mic.to_csv(f'{data_path_clean}\\trips_mic.csv', index=False)
     df_trips_synt.to_csv(f'{data_path_clean}\\trips_synt.csv', index=False)
     df_trips_sim.to_csv(f'{data_path_clean}\\trips_sim.csv', index=False)

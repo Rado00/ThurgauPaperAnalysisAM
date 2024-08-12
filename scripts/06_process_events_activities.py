@@ -9,11 +9,11 @@ from collections import defaultdict
 if __name__ == '__main__':
     setup_logging("06_process_events_activities.log")
 
-    data_path, zone_name, scenario, csv_folder, output_folder, percentile, clean_csv_folder = read_config()
+    data_path, simulation_zone_name, scenario, sim_output_folder, percentile, analysis_zone_name, csv_folder, clean_csv_folder, shapeFileName = read_config()
 
     # Create directory for the zone
-    scenario_path: str = os.path.join(data_path, zone_name, scenario, percentile)
-    output_folder_path: str = os.path.join(data_path, zone_name, output_folder)
+    scenario_path: str = os.path.join(data_path, simulation_zone_name, scenario, percentile)
+    sim_output_folder_path: str = os.path.join(data_path, simulation_zone_name, sim_output_folder)
 
     plans = matsim.plan_reader(os.path.join(scenario_path, "population.xml.gz"))
     records = []
@@ -45,10 +45,8 @@ if __name__ == '__main__':
     ax = activities_geo.plot(column="type", figsize=(15, 15), legend=True, alpha=0.1)
     ctx.add_basemap(ax, crs=activities_geo.crs)
 
-    sim_output_path = os.path.join(data_path, zone_name, output_folder)
-
     events = matsim.event_reader(
-        f'{sim_output_path}\\output_events.xml.gz', types='left link,departure')
+        f'{sim_output_folder_path}\\output_events.xml.gz', types='left link,departure')
 
     # defaultdict creates a value if not there. Here, it creates the default int, which is 0
     link_counts = defaultdict(int)

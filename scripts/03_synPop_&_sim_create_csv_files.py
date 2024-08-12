@@ -5,11 +5,11 @@ from common import *
 if __name__ == '__main__':
     setup_logging("03_read_create_csv_files.log")
 
-    data_path, zone_name, scenario, csv_folder, output_folder, percentile, clean_csv_folder, shapeFileName = read_config()
+    data_path, simulation_zone_name, scenario, sim_output_folder, percentile, analysis_zone_name, csv_folder, clean_csv_folder, shapeFileName = read_config()
 
     # Create directory for the zone
-    scenario_path: str = os.path.join(data_path, zone_name, scenario, percentile)
-    output_folder_path: str = os.path.join(data_path, zone_name, output_folder)
+    scenario_path: str = os.path.join(data_path, simulation_zone_name, scenario, percentile)
+    output_folder_path: str = os.path.join(data_path, simulation_zone_name, sim_output_folder)
 
     # Read the xml data with matsim library
     try:
@@ -39,7 +39,7 @@ if __name__ == '__main__':
         logging.error("Error creating dataframes: " + str(e))
         sys.exit()
 
-    pre_processed_data_path = os.path.join(data_path, zone_name, csv_folder, percentile)
+    pre_processed_data_path = os.path.join(data_path, analysis_zone_name, csv_folder, percentile)
     # Create the directory for the csv files is not exists
     if not os.path.exists(pre_processed_data_path):
         os.makedirs(pre_processed_data_path)
