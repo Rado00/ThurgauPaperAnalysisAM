@@ -11,14 +11,18 @@ if __name__ == '__main__':
     scenario_path: str = os.path.join(data_path, simulation_zone_name, scenario, percentile)
     output_folder_path: str = os.path.join(data_path, simulation_zone_name, sim_output_folder)
 
-    # Read the xml data with matsim library
+    # Read the XML data with a matsim library
     try:
         network = matsim.read_network(os.path.join(scenario_path, "network.xml.gz"))
-        plans = matsim.plan_reader_dataframe(os.path.join(scenario_path, f"imputed_population.xml.gz"))
-        households_synt = matsim.household_reader(os.path.join(scenario_path, "households.xml.gz")) # dataframe types conversion failed
-        households_sim = matsim.household_reader(os.path.join(output_folder_path, "output_households.xml.gz")) # dataframe types conversion failed
-        plans_sim = matsim.plan_reader_dataframe(os.path.join(output_folder_path, "output_plans.xml.gz"))
         logging.info("Network data loaded successfully")
+        plans = matsim.plan_reader_dataframe(os.path.join(scenario_path, f"population.xml.gz"))
+        logging.info("Population data loaded successfully")
+        households_synt = matsim.household_reader(os.path.join(scenario_path, "households.xml.gz")) # dataframe types conversion failed
+        logging.info("Household data loaded successfully")
+        households_sim = matsim.household_reader(os.path.join(output_folder_path, "output_households.xml.gz")) # dataframe types conversion failed
+        logging.info("Output household data loaded successfully")
+        plans_sim = matsim.plan_reader_dataframe(os.path.join(output_folder_path, "output_plans.xml.gz"))
+        logging.info("Output plans data loaded successfully")
     except Exception as e:
         logging.error("Error loading network data: " + str(e))
         sys.exit()

@@ -41,7 +41,24 @@ if __name__ == '__main__':
     output_data_path = os.path.join(data_path, simulation_zone_name, sim_output_folder)
 
     try:
+        import json
         events = matsim.event_reader(os.path.join(output_data_path, "output_events.xml.gz"))
+        events_dict = {}
+        counter = 0
+        for id in events:
+            counter += 1
+            temp_event = {}
+            for key in id.keys():
+                temp_event[key] = id[key]
+            events_dict[f"event_{counter}"] = temp_event
+            if counter >= 1000:
+                break
+
+        file_name = "events.json"
+        # Write the dictionary to a JSON file
+        with open(file_name, "w") as json_file:
+            json.dump(events_dict, json_file, indent=4)  # `indent=4` makes the file human-readable
+        print(f"Dictionary has been written to {file_name}")
 
         # plans_sim = matsim.plan_reader_dataframe(os.path.join(output_data_path, "output_vehicles.xml.gz"))
         print(events.head())
@@ -55,12 +72,12 @@ if __name__ == '__main__':
         shape_file_path = os.path.join(data_path, analysis_zone_name, "ShapeFiles", shapeFileName)
         shape = gpd.read_file(shape_file_path)
 
+        all_activities = pd.read_csv(f'{os.path.join(data_path, analysis_zone_name, csv_folder, percentile)}\\df_activity_sim.csv')
+
         # Process activities to find those within the shape
-        activitiesInTheZone = filter_activities_in_the_zone(plans_sim.activities, shape)
+        activitiesInTheZone = filter_activities_in_the_zone(all_activities, shape)
 
         unique_plan_ids = activitiesInTheZone['plan_id'].unique()
-
-        all_activities = plans_sim.activities
     
         # Filter the activities for the unique plan IDs
         activitiesOfPlansThatPassInTheZone = all_activities[all_activities['plan_id'].isin(unique_plan_ids)]
@@ -71,7 +88,6 @@ if __name__ == '__main__':
     # UNCOMMENT IF YOU WANT ONLY THE ACTIVITIES THAT ARE INSIDE THE ZONE
         # Save the resulting DataFrame to a new CSV file
         # activitiesInTheZone.to_csv('Frauenfeld_Activities.csv', index=False)
-
 
     except Exception as e:
         logging.error("Error processing simulation data: " + str(e))
@@ -120,7 +136,7 @@ if __name__ == '__main__':
     # plt.show()
 
     aiz = activitiesInTheZone.shape[0] # Number of activities in the zone
-    ap = plans_sim.activities.shape[0] # Number of activities in the simulation
+    ap = all_activities.shape[0] # Number of activities in the simulation
     sizes = [aiz, ap-aiz]
     labels = ['Inside Frauenfeld', 'Outside Frauenfeld']
     colors = ['#ff9999', '#66b3ff']

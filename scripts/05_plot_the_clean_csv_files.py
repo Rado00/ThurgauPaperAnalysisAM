@@ -5,6 +5,8 @@ import warnings
 import plotly.express as px
 import plotly.graph_objects as go
 from plotly.subplots import make_subplots
+pd.set_option('display.max_columns', None)
+pd.set_option('display.max_rows', None)
 
 warnings.filterwarnings('ignore')
 
@@ -538,7 +540,7 @@ if __name__ == '__main__':
     # fig.show()
 
     # Save the figure as an image with higher resolution
-    fig.write_image(f"{plots_directory}\\comparative_activity_chain_distribution.png", scale=4)
+    fig.write_image(f"{plots_directory}\\comparative_activity_chain_distribution_1.png", scale=4)
 
     # Calculate total counts for each activity chain for Synthetic Population
     chain_counts_syn = df_activity_chains_syn['activity_chain'].value_counts().reset_index()
@@ -588,7 +590,7 @@ if __name__ == '__main__':
 
     # fig.show()
 
-    fig.write_image(f"{plots_directory}\\comparative_activity_chain_distribution.png", scale=4)
+    fig.write_image(f"{plots_directory}\\comparative_activity_chain_distribution_2.png", scale=4)
 
     # Now calculate the value counts and percentages for the cleaned-up modes
     mode_counts_synt = df_legs_synt['mode'].value_counts().reset_index()
