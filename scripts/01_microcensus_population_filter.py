@@ -59,10 +59,9 @@ def fix_marital_status(df):
 
 def execute_person(path):
     # Read the "zielpersonen.csv" data from the microzensus folder
-    df_mz_persons = pd.read_csv(
-        "%s\\microzensus\\zielpersonen.csv" % path,
-        sep=",", encoding="latin1", parse_dates=["USTag"]
-    )
+    file_path_Ziel = os.path.join(path, "microzensus", "zielpersonen.csv")
+    print(f"Constructed file path: {file_path_Ziel}")
+    df_mz_persons = pd.read_csv(file_path_Ziel, sep=",", encoding="latin1", parse_dates=["USTag"])
 
     # "alter" : "age"
     # "gesl" : "sex"
