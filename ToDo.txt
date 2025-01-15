@@ -1,6 +1,3 @@
-
-Analysis Freuenfeld Outputs(Sim) vs Thurgau Outputs filtered in Freuenfeld
-
 Add ReadingOutputs with DRT
 
 Mode Share Graph with the cake in the smaller zones on the map
