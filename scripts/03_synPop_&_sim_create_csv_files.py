@@ -1,6 +1,9 @@
 # Import necessary libraries
 import matsim
 from common import *
+import pandas as pd
+pd.set_option('display.max_columns', None)
+pd.set_option('display.max_rows', None)
 
 if __name__ == '__main__':
     setup_logging("03_read_create_csv_files.log")
