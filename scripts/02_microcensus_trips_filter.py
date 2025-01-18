@@ -13,6 +13,7 @@ output data:
 - Remove persons with trips not ending with 'home'
 - Remove persons with trips not starting with 'home'
 """
+import logging
 
 # Import necessary libraries
 import pyproj
@@ -198,6 +199,7 @@ if __name__ == '__main__':
     data_path, simulation_zone_name, scenario, sim_output_folder, percentile, analysis_zone_name, csv_folder, clean_csv_folder, shapeFileName = read_config()
     analysis_zone_path = os.path.join(data_path, analysis_zone_name)
     trips = execute(analysis_zone_path)
+    logging.info("Microcensus trips filtered successfully")
 
     # Load geographic data from a shapefile
     shapefile_path = os.path.join(analysis_zone_path,
@@ -205,6 +207,7 @@ if __name__ == '__main__':
     gdf = gpd.read_file(shapefile_path, engine="pyogrio")
 
     area_polygon = gdf.iloc[0]['geometry']
+    logging.info("Shapefile loaded successfully and area_polygon created successfully")
 
     # Create Point geometries for origin and destination
     trips['origin_point'] = trips.apply(lambda row: Point(row['origin_x'], row['origin_y']), axis=1)
@@ -216,11 +219,12 @@ if __name__ == '__main__':
         trips['destination_point'].apply(lambda point: point.within(area_polygon))
         ]
 
-
+    logging.info("Trips filtered successfully based on the shapefile polygon successfully")
     # Create activity chains
     df_activity_chains = filtered_trips.groupby(['person_id']).apply(create_activity_chain).reset_index()
 
     filtered_trips.to_csv(analysis_zone_path + '\\microzensus\\trips.csv')
+    logging.info(f"Trips saved successfully in the microzensus folder in the {analysis_zone_path} directory successfully")
     df_mz_trips = filtered_trips
 
     # Capitalize and remove underscores from mode names
@@ -249,6 +253,7 @@ if __name__ == '__main__':
     # Convert seconds to datetime and resample times to 15-minute bins
     df_mz_trips['departure_time'] = pd.to_datetime(df_mz_trips['departure_time'], unit='s').dt.floor('30T').dt.time
     df_mz_trips['arrival_time'] = pd.to_datetime(df_mz_trips['arrival_time'], unit='s').dt.floor('30T').dt.time
+    logging.info("The departure and arrival times are converted to datetime and resampled into bins successfully")
 
     # Count occurrences in each 15-minute bin
     departure_counts = df_mz_trips.groupby('departure_time').size().reset_index(name='Count')
@@ -258,6 +263,7 @@ if __name__ == '__main__':
     arrival_counts = df_mz_trips.groupby('arrival_time').size().reset_index(name='Count')
     arrival_counts['Type'] = 'Arrivals'
     arrival_counts = arrival_counts.rename(columns={'arrival_time': 'Time'})
+    logging.info("The arrival_counts and departure_counts are calculated successfully")
 
     # Combine data
     time_counts = pd.concat([departure_counts, arrival_counts], axis=0)
@@ -291,7 +297,10 @@ if __name__ == '__main__':
     directory = os.getcwd()
     parent_directory = os.path.dirname(directory)
     plots_directory = os.path.join(parent_directory, f'plots\\plots_{analysis_zone_name}')
+    if not os.path.exists(plots_directory):
+        os.makedirs(plots_directory)
     fig1.write_image(f"{plots_directory}\\purpose_distribution_Total_microcensus.png", scale=4)
+    logging.info(f"Purpose distribution total microcensus plotted successfully and saved in the {plots_directory} directory")
 
     # Calculate percentage distribution for each purpose
     purpose_counts['Percentage'] = (purpose_counts['Count'] / purpose_counts['Count'].sum()) * 100
@@ -304,7 +313,7 @@ if __name__ == '__main__':
 
     fig2.write_image(f"{plots_directory}\\purpose_distribution_pct_microcensus.png", scale=4)
 
-    print(f"There exist {df_activity_chains.activity_chain.nunique()} number of unique activity chains.")
+    logging.info(f"There exist {df_activity_chains.activity_chain.nunique()} number of unique activity chains.")
 
     filtered_trips[['HHNR', 'WEGNR', 'purpose']]
 
@@ -320,3 +329,4 @@ if __name__ == '__main__':
     fig.update_layout(width=1600, height=800)
     # fig.show()
     fig.write_image(f"{plots_directory}\\activity_chain_distribution_Total_microcensus.png", scale=4)
+    logging.info(f"Activity chain distribution total microcensus plotted successfully and saved in the {plots_directory} directory")

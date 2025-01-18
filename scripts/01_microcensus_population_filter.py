@@ -8,7 +8,7 @@ output data:
 - microzensus/population.csv
 - plots/plots_Thurgau/microcensus_population_plots.png
 """
-
+import logging
 # Import necessary libraries
 import math
 import pyproj
@@ -231,7 +231,9 @@ if __name__ == '__main__':
     analysis_zone_path = os.path.join(data_path, analysis_zone_name)
 
     df_mz_persons = execute_person(analysis_zone_path)
+    logging.info(f"Person data loaded and excuted successfully from the {analysis_zone_path} folder.")
     df_mz_households = execute_household(analysis_zone_path)
+    logging.info(f"Household data loaded and excuted successfully from the {analysis_zone_path} folder.")
 
     df = pd.merge(df_mz_persons, df_mz_households, on='person_id', how='left')
 
@@ -260,9 +262,9 @@ if __name__ == '__main__':
     df = pd.DataFrame(df.drop(columns='home_point'))
 
     df.to_csv(analysis_zone_path + '\\microzensus\\population.csv')
+    logging.info(f"Population data saved successfully in the {analysis_zone_path} directory and microzensus folder.")
 
     # !pip install --upgrade nbformat
-    print(nbformat.__version__)
     variables_hh = [
         "person_id", "household_size", "number_of_cars", "number_of_bikes", "income_class",
         "home_x", "home_y", "household_size_class", "number_of_cars_class", "number_of_bikes_class", "household_weight",
@@ -319,4 +321,7 @@ if __name__ == '__main__':
     directory = os.getcwd()
     parent_directory = os.path.dirname(directory)
     plots_directory = os.path.join(parent_directory, f'plots\\plots_{analysis_zone_name}')
+    if not os.path.exists(plots_directory):
+        os.makedirs(plots_directory)
     fig.write_image(f"{plots_directory}\\microcensus_population_plots.png", scale=4)
+    logging.info(f"Plots saved successfully in the {plots_directory} directory.")

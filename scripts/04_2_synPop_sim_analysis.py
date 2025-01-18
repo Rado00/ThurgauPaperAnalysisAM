@@ -58,10 +58,10 @@ if __name__ == '__main__':
         # Write the dictionary to a JSON file
         with open(file_name, "w") as json_file:
             json.dump(events_dict, json_file, indent=4)  # `indent=4` makes the file human-readable
-        print(f"Dictionary has been written to {file_name}")
+        logging.info(f"Dictionary has been written to {file_name}")
 
         # plans_sim = matsim.plan_reader_dataframe(os.path.join(output_data_path, "output_vehicles.xml.gz"))
-        print(events.head())
+
     except Exception as e:
         logging.error("Error loading simulation data: " + str(e))
         sys.exit()
@@ -91,7 +91,6 @@ if __name__ == '__main__':
 
     except Exception as e:
         logging.error("Error processing simulation data: " + str(e))
-        sys.exit()
 
     # Frauenfeld Activities Data Analysis
     # Load the data
