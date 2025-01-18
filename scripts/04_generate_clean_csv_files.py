@@ -313,6 +313,10 @@ if __name__ == '__main__':
                             how='left')
 
     data_path_clean = os.path.join(data_path, analysis_zone_name, clean_csv_folder, percentile)
+    # Ensure the directory exists
+    if not os.path.exists(data_path_clean):
+        os.makedirs(data_path_clean)
+    # Write the CSV files
     df_trips_mic.to_csv(f'{data_path_clean}\\trips_mic.csv', index=False)
     df_trips_synt.to_csv(f'{data_path_clean}\\trips_synt.csv', index=False)
     df_trips_sim.to_csv(f'{data_path_clean}\\trips_sim.csv', index=False)
