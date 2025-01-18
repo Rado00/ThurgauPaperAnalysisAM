@@ -8,16 +8,16 @@ REM Navigate to the directory containing your scripts
 cd "C:\Users\muaa\Documents\3_MIEI\ThurgauPaperAnalysisAM\scripts"
 
 REM Run each script in sequence
-echo Running 01_microcensus_population_filter.py...
-python 01_microcensus_population_filter.py
-if %ERRORLEVEL% neq 0 goto :error
+REM echo Running 01_microcensus_population_filter.py...
+REM python 01_microcensus_population_filter.py
+REM if %ERRORLEVEL% neq 0 goto :error
 
-echo Running 02_microcensus_trips_filter.py...
-python 02_microcensus_trips_filter.py
-if %ERRORLEVEL% neq 0 goto :error
+REM echo Running 02_microcensus_trips_filter.py...
+REM python 02_microcensus_trips_filter.py
+REM if %ERRORLEVEL% neq 0 goto :error
 
-echo Running 03_synPop_&_sim_create_csv_files.py...
-python 03_synPop_&_sim_create_csv_files.py
+echo Running 03_synPop_and_sim_create_csv_files.py...
+python 03_synPop_and_sim_create_csv_files.py
 if %ERRORLEVEL% neq 0 goto :error
 
 echo Running 04_generate_clean_csv_files.py...
