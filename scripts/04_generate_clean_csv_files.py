@@ -175,6 +175,15 @@ def create_activity_chain_syn(group):
     return pd.Series({'activity_chain': chain})
 
 
+def execute_household_just_person_household_weight(path):
+    df_mz_households = pd.read_csv(
+        "%s\\microzensus\\haushalte.csv" % path, sep=",", encoding="latin1")
+    df_mz_households["person_id"] = df_mz_households["HHNR"]
+    df_mz_households["household_weight"] = df_mz_households["WM"]
+
+    return df_mz_households[["person_id", "household_weight"]]
+
+
 if __name__ == '__main__':
     setup_logging("04_generate_clean_csv_files.log")
 
@@ -183,7 +192,7 @@ if __name__ == '__main__':
     # Create directory for the zone
     scenario_path: str = os.path.join(data_path, simulation_zone_name, scenario, percentile)
     output_folder_path: str = os.path.join(data_path, simulation_zone_name, sim_output_folder)
-
+    analysis_zone_path = os.path.join(data_path, analysis_zone_name)
     pre_processed_data_path = os.path.join(data_path, analysis_zone_name, csv_folder, percentile)
 
     # Read the csv files
@@ -308,9 +317,19 @@ if __name__ == '__main__':
     df_activity_chains_sim['activity_chain'] = df_activity_chains_sim['activity_chain'].replace({'H': 'H-H'})
     df_activity_chains_mic['activity_chain'] = df_activity_chains_mic['activity_chain'].replace({'H': 'H-H'})
 
+    # All person id and household weight values
+    reference_population = execute_household_just_person_household_weight(analysis_zone_path)
+
     # Merge the 'household_weight' column from df_population_mic to df_trips_mic based on 'person_id'
     df_trips_mic = pd.merge(df_trips_mic, df_population_mic[['person_id', 'household_weight']], on='person_id',
                             how='left')
+
+    df_trips_mic['household_weight'] = df_trips_mic.apply(
+        lambda row: row['household_weight'] if pd.notnull(row['household_weight']) else
+        reference_population.loc[reference_population['person_id'] == row['person_id'], 'household_weight'].values[0]
+        if row['person_id'] in reference_population['person_id'].values else None,
+        axis=1
+    )
 
     data_path_clean = os.path.join(data_path, analysis_zone_name, clean_csv_folder, percentile)
     # Ensure the directory exists

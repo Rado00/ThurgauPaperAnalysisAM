@@ -7,11 +7,10 @@ import plotly.express as px
 from datetime import datetime
 import plotly.graph_objects as go
 from plotly.subplots import make_subplots
-
 pd.set_option('display.max_columns', None)
 pd.set_option('display.max_rows', None)
-
 warnings.filterwarnings('ignore')
+
 
 if __name__ == '__main__':
     setup_logging("04_plot_mode_share_time_distance_synt.log")
@@ -55,17 +54,18 @@ if __name__ == '__main__':
     df_synt_mode_share['mode'] = df_synt_mode_share['mode'].str.replace('_', ' ').str.title()
     df_sim_mode_share['mode'] = df_sim_mode_share['mode'].str.replace('_', ' ').str.title()
 
-    df_synt_mode_share['mode'] = df_synt_mode_share['mode'].replace('bike', 'Bike')
-    df_synt_mode_share['mode'] = df_sim_mode_share['mode'].replace('bike', 'Bike')
     logging.info(f"Modes of the all dataframes have been capitalized and underscores have been removed.")
 
     df_synt_mode_share['travel_time'] = pd.to_timedelta(df_synt_mode_share['travel_time']).dt.total_seconds()
     df_sim_mode_share['travel_time'] = pd.to_timedelta(df_sim_mode_share['travel_time']).dt.total_seconds()
     logging.info(f"Travel time has been converted to seconds.")
+    df_mic_mode_share['distance'] = df_mic_mode_share['distance'] * df_mic_mode_share['household_weight']
+    logging.info(f"Distance has been multiplied by household weight.")
 
     mode_share_distance_mic = df_mic_mode_share.groupby('mode')[
         'distance'].sum().reset_index()
     mode_share_distance_mic.columns = ['Mode', 'Total Distance']
+
     mode_share_distance_mic['Percentage'] = (mode_share_distance_mic['Total Distance'] / mode_share_distance_mic[
         'Total Distance'].sum()) * 100
 
@@ -134,6 +134,9 @@ if __name__ == '__main__':
     # Save the figure as an image with higher resolution
     fig.write_image(f"{mode_share_directory}\\Mode_share_by_Distance.png", scale=4)
     logging.info(f"Mode share by distance figure has been saved successfully.")
+
+    df_mic_mode_share['travel_time'] = df_mic_mode_share['travel_time'] * df_mic_mode_share['household_weight']
+    logging.info(f"Travel time has been multiplied by household weight.")
 
     mode_share_time_mic = df_mic_mode_share.groupby('mode')[
         'travel_time'].sum().reset_index()

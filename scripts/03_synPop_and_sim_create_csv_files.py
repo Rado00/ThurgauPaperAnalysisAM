@@ -16,7 +16,7 @@ if __name__ == '__main__':
 
     # Read the XML data with a matsim library
     try:
-        # network = matsim.read_network(os.path.join(scenario_path, "network.xml.gz"))
+        network = matsim.read_network(os.path.join(scenario_path, "network.xml.gz"))
         logging.info("Network data loaded successfully")
         plans = matsim.plan_reader_dataframe(os.path.join(scenario_path, f"population.xml.gz"))
         logging.info("Population data loaded successfully")
