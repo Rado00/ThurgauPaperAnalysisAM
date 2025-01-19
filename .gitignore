@@ -13,3 +13,4 @@ plots/
 config/
 __pycache__/
 
+/scripts/.idea
