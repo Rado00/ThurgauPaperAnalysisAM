@@ -7,10 +7,10 @@ import plotly.express as px
 from datetime import datetime
 import plotly.graph_objects as go
 from plotly.subplots import make_subplots
+
 pd.set_option('display.max_columns', None)
 pd.set_option('display.max_rows', None)
 warnings.filterwarnings('ignore')
-
 
 if __name__ == '__main__':
     setup_logging("04_plot_mode_share_time_distance_synt.log")
@@ -59,7 +59,9 @@ if __name__ == '__main__':
     df_synt_mode_share['travel_time'] = pd.to_timedelta(df_synt_mode_share['travel_time']).dt.total_seconds()
     df_sim_mode_share['travel_time'] = pd.to_timedelta(df_sim_mode_share['travel_time']).dt.total_seconds()
     logging.info(f"Travel time has been converted to seconds.")
-    df_mic_mode_share['distance'] = df_mic_mode_share['distance'] * df_mic_mode_share['household_weight']
+
+    # Multiply distance by household weight
+    df_mic_mode_share['weighted__distance'] = df_mic_mode_share['distance'] * df_mic_mode_share['household_weight']
     logging.info(f"Distance has been multiplied by household weight.")
 
     mode_share_distance_mic = df_mic_mode_share.groupby('mode')[
@@ -68,6 +70,14 @@ if __name__ == '__main__':
 
     mode_share_distance_mic['Percentage'] = (mode_share_distance_mic['Total Distance'] / mode_share_distance_mic[
         'Total Distance'].sum()) * 100
+
+    mode_share_weighted_distance_mic = df_mic_mode_share.groupby('mode')[
+        'weighted__distance'].sum().reset_index()
+    mode_share_weighted_distance_mic.columns = ['Mode', 'Total Weighted Distance']
+
+    mode_share_weighted_distance_mic['Percentage'] = (mode_share_weighted_distance_mic['Total Weighted Distance'] /
+                                                      mode_share_weighted_distance_mic[
+                                                          'Total Weighted Distance'].sum()) * 100
 
     mode_share_distance_synt = df_synt_mode_share.groupby('mode')[
         'distance'].sum().reset_index()
@@ -84,13 +94,25 @@ if __name__ == '__main__':
     # Create a figure with subplots
     fig = go.Figure()
 
-    # Add bars for microcensus modes percentage
+    # Add bars for microcensus modes percentage weighted by distance
+    fig.add_trace(
+        go.Bar(
+            x=mode_share_weighted_distance_mic['Mode'],
+            y=mode_share_weighted_distance_mic['Percentage'],
+            text=mode_share_weighted_distance_mic['Percentage'].round(1),
+            textposition='outside',
+            name='Microcensus Weighted',
+            marker_color='yellow'
+        )
+    )
+
+    # Add bars for microcensus modes percentage Single Leg
     fig.add_trace(go.Bar(
         x=mode_share_distance_mic['Mode'],
         y=mode_share_distance_mic['Percentage'],
         text=mode_share_distance_mic['Percentage'].round(1),
         textposition='outside',
-        name='Microcensus',
+        name='Microcensus Single',
         marker_color='blue'
     ))
 
@@ -135,7 +157,7 @@ if __name__ == '__main__':
     fig.write_image(f"{mode_share_directory}\\Mode_share_by_Distance.png", scale=4)
     logging.info(f"Mode share by distance figure has been saved successfully.")
 
-    df_mic_mode_share['travel_time'] = df_mic_mode_share['travel_time'] * df_mic_mode_share['household_weight']
+    df_mic_mode_share['weighted_travel_time'] = df_mic_mode_share['travel_time'] * df_mic_mode_share['household_weight']
     logging.info(f"Travel time has been multiplied by household weight.")
 
     mode_share_time_mic = df_mic_mode_share.groupby('mode')[
@@ -143,6 +165,15 @@ if __name__ == '__main__':
     mode_share_time_mic.columns = ['Mode', 'Total Travel Time']
     mode_share_time_mic['Percentage'] = (mode_share_time_mic['Total Travel Time'] / mode_share_time_mic[
         'Total Travel Time'].sum()) * 100
+
+    mode_share_weighted_time_mic = df_mic_mode_share.groupby('mode')[
+        'weighted_travel_time'].sum().reset_index()
+
+    mode_share_weighted_time_mic.columns = ['Mode', 'Total Weighted Travel Time']
+
+    mode_share_weighted_time_mic['Percentage'] = (mode_share_weighted_time_mic['Total Weighted Travel Time'] /
+                                                  mode_share_weighted_time_mic[
+                                                      'Total Weighted Travel Time'].sum()) * 100
 
     mode_share_time_synt = df_synt_mode_share.groupby('mode')[
         'travel_time'].sum().reset_index()
@@ -159,13 +190,23 @@ if __name__ == '__main__':
     # Create a figure with subplots
     fig = go.Figure()
 
-    # Add bars for microcensus modes percentage
+    # Add bars for microcensus modes percentage weighted by travel time
+    fig.add_trace(go.Bar(
+        x=mode_share_weighted_time_mic['Mode'],
+        y=mode_share_weighted_time_mic['Percentage'],
+        text=mode_share_weighted_time_mic['Percentage'].round(1),
+        textposition='outside',
+        name='Microcensus Weighted',
+        marker_color='yellow'
+    ))
+
+    # Add bars for microcensus modes percentage Single Leg
     fig.add_trace(go.Bar(
         x=mode_share_time_mic['Mode'],
         y=mode_share_time_mic['Percentage'],
         text=mode_share_time_mic['Percentage'].round(1),
         textposition='outside',
-        name='Microcensus',
+        name='Microcensus Single',
         marker_color='blue'
     ))
 
@@ -206,15 +247,21 @@ if __name__ == '__main__':
     # Save the figure as an image with higher resolution
     fig.write_image(f"{mode_share_directory}\\Mode_share_by_Travel_Time.png", scale=4)
     logging.info(f"Mode share by travel time figure has been saved successfully.")
+    mode_share_time_mic.columns = ['Mode', 'Total Travel Time Microcensus Single', 'Percentage Microcensus Single']
+    mode_share_weighted_time_mic.columns = ['Mode', 'Total Weighted Travel Time Microcensus Weighted',
+                                            'Percentage Weighted Microcensus']
+    mode_share_time_sim.columns = ['Mode', 'Total Travel Time Simulation', 'Percentage Simulation']
+    mode_share_time_synt.columns = ['Mode', 'Total Travel Time Synthetic', 'Percentage Synthetic']
 
-    mode_share_comparison_time = mode_share_time_mic.merge(mode_share_time_synt, on='Mode', how='outer').merge(
+    mode_share_comparison_time = mode_share_time_mic.merge(mode_share_weighted_time_mic, on='Mode', how='outer').merge(
         mode_share_time_sim, on='Mode',
-        how='outer')
+        how='outer').merge(mode_share_time_synt, on='Mode', how='outer')
 
     # Time is in seconds
     mode_share_comparison_time.columns = ['Mode', 'Total Travel Time Microcensus', 'Percentage Microcensus',
-                                     'Total Travel Time Synthetic', 'Percentage Synthetic',
-                                     'Total Travel Time Simulation', 'Percentage Simulation']
+                                          'Total Weighted Travel Time Microcensus', 'Percentage Weighted Microcensus',
+                                          'Total Travel Time Synthetic', 'Percentage Synthetic',
+                                          'Total Travel Time Simulation', 'Percentage Simulation']
 
     mode_share_comparison_time = mode_share_comparison_time.round(2)
     now = datetime.now().strftime("%Y_%m_%d_%H_%M_%S")
@@ -222,18 +269,25 @@ if __name__ == '__main__':
     mode_share_comparison_time.to_csv(f"{mode_share_directory}\\Mode_share_time_comparison{now}.csv", index=False)
     logging.info(f"Mode share comparison csv file has been saved successfully.")
 
-    mode_share_comparison_distance = mode_share_distance_mic.merge(mode_share_distance_synt, on='Mode', how='outer').merge(
+    mode_share_distance_mic.columns = ['Mode', 'Total Distance Microcensus Single', 'Percentage Microcensus Single']
+    mode_share_weighted_distance_mic.columns = ['Mode', 'Total Weighted Distance Microcensus',
+                                                'Percentage Weighted Microcensus']
+    mode_share_distance_sim.columns = ['Mode', 'Total Distance Simulation', 'Percentage Simulation']
+    mode_share_distance_synt.columns = ['Mode', 'Total Distance Synthetic', 'Percentage Synthetic']
+
+    mode_share_comparison_distance = mode_share_distance_mic.merge(mode_share_weighted_distance_mic, on='Mode',
+                                                                   how='outer').merge(
         mode_share_distance_sim, on='Mode',
-        how='outer')
+        how='outer').merge(mode_share_distance_synt, on='Mode', how='outer')
 
     # Distance is in meters
     mode_share_comparison_distance.columns = ['Mode', 'Total Distance Microcensus', 'Percentage Microcensus',
-                                        'Total Distance Synthetic', 'Percentage Synthetic',
-                                        'Total Distance Simulation', 'Percentage Simulation']
+                                              'Total Weighted Distance Microcensus', 'Percentage Weighted Microcensus',
+                                              'Total Distance Synthetic', 'Percentage Synthetic',
+                                              'Total Distance Simulation', 'Percentage Simulation']
 
     mode_share_comparison_distance = mode_share_comparison_distance.round(2)
 
-    mode_share_comparison_distance.to_csv(f"{mode_share_directory}\\Mode_share_distance_comparison_{now}.csv", index=False)
+    mode_share_comparison_distance.to_csv(f"{mode_share_directory}\\Mode_share_distance_comparison_{now}.csv",
+                                          index=False)
     logging.info(f"Mode share comparison distance csv file has been saved successfully.")
-
-
