@@ -15,4 +15,9 @@ install:
 	pip install -r requirements.txt
 	@echo "Installed the required packages successfully"
 
+push:
+	@echo "Enter your commit message: "
+	@powershell -Command "$$msg = Read-Host 'Enter commit message'; git add .; git commit -m $$msg; git push"
+	@echo "Pushed the changes to the repository successfully"
+
 

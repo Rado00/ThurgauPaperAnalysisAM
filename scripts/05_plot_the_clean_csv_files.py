@@ -93,36 +93,36 @@ if __name__ == '__main__':
     logging.info("Gender comparison with household weight has been plotted successfully.")
 
     # ------------------------------------------------------------------------------------------------------------------------------------------------
-    gender_counts_mic_by_number = df_population_mic['sex'].value_counts().reset_index()
-
-    gender_counts_mic_by_number.columns = ['gender', 'count']
-
-    # Creating subplots
-    fig = make_subplots(rows=1, cols=2, specs=[[{'type': 'pie'}, {'type': 'pie'}]])
-
-    # Adding the pie chart for Synthetic Population
-    fig.add_trace(
-        go.Pie(labels=gender_counts_synt['gender'], values=gender_counts_synt['count'],
-               title='Gender Distribution Synthetic Population'),
-        row=1, col=1
-    )
-
-    # Adding the pie chart for Microcensus
-    fig.add_trace(
-        go.Pie(labels=gender_counts_mic_by_number['gender'],
-               values=gender_counts_mic_by_number['count'],
-               title='Gender Distribution - Microcensus'),
-        row=1, col=2
-    )
-
-    # Updating layout and showing the figure
-    fig.update_layout(title_text="Comparative Gender Distribution By Number", width=1200, height=600)
-    # TODO for showing the figure just uncomment the following line
-    # fig.show()
-
-    # Save the figure as an image with higher resolution
-    fig.write_image(f"{plots_directory}\\comparative_gender_distribution_by_number.png", scale=4)
-    logging.info("Gender comparison by number has been plotted successfully.")
+    # gender_counts_mic_by_number = df_population_mic['sex'].value_counts().reset_index()
+    #
+    # gender_counts_mic_by_number.columns = ['gender', 'count']
+    #
+    # # Creating subplots
+    # fig = make_subplots(rows=1, cols=2, specs=[[{'type': 'pie'}, {'type': 'pie'}]])
+    #
+    # # Adding the pie chart for Synthetic Population
+    # fig.add_trace(
+    #     go.Pie(labels=gender_counts_synt['gender'], values=gender_counts_synt['count'],
+    #            title='Gender Distribution Synthetic Population'),
+    #     row=1, col=1
+    # )
+    #
+    # # Adding the pie chart for Microcensus
+    # fig.add_trace(
+    #     go.Pie(labels=gender_counts_mic_by_number['gender'],
+    #            values=gender_counts_mic_by_number['count'],
+    #            title='Gender Distribution - Microcensus'),
+    #     row=1, col=2
+    # )
+    #
+    # # Updating layout and showing the figure
+    # fig.update_layout(title_text="Comparative Gender Distribution By Number", width=1200, height=600)
+    # # TODO for showing the figure just uncomment the following line
+    # # fig.show()
+    #
+    # # Save the figure as an image with higher resolution
+    # fig.write_image(f"{plots_directory}\\comparative_gender_distribution_by_number.png", scale=4)
+    # logging.info("Gender comparison by number has been plotted successfully.")
     # ------------------------------------------------------------------------------------------------------------------------------------------------
     # Calculate value counts and percentages for df_households_synt
     income_counts_synt = df_households_synt['incomeClass'].value_counts().reset_index()
@@ -317,59 +317,59 @@ if __name__ == '__main__':
     fig.write_image(f"{plots_directory}\\comparative_car_ownership_distribution_with_household_weight.png", scale=4)
     logging.info("Car ownership comparison with household weight has been plotted successfully.")
     # ------------------------------------------------------------------------------------------------------------------------------------------------
-    car_counts_mic_by_number = df_population_mic['number_of_cars'].value_counts().reset_index().sort_values(
-        'number_of_cars')
-    car_counts_mic_by_number.columns = ['Number of Cars', 'Count']
-
-    car_counts_mic_by_number['Percentage'] = (car_counts_mic_by_number['Count'] / car_counts_mic_by_number[
-        'Count'].sum()) * 100
-
-    car_counts_mic_by_number['Number of Cars'] = pd.Categorical(car_counts_mic_by_number['Number of Cars'],
-                                                                categories=custom_order,
-                                                                ordered=True)
-
-    car_counts_mic_by_number = car_counts_mic_by_number.sort_values('Number of Cars')
-
-    # Create a figure with subplots
-    fig = go.Figure()
-
-    # Add bars for microcensus car ownership percentage
-    fig.add_trace(go.Bar(
-        x=car_counts_mic_by_number['Number of Cars'],
-        y=car_counts_mic_by_number['Percentage'],
-        name='Microcensus - Car Ownership',
-        text=car_counts_mic_by_number['Percentage'].round(1),
-        textposition='outside',
-        marker_color='blue'
-    ))
-
-    # Add bars for synthetic households car ownership percentage
-    fig.add_trace(go.Bar(
-        x=car_counts_synt['Number of Cars'],
-        y=car_counts_synt['Percentage'],
-        name='Synthetic - Car Ownership',
-        text=car_counts_synt['Percentage'].round(1),
-        textposition='outside',
-        marker_color='red'
-    ))
-
-    # Update the layout for a grouped bar chart
-    fig.update_layout(
-        barmode='group',
-        title='Comparison of Car Ownership Distribution - Percentage By Number',
-        xaxis_title='Number of Cars',
-        yaxis_title='Percentage (%)',
-        legend_title='Dataset',
-        width=1200,
-        height=600
-    )
+    # car_counts_mic_by_number = df_population_mic['number_of_cars'].value_counts().reset_index().sort_values(
+    #     'number_of_cars')
+    # car_counts_mic_by_number.columns = ['Number of Cars', 'Count']
+    #
+    # car_counts_mic_by_number['Percentage'] = (car_counts_mic_by_number['Count'] / car_counts_mic_by_number[
+    #     'Count'].sum()) * 100
+    #
+    # car_counts_mic_by_number['Number of Cars'] = pd.Categorical(car_counts_mic_by_number['Number of Cars'],
+    #                                                             categories=custom_order,
+    #                                                             ordered=True)
+    #
+    # car_counts_mic_by_number = car_counts_mic_by_number.sort_values('Number of Cars')
+    #
+    # # Create a figure with subplots
+    # fig = go.Figure()
+    #
+    # # Add bars for microcensus car ownership percentage
+    # fig.add_trace(go.Bar(
+    #     x=car_counts_mic_by_number['Number of Cars'],
+    #     y=car_counts_mic_by_number['Percentage'],
+    #     name='Microcensus - Car Ownership',
+    #     text=car_counts_mic_by_number['Percentage'].round(1),
+    #     textposition='outside',
+    #     marker_color='blue'
+    # ))
+    #
+    # # Add bars for synthetic households car ownership percentage
+    # fig.add_trace(go.Bar(
+    #     x=car_counts_synt['Number of Cars'],
+    #     y=car_counts_synt['Percentage'],
+    #     name='Synthetic - Car Ownership',
+    #     text=car_counts_synt['Percentage'].round(1),
+    #     textposition='outside',
+    #     marker_color='red'
+    # ))
+    #
+    # # Update the layout for a grouped bar chart
+    # fig.update_layout(
+    #     barmode='group',
+    #     title='Comparison of Car Ownership Distribution - Percentage By Number',
+    #     xaxis_title='Number of Cars',
+    #     yaxis_title='Percentage (%)',
+    #     legend_title='Dataset',
+    #     width=1200,
+    #     height=600
+    # )
 
     # Show the figure
     # fig.show()
 
     # Save the figure as an image with higher resolution
-    fig.write_image(f"{plots_directory}\\comparative_car_ownership_distribution_by_number.png", scale=4)
-    logging.info("Car ownership comparison by number has been plotted successfully.")
+    # fig.write_image(f"{plots_directory}\\comparative_car_ownership_distribution_by_number.png", scale=4)
+    # logging.info("Car ownership comparison by number has been plotted successfully.")
     # ------------------------------------------------------------------------------------------------------------------------------------------------
     # Calculate total counts for each type
     type_counts_synt = df_activity_synt['type'].value_counts().reset_index()

@@ -32,6 +32,9 @@ if __name__ == '__main__':
 
     # Create the separated dataframe files of the loaded data
     try:
+        network_nodes = network.nodes.head(100)
+        network_links = network.links.head(100)
+
         df_households_synt = households_synt.households
         df_activity_synt = plans.activities
         df_legs_synt = plans.legs

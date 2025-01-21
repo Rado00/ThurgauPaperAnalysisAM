@@ -6,10 +6,12 @@
 *.jpeg
 *.csv
 *.pkl
+test.py
+
 
 #folders
 logs/
 plots/
 config/
 __pycache__/
-
+sample_data/

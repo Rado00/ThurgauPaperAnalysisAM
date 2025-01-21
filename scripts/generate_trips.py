@@ -179,7 +179,7 @@ def create_activity_chain(group):
 if __name__ == '__main__':
     setup_logging("01_read_create_csv_files.log")
 
-    data_path, zone_name, scenario, csv_folder, output_folder, percentile, clean_csv_folder = read_config()
+    data_path, zone_name, scenario, csv_folder, output_folder, percentile, csv_folder, clean_csv_folder, shapeFileName = read_config()
 
     directory = os.getcwd()
     parent_directory = os.path.dirname(directory)
@@ -189,7 +189,7 @@ if __name__ == '__main__':
     logging.info("Trips executed function is successfully done")
 
     # Load geographic data from a shapefile
-    shapefile_path = os.path.join(data_path, zone_name) + '\\ShapeFiles\\Frauenfeld_proj.shp'  # please replace with your shapefile path
+    shapefile_path = os.path.join(data_path, zone_name) + f'\\ShapeFiles\\{shapeFileName}'  # please replace with your shapefile path
     gdf = gpd.read_file(shapefile_path)
     logging.info("Shapefile read successfully")
 

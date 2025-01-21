@@ -203,7 +203,7 @@ if __name__ == '__main__':
 
     # Load geographic data from a shapefile
     shapefile_path = os.path.join(analysis_zone_path,
-                                  f"ShapeFiles\\{shapeFileName}")  # please replace with your shapefile path
+                                  f"ShapeFiles\\{shapeFileName}")
     gdf = gpd.read_file(shapefile_path, engine="pyogrio")
 
     area_polygon = gdf.iloc[0]['geometry']
@@ -213,7 +213,7 @@ if __name__ == '__main__':
     trips['origin_point'] = trips.apply(lambda row: Point(row['origin_x'], row['origin_y']), axis=1)
     trips['destination_point'] = trips.apply(lambda row: Point(row['destination_x'], row['destination_y']), axis=1)
 
-    # Filter trips where both origin and destination are within the Zurich city polygon
+    # Filter trips where both origin and destination are within the given city polygon shapefile
     filtered_trips = trips[
         trips['origin_point'].apply(lambda point: point.within(area_polygon)) &
         trips['destination_point'].apply(lambda point: point.within(area_polygon))
