@@ -3,6 +3,8 @@ from common import *
 import pandas as pd
 import warnings
 warnings.filterwarnings('ignore')
+pd.set_option('display.max_columns', None)
+pd.set_option('display.max_rows', None)
 
 
 # Functions
@@ -175,13 +177,13 @@ def create_activity_chain_syn(group):
     return pd.Series({'activity_chain': chain})
 
 
-# def execute_household_just_person_household_weight(path):
-#     df_mz_households = pd.read_csv(
-#         "%s\\microzensus\\haushalte.csv" % path, sep=",", encoding="latin1")
-#     df_mz_households["person_id"] = df_mz_households["HHNR"]
-#     df_mz_households["household_weight"] = df_mz_households["WM"]
-#
-#     return df_mz_households[["person_id", "household_weight"]]
+def execute_household_just_person_household_weight(path):
+    df_mz_households = pd.read_csv(
+        "%s\\microzensus\\haushalte.csv" % path, sep=",", encoding="latin1")
+    df_mz_households["person_id"] = df_mz_households["HHNR"]
+    df_mz_households["household_weight"] = df_mz_households["WM"]
+
+    return df_mz_households[["person_id", "household_weight"]]
 
 
 if __name__ == '__main__':
@@ -214,7 +216,7 @@ if __name__ == '__main__':
     new_path = os.path.join(data_path, analysis_zone_name, 'microzensus')
     try:
         df_population_mic = pd.read_csv(f"{new_path}\\population.csv")
-        # df_trips_mic = pd.read_csv(f"{new_path}\\trips.csv")
+        df_trips_mic = pd.read_csv(f"{new_path}\\trips.csv")
     except Exception as e:
         logging.error("Error reading csv files: " + str(e))
         sys.exit()
@@ -261,16 +263,16 @@ if __name__ == '__main__':
     df_trips_sim['arrival_time'] = df_trips_sim['arrival_time'].apply(safe_convert_time)
 
     # Convert seconds to datetime and resample times to 15-minute bins
-    # df_trips_mic['departure_time'] = pd.to_datetime(df_trips_mic['departure_time'], unit='s').dt.floor('30T').dt.time
-    # df_trips_mic['arrival_time'] = pd.to_datetime(df_trips_mic['arrival_time'], unit='s').dt.floor('30T').dt.time
+    df_trips_mic['departure_time'] = pd.to_datetime(df_trips_mic['departure_time'], unit='s').dt.floor('30T').dt.time
+    df_trips_mic['arrival_time'] = pd.to_datetime(df_trips_mic['arrival_time'], unit='s').dt.floor('30T').dt.time
 
     # Capitalize and remove underscores from mode names for both dataframes
-    # df_trips_mic['mode'] = df_trips_mic['mode'].str.replace('_', ' ').str.title()
+    df_trips_mic['mode'] = df_trips_mic['mode'].str.replace('_', ' ').str.title()
     # df_legs_synt['mode'] = df_legs_synt['mode'].str.replace('_', ' ').str.title()
     df_legs_sim['mode'] = df_legs_sim['mode'].str.replace('_', ' ').str.title()
 
     # Capitalize and remove underscores from type names
-    # df_trips_mic['purpose'] = df_trips_mic['purpose'].str.replace('_', ' ').str.title()
+    df_trips_mic['purpose'] = df_trips_mic['purpose'].str.replace('_', ' ').str.title()
     # df_activity_synt['type'] = df_activity_synt['type'].str.replace('_', ' ').str.title()
     df_activity_sim['type'] = df_activity_sim['type'].str.replace('_', ' ').str.title()
 
@@ -302,41 +304,41 @@ if __name__ == '__main__':
             (df_activity_sim['type'] == 'Home') & (df_activity_sim['end_time'].notna()) & (
         df_activity_sim['start_time'].notna()))]
 
-    # df_activity_chains_mic = df_trips_mic.groupby(['person_id']).apply(create_activity_chain_mic).reset_index()
+    df_activity_chains_mic = df_trips_mic.groupby(['person_id']).apply(create_activity_chain_mic).reset_index()
     df_activity_chains_sim = df_activity_sim.groupby(['plan_id']).apply(create_activity_chain_syn).reset_index()
     # df_activity_chains_syn = df_activity_synt.groupby(['plan_id']).apply(create_activity_chain_syn).reset_index()
 
     # Replace all 'H' with 'H-H' in the 'activity_chain' column
     # df_activity_chains_syn['activity_chain'] = df_activity_chains_syn['activity_chain'].replace({'H': 'H-H'})
     df_activity_chains_sim['activity_chain'] = df_activity_chains_sim['activity_chain'].replace({'H': 'H-H'})
-    # df_activity_chains_mic['activity_chain'] = df_activity_chains_mic['activity_chain'].replace({'H': 'H-H'})
+    df_activity_chains_mic['activity_chain'] = df_activity_chains_mic['activity_chain'].replace({'H': 'H-H'})
 
     # All person id and household weight values
-    # reference_population = execute_household_just_person_household_weight(analysis_zone_path)
+    reference_population = execute_household_just_person_household_weight(analysis_zone_path)
 
     # Merge the 'household_weight' column from df_population_mic to df_trips_mic based on 'person_id'
-    # df_trips_mic = pd.merge(df_trips_mic, df_population_mic[['person_id', 'household_weight']], on='person_id',
-    #                         how='left')
+    df_trips_mic = pd.merge(df_trips_mic, df_population_mic[['person_id', 'household_weight']], on='person_id',
+                            how='left')
 
-    # df_trips_mic['household_weight'] = df_trips_mic.apply(
-    #     lambda row: row['household_weight'] if pd.notnull(row['household_weight']) else
-    #     reference_population.loc[reference_population['person_id'] == row['person_id'], 'household_weight'].values[0]
-    #     if row['person_id'] in reference_population['person_id'].values else None,
-    #     axis=1
-    # )
+    df_trips_mic['household_weight'] = df_trips_mic.apply(
+        lambda row: row['household_weight'] if pd.notnull(row['household_weight']) else
+        reference_population.loc[reference_population['person_id'] == row['person_id'], 'household_weight'].values[0]
+        if row['person_id'] in reference_population['person_id'].values else None,
+        axis=1
+    )
 
     data_path_clean = os.path.join(data_path, analysis_zone_name, clean_csv_folder, percentile)
     # Ensure the directory exists
     if not os.path.exists(data_path_clean):
         os.makedirs(data_path_clean)
     # Write the CSV files
-    # df_trips_mic.to_csv(f'{data_path_clean}\\trips_mic.csv', index=False)
+    df_trips_mic.to_csv(f'{data_path_clean}\\trips_mic.csv', index=False)
     # df_trips_synt.to_csv(f'{data_path_clean}\\trips_synt.csv', index=False)
     df_trips_sim.to_csv(f'{data_path_clean}\\trips_sim.csv', index=False)
 
     # df_activity_chains_syn.to_csv(f'{data_path_clean}\\activity_chains_syn.csv', index=False)
     df_activity_chains_sim.to_csv(f'{data_path_clean}\\activity_chains_sim.csv', index=False)
-    # df_activity_chains_mic.to_csv(f'{data_path_clean}\\activity_chains_mic.csv', index=False)
+    df_activity_chains_mic.to_csv(f'{data_path_clean}\\activity_chains_mic.csv', index=False)
 
     df_population_mic.to_csv(f'{data_path_clean}\\population_clean_mic.csv', index=False)
     # df_persons_synt.to_csv(f'{data_path_clean}\\population_clean_synth.csv', index=False)

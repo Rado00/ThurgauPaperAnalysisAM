@@ -6,11 +6,17 @@
 *.jpeg
 *.csv
 *.pkl
+test.py
+
 
 #folders
 logs/
 plots/
 config/
 __pycache__/
+<<<<<<< HEAD
+sample_data/
+=======
 
 /scripts/.idea
+>>>>>>> 1f7b6a1cb888757bd81d2a40cc6ccc8b7991574c
