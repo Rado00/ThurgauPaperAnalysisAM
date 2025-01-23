@@ -31,7 +31,7 @@ if __name__ == '__main__':
     data_path_clean = os.path.join(data_path, analysis_zone_name, clean_csv_folder, percentile)
     df_trips_mic = pd.read_csv(f'{data_path_clean}\\trips_mic.csv')
     df_trips_synt = pd.read_csv(f'{data_path_clean}\\trips_synt.csv')
-    df_trips_sim = pd.read_csv(f'{data_path_clean}\\trips_sim.csv')
+    # df_trips_sim = pd.read_csv(f'{data_path_clean}\\trips_sim.csv')
 
     df_activity_chains_syn = pd.read_csv(f'{data_path_clean}\\activity_chains_syn.csv')
     df_activity_chains_sim = pd.read_csv(f'{data_path_clean}\\activity_chains_sim.csv')

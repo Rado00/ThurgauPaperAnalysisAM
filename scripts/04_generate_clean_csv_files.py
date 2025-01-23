@@ -109,34 +109,34 @@ def process_activity_and_legs_data(df_activity, df_legs, values_to_remove, modes
     return df_activity_filtered, df_legs_filtered
 
 
-def create_trips_dataframe(df_activity):
-    # List to hold new trip entries
-    new_trips = []
-
-    # Iterate over the activity DataFrame
-    for i in range(len(df_activity) - 1):
-        # Get current and next row
-        current_row = df_activity.iloc[i]
-        next_row = df_activity.iloc[i + 1]
-
-        # Check if the IDs are consecutive
-        if current_row['id'] + 1 == next_row['id']:
-            # Create a new trip entry
-            new_trips.append({
-                'trip_id': current_row['id'],
-                'departure_time': current_row['end_time'],
-                'arrival_time': next_row['start_time'],
-                'start_coor_x': current_row['x'],
-                'start_coor_y': current_row['y'],
-                'ziel_coor_x': next_row['x'],
-                'ziel_coor_y': next_row['y'],
-
-            })
-
-    # Create a DataFrame from the list of new trips
-    df_trips = pd.DataFrame(new_trips)
-
-    return df_trips
+# def create_trips_dataframe(df_activity):
+#     # List to hold new trip entries
+#     new_trips = []
+#
+#     # Iterate over the activity DataFrame
+#     for i in range(len(df_activity) - 1):
+#         # Get current and next row
+#         current_row = df_activity.iloc[i]
+#         next_row = df_activity.iloc[i + 1]
+#
+#         # Check if the IDs are consecutive
+#         if current_row['id'] + 1 == next_row['id']:
+#             # Create a new trip entry
+#             new_trips.append({
+#                 'trip_id': current_row['id'],
+#                 'departure_time': current_row['end_time'],
+#                 'arrival_time': next_row['start_time'],
+#                 'start_coor_x': current_row['x'],
+#                 'start_coor_y': current_row['y'],
+#                 'ziel_coor_x': next_row['x'],
+#                 'ziel_coor_y': next_row['y'],
+#
+#             })
+#
+#     # Create a DataFrame from the list of new trips
+#     df_trips = pd.DataFrame(new_trips)
+#
+#     return df_trips
 
 
 def safe_convert_time(time_str):
@@ -250,17 +250,17 @@ if __name__ == '__main__':
     df_legs_sim = df_legs_sim_filtered
 
     # df_trips_synt = create_trips_dataframe(df_activity_synt)
-    df_trips_sim = create_trips_dataframe(df_activity_sim)
+    # df_trips_sim = create_trips_dataframe(df_activity_sim)
 
     # df_trips_synt = df_trips_synt.dropna()
-    df_trips_sim = df_trips_sim.dropna()
+    # df_trips_sim = df_trips_sim.dropna()
 
     # Apply the conversion function to the DataFrame
     # df_trips_synt['departure_time'] = df_trips_synt['departure_time'].apply(safe_convert_time)
     # df_trips_synt['arrival_time'] = df_trips_synt['arrival_time'].apply(safe_convert_time)
 
-    df_trips_sim['departure_time'] = df_trips_sim['departure_time'].apply(safe_convert_time)
-    df_trips_sim['arrival_time'] = df_trips_sim['arrival_time'].apply(safe_convert_time)
+    # df_trips_sim['departure_time'] = df_trips_sim['departure_time'].apply(safe_convert_time)
+    # df_trips_sim['arrival_time'] = df_trips_sim['arrival_time'].apply(safe_convert_time)
 
     # Convert seconds to datetime and resample times to 15-minute bins
     df_trips_mic['departure_time'] = pd.to_datetime(df_trips_mic['departure_time'], unit='s').dt.floor('30T').dt.time
@@ -334,7 +334,7 @@ if __name__ == '__main__':
     # Write the CSV files
     df_trips_mic.to_csv(f'{data_path_clean}\\trips_mic.csv', index=False)
     # df_trips_synt.to_csv(f'{data_path_clean}\\trips_synt.csv', index=False)
-    df_trips_sim.to_csv(f'{data_path_clean}\\trips_sim.csv', index=False)
+    # df_trips_sim.to_csv(f'{data_path_clean}\\trips_sim.csv', index=False)
 
     # df_activity_chains_syn.to_csv(f'{data_path_clean}\\activity_chains_syn.csv', index=False)
     df_activity_chains_sim.to_csv(f'{data_path_clean}\\activity_chains_sim.csv', index=False)
