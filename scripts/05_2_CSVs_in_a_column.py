@@ -39,10 +39,8 @@ if __name__ == '__main__':
                 if not df.empty:
                     for col in df.columns:
                         for index, value in df[col].items():
-
-                            # Customize the title based on file, column name, and index
+                            mode = mode_mappings.get(index, '')
                             if file_name == 'Mode_share_distance_comparison.csv':
-                                mode = mode_mappings.get(index, '')
                                 if 'Percentage Microcensus' in col:
                                     title = f"% Distance {mode} Mic by raw"
                                 elif 'Percentage Weighted Microcensus' in col:
@@ -53,18 +51,9 @@ if __name__ == '__main__':
                                     title = f"% Distance {mode} Sim"
                                 elif 'Percentage Synthetic' in col:
                                     title = f"% Distance {mode} Synthetic"
-
                                 else:
-                                    continue  # Skip rows not matching the specified patterns
-                                consolidated_data.append([title, value])
-                                continue
-
-                            title = f"{file_name}_{col}_{index}"
-                            consolidated_data.append([title, value])
-
-                            # Customize the title based on file, column name, and index
-                            if file_name == 'mode_share_trip_comparison.csv':
-                                mode = mode_mappings.get(index, '')
+                                    continue
+                            elif file_name == 'mode_share_trip_comparison.csv':
                                 if 'Number_Percentage' in col:
                                     title = f"% Trips {mode} Mic by raw"
                                 elif 'Household_Percentage' in col:
@@ -76,16 +65,8 @@ if __name__ == '__main__':
                                 elif 'Synthetic_Percentage' in col:
                                     title = f"% Trips {mode} Synthetic"
                                 else:
-                                    continue  # Skip rows not matching the specified patterns
-                                consolidated_data.append([title, value])
-                                continue
-
-                            title = f"{file_name}_{col}_{index}"
-                            consolidated_data.append([title, value])
-
-                            # Customize the title based on file, column name, and index
-                            if file_name == 'Mode_share_time_comparison.csv':
-                                mode = mode_mappings.get(index, '')
+                                    continue
+                            elif file_name == 'Mode_share_time_comparison.csv':
                                 if 'Percentage Microcensus' in col:
                                     title = f"% TravelTime {mode} Mic by raw"
                                 elif 'Percentage Weighted Microcensus' in col:
@@ -97,19 +78,17 @@ if __name__ == '__main__':
                                 elif 'Percentage Synthetic' in col:
                                     title = f"% TravelTime {mode} Synthetic"
                                 else:
-                                    continue  # Skip rows not matching the specified patterns
-                                consolidated_data.append([title, value])
-                                continue
-
-                            title = f"{file_name}_{col}_{index}"
+                                    continue
+                            else:
+                                continue  # Skip unrecognized files or columns
                             consolidated_data.append([title, value])
             else:
                 print(f"File not found: {file_name}")
 
         if consolidated_data:
             output_df = pd.DataFrame(consolidated_data, columns=['Title', 'Value'])
-            # Using semicolon as the delimiter
             output_df.to_csv(os.path.join(mode_share_directory, 'modalSplitCalibration.csv'), sep=';', index=False)
+            print("Data successfully saved.")
         else:
             print("No data found in the files.")
     else:
