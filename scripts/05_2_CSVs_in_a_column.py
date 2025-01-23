@@ -28,6 +28,84 @@ if __name__ == '__main__':
         4: 'Walk'
     }
 
+    desired_order = [
+        "% Distance Bike Mic weighted",
+        "% Distance Bike Mic by raw",
+        "% Distance Bike Sim",
+        "% Distance Car Mic weighted",
+        "% Distance Car Mic by raw",
+        "% Distance Car Sim",
+        "% Distance Car Passenger Mic weighted",
+        "% Distance Car Passenger Mic by raw",
+        "% Distance Car Passenger Sim",
+        "% Distance PT Mic weighted",
+        "% Distance PT Mic by raw",
+        "% Distance PT Sim",
+        "% Distance Walk Mic weighted",
+        "% Distance Walk Mic by raw",
+        "% Distance Walk Sim",
+        "% TravelTime Bike Mic weighted",
+        "% TravelTime Bike Mic by raw",
+        "% TravelTime Bike Sim",
+        "% TravelTime Car Mic weighted",
+        "% TravelTime Car Mic by raw",
+        "% TravelTime Car Sim",
+        "% TravelTime Car Passenger Mic weighted",
+        "% TravelTime Car Passenger Mic by raw",
+        "% TravelTime Car Passenger Sim",
+        "% TravelTime PT Mic weighted",
+        "% TravelTime PT Mic by raw",
+        "% TravelTime PT Sim",
+        "% TravelTime Walk Mic weighted",
+        "% TravelTime Walk Mic by raw",
+        "% TravelTime Walk Sim",
+        "% Trips Bike Mic weighted",
+        "% Trips Bike Mic by raw",
+        "% Trips Bike Sim",
+        "% Trips Car Mic weighted",
+        "% Trips Car Mic by raw",
+        "% Trips Car Sim",
+        "% Trips Car Passenger Mic weighted",
+        "% Trips Car Passenger Mic by raw",
+        "% Trips Car Passenger Sim",
+        "% Trips PT Mic weighted",
+        "% Trips PT Mic by raw",
+        "% Trips PT Sim",
+        "% Trips Walk Mic weighted",
+        "% Trips Walk Mic by raw",
+        "% Trips Walk Sim",
+        "Count Distance Bike Thurgau Sim",
+        "Count Distance Car Thurgau Sim",
+        "Count Distance Car Passenger Thurgau Sim",
+        "Count Distance PT Thurgau Sim",
+        "Count Distance Walk Thurgau Sim",
+        "Count TravelTime Bike Thurgau Sim",
+        "Count TravelTime Car Thurgau Sim",
+        "Count TravelTime Car Passenger Thurgau Sim",
+        "Count TravelTime PT Thurgau Sim",
+        "Count TravelTime Walk Thurgau Sim",
+        "Count Trips Bike Thurgau Sim",
+        "Count Trips Car Thurgau Sim",
+        "Count Trips Car Passenger Thurgau Sim",
+        "Count Trips PT Thurgau Sim",
+        "Count Trips Walk Thurgau Sim",
+        "% Distance Bike Synthetic",
+        "% Distance Car Synthetic",
+        "% Distance Car Passenger Synthetic",
+        "% Distance PT Synthetic",
+        "% Distance Walk Synthetic",
+        "% TravelTime Bike Synthetic",
+        "% TravelTime Car Synthetic",
+        "% TravelTime Car Passenger Synthetic",
+        "% TravelTime PT Synthetic",
+        "% TravelTime Walk Synthetic",
+        "% Trips Bike Synthetic",
+        "% Trips Car Synthetic",
+        "% Trips Car Passenger Synthetic",
+        "% Trips PT Synthetic",
+        "% Trips Walk Synthetic"
+    ]
+
     # Verify the directory exists
     if os.path.exists(mode_share_directory):
         consolidated_data = []
@@ -86,7 +164,12 @@ if __name__ == '__main__':
                 print(f"File not found: {file_name}")
 
         if consolidated_data:
+            # Create DataFrame
             output_df = pd.DataFrame(consolidated_data, columns=['Title', 'Value'])
+            # Sort DataFrame by desired order
+            output_df['Order'] = output_df['Title'].apply(lambda x: desired_order.index(x) if x in desired_order else len(desired_order))
+            output_df = output_df.sort_values('Order').drop('Order', axis=1)
+            # Save DataFrame to CSV
             output_df.to_csv(os.path.join(mode_share_directory, 'modalSplitCalibration.csv'), sep=';', index=False)
             print("Data successfully saved.")
         else:
