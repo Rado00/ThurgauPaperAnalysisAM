@@ -169,6 +169,7 @@ if __name__ == '__main__':
             # Sort DataFrame by desired order
             output_df['Order'] = output_df['Title'].apply(lambda x: desired_order.index(x) if x in desired_order else len(desired_order))
             output_df = output_df.sort_values('Order').drop('Order', axis=1)
+            output_df['Value with Comma'] = output_df['Value'].astype(str).str.replace('.', ',', regex=False)
             # Save DataFrame to CSV
             output_df.to_csv(os.path.join(mode_share_directory, 'modalSplitCalibration.csv'), sep=';', index=False)
             print("Data successfully saved.")
