@@ -22,24 +22,28 @@ echo Running 03_synPop_and_sim_create_csv_files.py...
 python 03_synPop_and_sim_create_csv_files.py
 if %ERRORLEVEL% neq 0 goto :error
 
-echo Running 03_synt_and_sim_mode_share_by_time_distance.py...
-python 03_synt_and_sim_mode_share_by_time_distance.py
-if %ERRORLEVEL% neq 0 goto :error
-
 echo Running 04_generate_clean_csv_files.py...
 python 04_generate_clean_csv_files.py
 if %ERRORLEVEL% neq 0 goto :error
 
-echo Running 04_plot_mode_share_time_distance_synt.py...
-python 04_plot_mode_share_time_distance_synt.py
+echo Running 05_synt_and_sim_mode_share_by_time_distance.py...
+python 05_synt_and_sim_mode_share_by_time_distance.py
 if %ERRORLEVEL% neq 0 goto :error
 
-echo Running 05_plot_the_clean_csv_files.py...
-python 05_plot_the_clean_csv_files.py
+echo Running 06_plot_mode_share_time_distance_synt.py...
+python 06_plot_mode_share_time_distance_synt.py
 if %ERRORLEVEL% neq 0 goto :error
 
-echo Running 05_2_CSVs_in_a_column.py...
-python 05_2_CSVs_in_a_column.py
+echo 07_synPop_sim_analysis.py...
+python 07_synPop_sim_analysis.py...
+if %ERRORLEVEL% neq 0 goto :error
+
+echo Running 08_plot_the_clean_csv_files.py...
+python 08_plot_the_clean_csv_files.py
+if %ERRORLEVEL% neq 0 goto :error
+
+echo Running 09_CSVs_in_a_column.py...
+python 09_CSVs_in_a_column.py
 if %ERRORLEVEL% neq 0 goto :error
 
 echo All scripts executed successfully!
@@ -50,3 +54,5 @@ exit /b 0
 echo A script failed with error level %ERRORLEVEL%. Exiting.
 pause
 exit /b %ERRORLEVEL%
+
+04_2_synPop_sim_analysis.py
