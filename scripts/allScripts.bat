@@ -16,29 +16,33 @@ REM echo Running 02_microcensus_trips_filter.py...
 REM python 02_microcensus_trips_filter.py
 REM if %ERRORLEVEL% neq 0 goto :error
 
-echo Running 03_synPop_and_sim_create_csv_files.py...
-python 03_synPop_and_sim_create_csv_files.py
-if %ERRORLEVEL% neq 0 goto :error
+REM echo Running 03_synPop_and_sim_create_csv_files.py...
+REM python 03_synPop_and_sim_create_csv_files.py
+REM if %ERRORLEVEL% neq 0 goto :error
 
-echo Running 03_synt_and_sim_mode_share_by_time_distance.py...
-python 03_synt_and_sim_mode_share_by_time_distance.py
-if %ERRORLEVEL% neq 0 goto :error
+REM echo Running 03_synt_and_sim_mode_share_by_time_distance.py...
+REM python 03_synt_and_sim_mode_share_by_time_distance.py
+REM if %ERRORLEVEL% neq 0 goto :error
 
-echo Running 04_generate_clean_csv_files.py...
-python 04_generate_clean_csv_files.py
-if %ERRORLEVEL% neq 0 goto :error
+REM echo Running 04_generate_clean_csv_files.py...
+REM python 04_generate_clean_csv_files.py
+REM if %ERRORLEVEL% neq 0 goto :error
 
-echo Running 04_plot_mode_share_time_distance_synt.py...
-python 04_plot_mode_share_time_distance_synt.py
-if %ERRORLEVEL% neq 0 goto :error
+REM echo Running 04_plot_mode_share_time_distance_synt.py...
+REM python 04_plot_mode_share_time_distance_synt.py
+REM if %ERRORLEVEL% neq 0 goto :error
 
 REM NOT USING THIS
 REM echo Running 04_2_synPop_sim_analysis.py...
 REM python 04_2_synPop_sim_analysis.py
 REM if %ERRORLEVEL% neq 0 goto :error
 
-echo Running 05_plot_the_clean_csv_files.py...
-python 05_plot_the_clean_csv_files.py
+REM echo Running 05_plot_the_clean_csv_files.py...
+REM python 05_plot_the_clean_csv_files.py
+REM if %ERRORLEVEL% neq 0 goto :error
+
+echo Running 05_2_CSVs_in_a_column.py...
+python 05_2_CSVs_in_a_column.py
 if %ERRORLEVEL% neq 0 goto :error
 
 echo All scripts executed successfully!

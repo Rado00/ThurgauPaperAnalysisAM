@@ -266,7 +266,7 @@ if __name__ == '__main__':
     mode_share_comparison_time = mode_share_comparison_time.round(2)
     now = datetime.now().strftime("%Y_%m_%d_%H_%M_%S")
 
-    mode_share_comparison_time.to_csv(f"{mode_share_directory}\\Mode_share_time_comparison{now}.csv", index=False)
+    mode_share_comparison_time.to_csv(f"{mode_share_directory}\\Mode_share_time_comparison.csv", index=False)
     logging.info(f"Mode share comparison csv file has been saved successfully.")
 
     mode_share_distance_mic.columns = ['Mode', 'Total Distance Microcensus Single', 'Percentage Microcensus Single']
@@ -288,6 +288,6 @@ if __name__ == '__main__':
 
     mode_share_comparison_distance = mode_share_comparison_distance.round(2)
 
-    mode_share_comparison_distance.to_csv(f"{mode_share_directory}\\Mode_share_distance_comparison_{now}.csv",
+    mode_share_comparison_distance.to_csv(f"{mode_share_directory}\\Mode_share_distance_comparison.csv",
                                           index=False)
     logging.info(f"Mode share comparison distance csv file has been saved successfully.")

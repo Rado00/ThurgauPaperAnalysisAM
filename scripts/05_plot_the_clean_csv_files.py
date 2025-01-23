@@ -1115,10 +1115,12 @@ if __name__ == '__main__':
     df_sim = mode_counts_sim.rename(columns={"Count": "Simulation_Count", "Percentage": "Simulation_Percentage"})
     df_synt = mode_counts_synt.rename(columns={"Count": "Synthetic_Count", "Percentage": "Synthetic_Percentage"})
 
+    mode_share_directory = os.path.join(plots_directory, 'mode_share')
+
     mode_share_comparison = df_household.merge(df_number, on='Mode', how='outer').merge(df_sim, on='Mode', how='outer').merge(df_synt, on='Mode', how='outer')
 
     mode_share_rounded_df = mode_share_comparison.round(2)
     now = datetime.now().strftime("%Y_%m_%d_%H_%M_%S")
 
-    mode_share_rounded_df.to_csv(f"{plots_directory}\\mode_share_comparison_{now}.csv", index=False)
+    mode_share_rounded_df.to_csv(f"{mode_share_directory}\\mode_share_tripcomparison.csv", index=False)
     logging.info("Mode share comparison data has been saved successfully.")
