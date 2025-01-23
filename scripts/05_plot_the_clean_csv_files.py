@@ -1122,5 +1122,5 @@ if __name__ == '__main__':
     mode_share_rounded_df = mode_share_comparison.round(2)
     now = datetime.now().strftime("%Y_%m_%d_%H_%M_%S")
 
-    mode_share_rounded_df.to_csv(f"{mode_share_directory}\\mode_share_tripcomparison.csv", index=False)
+    mode_share_rounded_df.to_csv(f"{mode_share_directory}\\mode_share_trip_comparison.csv", index=False)
     logging.info("Mode share comparison data has been saved successfully.")
