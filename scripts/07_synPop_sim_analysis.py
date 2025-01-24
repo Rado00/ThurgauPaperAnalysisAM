@@ -40,32 +40,6 @@ if __name__ == '__main__':
 
     output_data_path = os.path.join(data_path, simulation_zone_name, sim_output_folder)
 
-    try:
-        import json
-        events = matsim.event_reader(os.path.join(output_data_path, "output_events.xml.gz"))
-        events_dict = {}
-        counter = 0
-        for id in events:
-            counter += 1
-            temp_event = {}
-            for key in id.keys():
-                temp_event[key] = id[key]
-            events_dict[f"event_{counter}"] = temp_event
-            if counter >= 1000:
-                break
-
-        file_name = "events.json"
-        # Write the dictionary to a JSON file
-        with open(file_name, "w") as json_file:
-            json.dump(events_dict, json_file, indent=4)  # `indent=4` makes the file human-readable
-        logging.info(f"Dictionary has been written to {file_name}")
-
-        # plans_sim = matsim.plan_reader_dataframe(os.path.join(output_data_path, "output_vehicles.xml.gz"))
-
-    except Exception as e:
-        logging.error("Error loading simulation data: " + str(e))
-        sys.exit()
-
 # COMMENT IT IF YOU HAVE THE FILTERED CSV FILE AND YOU ONLY WANT TO CHANGE PLOTS
     try:
         # Load the shapefile

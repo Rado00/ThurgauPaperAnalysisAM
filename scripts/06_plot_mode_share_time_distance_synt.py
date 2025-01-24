@@ -13,7 +13,7 @@ pd.set_option('display.max_rows', None)
 warnings.filterwarnings('ignore')
 
 if __name__ == '__main__':
-    setup_logging("04_plot_mode_share_time_distance_synt.log")
+    setup_logging("06_plot_mode_share_time_distance_synt.log")
 
     data_path, simulation_zone_name, scenario, sim_output_folder, percentile, analysis_zone_name, csv_folder, clean_csv_folder, shapeFileName = read_config()
     logging.info(f"Reading config file from {data_path} path was successful.")
@@ -260,8 +260,8 @@ if __name__ == '__main__':
     # Time is in seconds
     mode_share_comparison_time.columns = ['Mode', 'Total Travel Time Microcensus', 'Percentage Microcensus',
                                           'Total Weighted Travel Time Microcensus', 'Percentage Weighted Microcensus',
-                                          'Total Travel Time Synthetic', 'Percentage Synthetic',
-                                          'Total Travel Time Simulation', 'Percentage Simulation']
+                                          'Total Travel Time Simulation', 'Percentage Simulation',
+                                          'Total Travel Time Synthetic', 'Percentage Synthetic']
 
     mode_share_comparison_time = mode_share_comparison_time.round(2)
     now = datetime.now().strftime("%Y_%m_%d_%H_%M_%S")
@@ -283,8 +283,8 @@ if __name__ == '__main__':
     # Distance is in meters
     mode_share_comparison_distance.columns = ['Mode', 'Total Distance Microcensus', 'Percentage Microcensus',
                                               'Total Weighted Distance Microcensus', 'Percentage Weighted Microcensus',
-                                              'Total Distance Synthetic', 'Percentage Synthetic',
-                                              'Total Distance Simulation', 'Percentage Simulation']
+                                              'Total Distance Simulation', 'Percentage Simulation',
+                                              'Total Distance Synthetic', 'Percentage Synthetic']
 
     mode_share_comparison_distance = mode_share_comparison_distance.round(2)
 
