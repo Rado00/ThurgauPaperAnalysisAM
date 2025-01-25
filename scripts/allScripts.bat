@@ -43,12 +43,10 @@ python 08_CSVs_in_a_column.py
 if %ERRORLEVEL% neq 0 goto :error
 
 echo All scripts executed successfully!
-pause
 exit /b 0
 
 :error
 echo A script failed with error level %ERRORLEVEL%. Exiting.
-pause
 exit /b %ERRORLEVEL%
 
 04_2_synPop_sim_analysis.py
