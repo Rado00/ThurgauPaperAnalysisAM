@@ -23,7 +23,8 @@ if __name__ == '__main__':
 
     directory = os.getcwd()
     parent_directory = os.path.dirname(directory)
-    plots_directory = os.path.join(parent_directory, f'plots\\plots_{analysis_zone_name}')
+    output_plots_folder_name = sim_output_folder.split('\\')[-1]
+    plots_directory = os.path.join(parent_directory, f'plots\\plots_{output_plots_folder_name}')
     if not os.path.exists(plots_directory):
         os.makedirs(plots_directory)
 

@@ -3,13 +3,15 @@ import os
 from common import *
 
 if __name__ == '__main__':
-    setup_logging("05_2_CSVs_in_a_column.log")
+    setup_logging("08_CSVs_in_a_column.log")
 
     data_path, simulation_zone_name, scenario, sim_output_folder, percentile, analysis_zone_name, csv_folder, clean_csv_folder, shapeFileName = read_config()
     logging.info(f"Reading config file from {data_path} path was successful.")
     directory = os.getcwd()
     parent_directory = os.path.dirname(directory)
-    plots_directory = os.path.join(parent_directory, f'plots\\plots_{analysis_zone_name}')
+    output_plots_folder_name = sim_output_folder.split('\\')[-1]
+
+    plots_directory = os.path.join(parent_directory, f'plots\\plots_{output_plots_folder_name}')
     mode_share_directory = os.path.join(plots_directory, 'mode_share')
 
     # List of specific CSV files to read

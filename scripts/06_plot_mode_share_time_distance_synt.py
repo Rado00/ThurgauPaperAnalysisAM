@@ -21,8 +21,9 @@ if __name__ == '__main__':
     pre_processed_data_path = os.path.join(data_path, analysis_zone_name, csv_folder, percentile)
 
     directory = os.getcwd()
+    output_plots_folder_name = sim_output_folder.split('\\')[-1]
     parent_directory = os.path.dirname(directory)
-    plots_directory = os.path.join(parent_directory, f'plots\\plots_{analysis_zone_name}')
+    plots_directory = os.path.join(parent_directory, f'plots\\plots_{output_plots_folder_name}')
     if not os.path.exists(plots_directory):
         os.makedirs(plots_directory)
 
