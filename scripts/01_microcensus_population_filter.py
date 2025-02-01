@@ -21,6 +21,7 @@ import plotly.graph_objs as go
 from plotly.subplots import make_subplots
 from common import *
 import warnings
+pd.set_option('display.max_columns', None)
 
 warnings.filterwarnings("ignore")
 
