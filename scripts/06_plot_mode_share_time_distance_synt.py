@@ -3,6 +3,7 @@ import logging
 from common import *
 import pandas as pd
 import warnings
+import geopandas as gpd
 import plotly.express as px
 from datetime import datetime
 import plotly.graph_objects as go
@@ -292,3 +293,4 @@ if __name__ == '__main__':
     mode_share_comparison_distance.to_csv(f"{mode_share_directory}\\Mode_share_distance_comparison.csv",
                                           index=False)
     logging.info(f"Mode share comparison distance csv file has been saved successfully.")
+
