@@ -16,7 +16,7 @@ pd.set_option('display.max_rows', 100)
 warnings.filterwarnings("ignore")
 
 if __name__ == '__main__':
-    setup_logging("06_2_plot_smaller_zones_modal_split.log")
+    setup_logging("06_plot_smaller_zones_modal_split.log")
     data_path, simulation_zone_name, scenario, sim_output_folder, percentile, analysis_zone_name, csv_folder, clean_csv_folder, shapeFileName = read_config()
     analysis_zone_path = os.path.join(data_path, analysis_zone_name)
     output_folder_path: str = os.path.join(data_path, simulation_zone_name, sim_output_folder)
@@ -37,10 +37,10 @@ if __name__ == '__main__':
     ]
 
     pre_processed_data_path = os.path.join(data_path, analysis_zone_name, csv_folder, percentile)
-    df_synt_mode_share = pd.read_csv(f'{pre_processed_data_path}\\travel_time_distance_mode_synt.csv', nrows=100000)
+    df_synt_mode_share = pd.read_csv(f'{pre_processed_data_path}\\travel_time_distance_mode_synt.csv')
     logging.info(
         f"Read {len(df_synt_mode_share)} rows from {pre_processed_data_path}\\travel_time_distance_mode_synt.csv")
-    df_sim_mode_share = pd.read_csv(f'{pre_processed_data_path}\\travel_time_distance_mode_sim.csv', nrows=100000)
+    df_sim_mode_share = pd.read_csv(f'{pre_processed_data_path}\\travel_time_distance_mode_sim.csv')
     logging.info(
         f"Read {len(df_sim_mode_share)} rows from {pre_processed_data_path}\\travel_time_distance_mode_sim.csv")
 
@@ -60,6 +60,8 @@ if __name__ == '__main__':
 
     df_synt_mode_share['x_y'] = df_synt_mode_share.apply(lambda row: Point(row['x'], row['y']), axis=1)
     df_sim_mode_share['x_y'] = df_sim_mode_share.apply(lambda row: Point(row['x'], row['y']), axis=1)
+
+    arcgis_pro_dict = {}
 
     for zone in zones:
         for file in os.listdir(shapefile_path):
@@ -244,11 +246,25 @@ if __name__ == '__main__':
                            suffixes=('_num_sim_1', '_num_sim_2'))
                 )
 
-                mode_share_comparison_time_csv.columns = ['Mode', 'Total Distance Synthetic', 'Percentage Distance Synthetic',
+                mode_share_comparison_time_csv.columns = ['Mode', 'Total Distance Synthetic',
+                                                          'Percentage Distance Synthetic',
                                                           'Total Distance Simulation', 'Percentage Distance Simulation',
-                                                          'Total Travel Time Synthetic', 'Percentage Travel Time Synthetic',
-                                                          'Total Travel Time Simulation', 'Percentage Travel Time Simulation',
+                                                          'Total Travel Time Synthetic',
+                                                          'Percentage Travel Time Synthetic',
+                                                          'Total Travel Time Simulation',
+                                                          'Percentage Travel Time Simulation',
                                                           'Count Synthetic', 'Percentage Count Synthetic',
                                                           'Count Simulation', 'Percentage Count Simulation']
                 mode_share_comparison_time_csv.to_csv(f"{mode_share_directory}\\{file}_Mode_share_comparison.csv",
                                                       index=False)
+
+                dataframe_arcgis_pro = mode_share_comparison_time_csv[
+                    ['Mode', 'Percentage Distance Synthetic', 'Percentage Distance Simulation',
+                     'Percentage Travel Time Synthetic', 'Percentage Travel Time Simulation',
+                     'Percentage Count Synthetic', 'Percentage Count Simulation']]
+                arcgis_pro_dict[file] = dataframe_arcgis_pro
+
+    data_serializable = {key: df.round(2).to_dict(orient='records') for key, df in arcgis_pro_dict.items()}
+
+    with open(f"{plots_directory}\\arcgis_pro_dict.json", "w") as outfile:
+        json.dump(data_serializable, outfile, indent=4)
