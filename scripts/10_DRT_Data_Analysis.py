@@ -7,6 +7,12 @@ import plotly.express as px
 from datetime import datetime
 import plotly.graph_objects as go
 from plotly.subplots import make_subplots
+from common import *
+
+
+
+if __name__ == '__main__':
+    setup_logging(get_log_filename())
 
 pd.set_option('display.max_columns', None)
 pd.set_option('display.max_rows', None)

@@ -16,7 +16,7 @@ pd.set_option('display.max_rows', 100)
 warnings.filterwarnings("ignore")
 
 if __name__ == '__main__':
-    setup_logging("06_plot_smaller_zones_modal_split.log")
+    setup_logging(get_log_filename())
     data_path, simulation_zone_name, scenario, sim_output_folder, percentile, analysis_zone_name, csv_folder, clean_csv_folder, shapeFileName = read_config()
     analysis_zone_path = os.path.join(data_path, analysis_zone_name)
     output_folder_path: str = os.path.join(data_path, simulation_zone_name, sim_output_folder)

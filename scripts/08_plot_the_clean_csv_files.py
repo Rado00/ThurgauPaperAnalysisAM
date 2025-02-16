@@ -14,7 +14,7 @@ pd.set_option('display.max_rows', None)
 warnings.filterwarnings('ignore')
 
 if __name__ == '__main__':
-    setup_logging("05_plot_the_clean_csv_files.log")
+    setup_logging(get_log_filename())
 
     data_path, simulation_zone_name, scenario, sim_output_folder, percentile, analysis_zone_name, csv_folder, clean_csv_folder, shapeFileName = read_config()
     logging.info(f"Reading config file from {data_path} path was successful.")

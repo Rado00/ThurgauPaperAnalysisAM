@@ -6,7 +6,7 @@ pd.set_option('display.max_columns', None)
 pd.set_option('display.max_rows', None)
 
 if __name__ == '__main__':
-    setup_logging("03_read_create_csv_files.log")
+    setup_logging(get_log_filename())
 
     data_path, simulation_zone_name, scenario, sim_output_folder, percentile, analysis_zone_name, csv_folder, clean_csv_folder, shapeFileName = read_config()
 
