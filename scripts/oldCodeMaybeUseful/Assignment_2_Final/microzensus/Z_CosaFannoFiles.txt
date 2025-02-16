@@ -1,0 +1,36 @@
+0) POPULATION
+Saves Population CSV file and plots general population data --> Filters in Frauenfeld, Weinfelden - Doesn't work with Thurgau (Kernel dies)
+
+
+
+
+ASSIGNMENT (py 3.10)
+Task 1: Mobility by the household location type SWI
+Dopo non mi funziona qualcosa sulle colonne
+Task 2: Average distance traveled by individual by urbanization degree
+Task 3: Average number of trips per weekday
+Task 4: Traveled distances by individual by household income
+Task 5: Mode share by trip purpose
+
+2 - Resgression Plots
+
+3- Zone Zurigo per densità
+OD trips
+
+
+PERSONS - Non funziona sulle posizioni, forse vanno solo tolte
+Distribution of Age
+D. of sex
+marital_status
+D. of driving licence
+D. car availability
+D. of employed
+D. of education
+D. od subs GA
+D. half tax
+D. subs juniors
+
+*) functions.py
+plot_shapefile
+decompress_gz_file
+
