@@ -16,6 +16,8 @@ warnings.filterwarnings('ignore')
 if __name__ == '__main__':
     setup_logging("05_plot_the_clean_csv_files.log")
 
+    my_list = [22.17, 21.51, 16.13, 8.8, 11.28, 5.12, 5.41, 8.3, 1.30]
+
     data_path, simulation_zone_name, scenario, sim_output_folder, percentile, analysis_zone_name, csv_folder, clean_csv_folder, shapeFileName = read_config()
     logging.info(f"Reading config file from {data_path} path was successful.")
 
@@ -210,6 +212,7 @@ if __name__ == '__main__':
 
     income_counts_mic_by_number['Income Class'] = income_counts_mic_by_number[
         'Income Class'].map(income_class_labels)
+    # income_counts_synt['Percentage'] = [22.17, 21.51, 16.13, 8.8, 11.28, 5.12, 5.41, 8.3, 1.30]
 
     # Create a figure with subplots
     fig = go.Figure()
@@ -237,7 +240,7 @@ if __name__ == '__main__':
     # Update the layout for a grouped bar chart
     fig.update_layout(
         barmode='group',
-        title='Comparison of Income Class Distribution - Percentage By Number',
+        title='Comparison of Income Class Distribution',
         xaxis_title='Income Class',
         yaxis_title='Percentage (%)',
         legend_title='Dataset',
@@ -249,9 +252,10 @@ if __name__ == '__main__':
     # fig.show()
 
     # Save the figure as an image with higher resolution
-    fig.write_image(f"{plots_directory}\\comparative_income_distribution_by_number.png", scale=4)
+    fig.write_image(f"{plots_directory}\\comparative_income_distribution_by_number1.png", scale=4)
     logging.info("Income comparison by number has been plotted successfully.")
     # ------------------------------------------------------------------------------------------------------------------------------------------------
+    """
     # Create a custom order for the x-axis categories
     custom_order = ['0', '1', '2', '3+']
 
@@ -1125,3 +1129,4 @@ if __name__ == '__main__':
 
     mode_share_rounded_df.to_csv(f"{mode_share_directory}\\mode_share_trip_comparison.csv", index=False)
     logging.info("Mode share comparison data has been saved successfully.")
+    """
