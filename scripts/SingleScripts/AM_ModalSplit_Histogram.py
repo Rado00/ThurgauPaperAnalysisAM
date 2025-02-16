@@ -34,12 +34,12 @@ fig.add_trace(go.Bar(
     text=simulation1, textposition="outside"
 ))
 
-fig.add_trace(go.Bar(
-    x=modes, y=[float(x) for x in simulation2],
-    name="Baseline Simulation 59",
-    marker_color=colors[3],
-    text=simulation2, textposition="outside"
-))
+# fig.add_trace(go.Bar(
+#     x=modes, y=[float(x) for x in simulation2],
+#     name="Baseline Simulation 59",
+#     marker_color=colors[3],
+#     text=simulation2, textposition="outside"
+# ))
 
 fig.add_trace(go.Bar(
     x=modes, y=[float(x) for x in microcensus],
