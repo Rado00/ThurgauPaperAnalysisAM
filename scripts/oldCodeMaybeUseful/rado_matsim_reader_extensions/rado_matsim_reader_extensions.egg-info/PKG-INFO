@@ -1,5 +1,0 @@
-Metadata-Version: 2.1
-Name: rado-matsim-reader-extensions
-Version: 0.1
-Requires-Dist: pandas
-Requires-Dist: xopen

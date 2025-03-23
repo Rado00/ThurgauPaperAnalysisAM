@@ -1,3 +1,0 @@
-
-import matsim
-matsim.event_reader

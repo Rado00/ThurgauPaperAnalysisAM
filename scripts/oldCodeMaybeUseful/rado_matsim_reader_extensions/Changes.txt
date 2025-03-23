@@ -1,3 +1,0 @@
-Added As Int64 when reading Household ID
-
-Poi in my_matsim_utils cambiato in str

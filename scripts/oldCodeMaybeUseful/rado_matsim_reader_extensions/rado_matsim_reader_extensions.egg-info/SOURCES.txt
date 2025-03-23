@@ -1,6 +1,0 @@
-setup.py
-rado_matsim_reader_extensions.egg-info/PKG-INFO
-rado_matsim_reader_extensions.egg-info/SOURCES.txt
-rado_matsim_reader_extensions.egg-info/dependency_links.txt
-rado_matsim_reader_extensions.egg-info/requires.txt
-rado_matsim_reader_extensions.egg-info/top_level.txt
