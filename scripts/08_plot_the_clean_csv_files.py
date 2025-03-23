@@ -14,7 +14,7 @@ pd.set_option('display.max_rows', None)
 warnings.filterwarnings('ignore')
 
 if __name__ == '__main__':
-    setup_logging("05_plot_the_clean_csv_files.log")
+    setup_logging(get_log_filename())
 
     my_list = [22.17, 21.51, 16.13, 8.8, 11.28, 5.12, 5.41, 8.3, 1.30]
 

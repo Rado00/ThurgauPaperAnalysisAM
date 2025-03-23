@@ -22,7 +22,7 @@ def compute_avg_coordinates(start_link, end_link, link_data):
 
 
 if __name__ == '__main__':
-    setup_logging("05_synt_and_sim_mode_share_by_time_distance.log")
+    setup_logging(get_log_filename())
 
     data_path, simulation_zone_name, scenario, sim_output_folder, percentile, analysis_zone_name, csv_folder, clean_csv_folder, shapeFileName = read_config()
 

@@ -187,7 +187,7 @@ def execute_household_just_person_household_weight(path):
 
 
 if __name__ == '__main__':
-    setup_logging("04_generate_clean_csv_files.log")
+    setup_logging(get_log_filename())
 
     data_path, simulation_zone_name, scenario, sim_output_folder, percentile, analysis_zone_name, csv_folder, clean_csv_folder, shapeFileName = read_config()
 

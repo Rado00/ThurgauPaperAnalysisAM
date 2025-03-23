@@ -209,4 +209,14 @@ if __name__ == '__main__':
     # plt.show()
 
 
+	# ✅ Summary
+# This script:
 
+# Loads MATSim simulation events and simulated activity plans.
+# Filters activities that occurred within a geographic zone (like Frauenfeld).
+# Identifies all plans (agents) with at least one activity in the zone.
+# Performs basic analysis:
+# NaN inspection
+# Activity counts
+# Inside/outside breakdown
+# Generates clean plots and saves results for reporting or further processing.
