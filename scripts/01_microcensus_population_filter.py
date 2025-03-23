@@ -238,7 +238,7 @@ if __name__ == '__main__':
 
     df = pd.merge(df_mz_persons, df_mz_households, on='person_id', how='left')
 
-    df.to_csv(analysis_zone_path + '\\microzensus\\all_population.csv')
+    df.to_csv(analysis_zone_path + '\\microzensus\\all_population.csv', index=False)
 
     # Load geographic data from a shapefile
     shapefile_path = os.path.join(analysis_zone_path,

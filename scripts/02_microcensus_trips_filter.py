@@ -233,6 +233,12 @@ if __name__ == '__main__':
 
     logging.info("Trips filtered successfully based on the shapefile polygon successfully")
 
+    rest_of_trips = trips.drop(filtered_trips_inside.index)
+
+    ids_inside = set(filtered_trips_inside['person_id'])
+    ids_rest = set(rest_of_trips['person_id'])
+    unique_ids = ids_inside.difference(ids_rest)
+
     filtered_trips_inside.to_csv(analysis_zone_path + '\\microzensus\\trips_inside_O_and_D.csv')
 
     filtered_trips_inside_outside = trips[
@@ -240,30 +246,37 @@ if __name__ == '__main__':
         trips['destination_point'].apply(lambda point: point.within(area_polygon))
         ]
 
-    filtered_trips_inside_outside.to_csv(analysis_zone_path + '\\microzensus\\trips_inside_O_or_D.csv')
+    filtered_trips_inside_outside.to_csv(analysis_zone_path + '\\microzensus\\trips_inside_O_or_D.csv', index=False)
 
     # Create activity chains
     df_activity_chains = filtered_trips_inside.groupby(['person_id']).apply(create_activity_chain).reset_index()
 
     filtered_trips_inside.to_csv(analysis_zone_path + '\\microzensus\\trips_inside_O_and_D.csv')
     logging.info(f"Trips saved successfully in the microzensus folder in the {analysis_zone_path} directory successfully")
-    df_mz_trips = filtered_trips_inside
 
     all_population = pd.read_csv(f"{analysis_zone_path}\\microzensus\\all_population.csv")
 
-    population_with_trips_O_and_D = all_population[all_population['person_id'].isin(df_mz_trips['person_id'])]
+    population_with_trips_O_and_D = all_population[all_population['person_id'].isin(unique_ids)]
 
-    population_with_trips_O_and_D.to_csv(analysis_zone_path + '\\microzensus\\population_all_activities_inside.csv')
+    population_with_trips_O_and_D.to_csv(analysis_zone_path + '\\microzensus\\population_all_activities_inside.csv', index=False)
 
     population_with_trips_O_or_D = all_population[all_population['person_id'].isin(filtered_trips_inside_outside['person_id'])]
 
-    population_with_trips_O_or_D.to_csv(analysis_zone_path + '\\microzensus\\population_at_least_one_activities_inside.csv')
+    population_with_trips_O_or_D.to_csv(analysis_zone_path + '\\microzensus\\population_at_least_one_activities_inside.csv', index=False)
+
+    trips_inside = trips[trips['person_id'].isin(population_with_trips_O_and_D['person_id'])]
+
+    trips_inside.to_csv(analysis_zone_path + '\\microzensus\\trips_all_activities_inside.csv', index=False)
+
+    trips_inside_outside = trips[trips['person_id'].isin(population_with_trips_O_or_D['person_id'])]
+
+    trips_inside_outside.to_csv(analysis_zone_path + '\\microzensus\\trips_at_least_one_activities_inside.csv', index=False)
 
     # Capitalize and remove underscores from mode names
-    df_mz_trips['mode'] = df_mz_trips['mode'].str.replace('_', ' ').str.upper()
+    filtered_trips_inside['mode'] = filtered_trips_inside['mode'].str.replace('_', ' ').str.upper()
 
     # Calculate total counts for each mode
-    mode_counts = df_mz_trips['mode'].value_counts().reset_index()
+    mode_counts = filtered_trips_inside['mode'].value_counts().reset_index()
     mode_counts.columns = ['Mode', 'Count']
 
     # Plot total counts
@@ -282,16 +295,16 @@ if __name__ == '__main__':
     # fig2.show()
 
     # Convert seconds to datetime and resample times to 15-minute bins
-    df_mz_trips['departure_time'] = pd.to_datetime(df_mz_trips['departure_time'], unit='s').dt.floor('30T').dt.time
-    df_mz_trips['arrival_time'] = pd.to_datetime(df_mz_trips['arrival_time'], unit='s').dt.floor('30T').dt.time
+    filtered_trips_inside['departure_time'] = pd.to_datetime(filtered_trips_inside['departure_time'], unit='s').dt.floor('30T').dt.time
+    filtered_trips_inside['arrival_time'] = pd.to_datetime(filtered_trips_inside['arrival_time'], unit='s').dt.floor('30T').dt.time
     logging.info("The departure and arrival times are converted to datetime and resampled into bins successfully")
 
     # Count occurrences in each 15-minute bin
-    departure_counts = df_mz_trips.groupby('departure_time').size().reset_index(name='Count')
+    departure_counts = filtered_trips_inside.groupby('departure_time').size().reset_index(name='Count')
     departure_counts['Type'] = 'Departures'
     departure_counts = departure_counts.rename(columns={'departure_time': 'Time'})
 
-    arrival_counts = df_mz_trips.groupby('arrival_time').size().reset_index(name='Count')
+    arrival_counts = filtered_trips_inside.groupby('arrival_time').size().reset_index(name='Count')
     arrival_counts['Type'] = 'Arrivals'
     arrival_counts = arrival_counts.rename(columns={'arrival_time': 'Time'})
     logging.info("The arrival_counts and departure_counts are calculated successfully")
@@ -314,10 +327,10 @@ if __name__ == '__main__':
     # fig.show()
 
     # Capitalize and remove underscores from purpose names
-    df_mz_trips['purpose'] = df_mz_trips['purpose'].str.replace('_', ' ').str.upper()
+    filtered_trips_inside['purpose'] = filtered_trips_inside['purpose'].str.replace('_', ' ').str.upper()
 
     # Calculate total counts for each purpose
-    purpose_counts = df_mz_trips['purpose'].value_counts().reset_index()
+    purpose_counts = filtered_trips_inside['purpose'].value_counts().reset_index()
     purpose_counts.columns = ['Purpose', 'Count']
 
     # Plot total counts
