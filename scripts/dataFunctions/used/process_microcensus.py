@@ -1,32 +1,7 @@
 import geopandas as gpd
 
 
-def configure(context):
-    context.config("data_path")
-
-
-def execute(context):
-    # Load data
-    data_path = context.config("data_path")
-
-    df = gpd.read_file(
-        "%s/municipality_borders/gd-b-00.03-875-gg18/ggg_2018-LV95/shp/g1k18.shp" % data_path,
-        encoding="latin1"
-    ).to_crs("epsg:2056")
-
-    df.crs = "epsg:2056"
-
-    df = df.rename({"KTNR": "canton_id", "KTNAME": "canton_name"}, axis=1)
-    df = df[["canton_id", "canton_name", "geometry"]]
-
-    return df
-
-
-SP_REGION_1 = [25, 12, 13, 1, 2, 14, 9]
-SP_REGION_2 = [21, 26, 15, 16, 22, 11, 24, 3, 6, 7]
-SP_REGION_3 = [17, 19, 10, 23, 20, 5, 18, 4, 8]
-
-
+# called in 01
 def impute_sp_region(df):
     assert ("canton_id" in df.columns)
     assert ("sp_region" not in df.columns)
@@ -43,3 +18,15 @@ def impute_sp_region(df):
 
     # assert(not np.any(df["sp_region"] == 0))
     return df
+    
+
+# called in 01
+def assign_household_class(df):
+    """
+        Combines all houeshold sizes above 5 into one class.
+
+        Attention! Here KM also says that houesholds with at least one married person
+        have a minimum size of 2. Technically, this doesn't need be true in reality, and
+        I'm not sure if it has any implications later on. (TODO)
+    """
+    df["household_size_class"] = np.minimum(5, df["household_size"]) - 1

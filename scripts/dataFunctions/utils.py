@@ -12,15 +12,7 @@ def fix_marital_status(df):
     df.loc[:, "marital_status"] = df.loc[:, "marital_status"].astype(np.int)
 
 
-def assign_household_class(df):
-    """
-        Combines all houeshold sizes above 5 into one class.
 
-        Attention! Here KM also says that houesholds with at least one married person
-        have a minimum size of 2. Technically, this doesn't need be true in reality, and
-        I'm not sure if it has any implications later on. (TODO)
-    """
-    df["household_size_class"] = np.minimum(5, df["household_size"]) - 1
 
 
 def read_csv(context, fp, fields, renames=None, sep=";", total=None, encoding="latin1", limit=None):
