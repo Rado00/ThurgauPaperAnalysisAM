@@ -2,7 +2,7 @@ import pandas as pd
 import os
 
 # Define the path to the CSV file
-syntheticPersonsPath = "C:/Users/muaa/Documents/3_MIEI/2023_ABMT_Data/Thurgau/Thurgau_Baseline_100pct_1/output_persons.csv"
+syntheticPersonsPath = "output_persons.csv"
 
 # Load the CSV file into a DataFrame with the correct delimiter
 df = pd.read_csv(syntheticPersonsPath, delimiter=';')
@@ -29,6 +29,6 @@ print("Filtered DataFrame:")
 print(df_filtered.head())
 
 # Optionally, save the filtered DataFrame to a new CSV file
-filtered_csv_path = "filtered_output_persons.csv"
+filtered_csv_path = "pippo.csv"
 df_filtered.to_csv(filtered_csv_path, index=False)
 print(f"Filtered data saved to {filtered_csv_path}")

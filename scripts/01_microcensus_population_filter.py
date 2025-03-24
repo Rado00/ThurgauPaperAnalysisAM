@@ -238,6 +238,8 @@ if __name__ == '__main__':
 
     df = pd.merge(df_mz_persons, df_mz_households, on='person_id', how='left')
 
+    df.to_csv(analysis_zone_path + '\\microzensus\\all_population.csv', index=False)
+
     # Load geographic data from a shapefile
     shapefile_path = os.path.join(analysis_zone_path,
                                   f"ShapeFiles\\{shapeFileName}")  # please replace with your shapefile path
@@ -262,7 +264,7 @@ if __name__ == '__main__':
     df = gdf_points[gdf_points['home_point'].within(area_polygon)]
     df = pd.DataFrame(df.drop(columns='home_point'))
 
-    df.to_csv(analysis_zone_path + '\\microzensus\\population.csv')
+    # df.to_csv(analysis_zone_path + '\\microzensus\\population.csv')
     logging.info(f"Population data saved successfully in the {analysis_zone_path} directory and microzensus folder.")
 
     # !pip install --upgrade nbformat

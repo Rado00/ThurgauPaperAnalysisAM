@@ -24,7 +24,8 @@ import geopandas as gpd
 from shapely.geometry import Point
 from common import *
 import warnings
-
+pd.set_option('display.max_columns', 100)
+pd.set_option('display.max_rows', 100)
 warnings.filterwarnings("ignore")
 
 # Get the path to the current script folder
@@ -39,6 +40,7 @@ def execute(path):
 
     df_mz_trips = pd.read_csv(f"{path}\\microzensus\\wege.csv", encoding=encoding)
     df_mz_stages = pd.read_csv(f"{path}\\microzensus\\etappen.csv", encoding=encoding)
+    print(df_mz_trips.shape)
 
     df_mz_trips = df_mz_trips[[
         "HHNR", "WEGNR", "f51100", "f51400", "wzweck1", "wzweck2", "wmittel",
@@ -133,6 +135,7 @@ def execute(path):
         df_mz_trips[["person_id", "previous_trip_id", "arrival_time"]],
         left_on=["person_id", "trip_id"], right_on=["person_id", "previous_trip_id"]
     )
+    print(df_durations.shape)
 
     df_durations.loc[:, "activity_duration"] = df_durations["arrival_time"] - df_durations["departure_time"]
 
@@ -141,9 +144,15 @@ def execute(path):
         on=["person_id", "trip_id"], how="left"
     )
 
+    # 1217 trips remove
     # Filter persons for which we do not have sufficient information
+    # unknown_ids = set(df_mz_trips[
+    #                       (df_mz_trips["mode"] == "unknown") | (df_mz_trips["purpose"] == "unknown")
+    #                       ]["person_id"])
+
+    # 213 trips remove
     unknown_ids = set(df_mz_trips[
-                          (df_mz_trips["mode"] == "unknown") | (df_mz_trips["purpose"] == "unknown")
+                          (df_mz_trips["mode"] == "unknown")
                           ]["person_id"])
 
     print("  Removed %d persons with trips with unknown mode or unknown purpose" % len(unknown_ids))
@@ -199,6 +208,9 @@ if __name__ == '__main__':
     data_path, simulation_zone_name, scenario, sim_output_folder, percentile, analysis_zone_name, csv_folder, clean_csv_folder, shapeFileName = read_config()
     analysis_zone_path = os.path.join(data_path, analysis_zone_name)
     trips = execute(analysis_zone_path)
+    # TODO remove this line
+    # trips = trips.head(100)
+    trips.to_csv(analysis_zone_path + '\\microzensus\\row_trips.csv')
     logging.info("Microcensus trips filtered successfully")
 
     # Load geographic data from a shapefile
@@ -214,24 +226,57 @@ if __name__ == '__main__':
     trips['destination_point'] = trips.apply(lambda row: Point(row['destination_x'], row['destination_y']), axis=1)
 
     # Filter trips where both origin and destination are within the given city polygon shapefile
-    filtered_trips = trips[
+    filtered_trips_inside = trips[
         trips['origin_point'].apply(lambda point: point.within(area_polygon)) &
         trips['destination_point'].apply(lambda point: point.within(area_polygon))
         ]
 
     logging.info("Trips filtered successfully based on the shapefile polygon successfully")
-    # Create activity chains
-    df_activity_chains = filtered_trips.groupby(['person_id']).apply(create_activity_chain).reset_index()
 
-    filtered_trips.to_csv(analysis_zone_path + '\\microzensus\\trips.csv')
+    rest_of_trips = trips.drop(filtered_trips_inside.index)
+
+    ids_inside = set(filtered_trips_inside['person_id'])
+    ids_rest = set(rest_of_trips['person_id'])
+    unique_ids = ids_inside.difference(ids_rest)
+
+    filtered_trips_inside.to_csv(analysis_zone_path + '\\microzensus\\trips_inside_O_and_D.csv')
+
+    filtered_trips_inside_outside = trips[
+        trips['origin_point'].apply(lambda point: point.within(area_polygon)) |
+        trips['destination_point'].apply(lambda point: point.within(area_polygon))
+        ]
+
+    filtered_trips_inside_outside.to_csv(analysis_zone_path + '\\microzensus\\trips_inside_O_or_D.csv', index=False)
+
+    # Create activity chains
+    df_activity_chains = filtered_trips_inside.groupby(['person_id']).apply(create_activity_chain).reset_index()
+
+    filtered_trips_inside.to_csv(analysis_zone_path + '\\microzensus\\trips_inside_O_and_D.csv')
     logging.info(f"Trips saved successfully in the microzensus folder in the {analysis_zone_path} directory successfully")
-    df_mz_trips = filtered_trips
+
+    all_population = pd.read_csv(f"{analysis_zone_path}\\microzensus\\all_population.csv")
+
+    population_with_trips_O_and_D = all_population[all_population['person_id'].isin(unique_ids)]
+
+    population_with_trips_O_and_D.to_csv(analysis_zone_path + '\\microzensus\\population_all_activities_inside.csv', index=False)
+
+    population_with_trips_O_or_D = all_population[all_population['person_id'].isin(filtered_trips_inside_outside['person_id'])]
+
+    population_with_trips_O_or_D.to_csv(analysis_zone_path + '\\microzensus\\population_at_least_one_activities_inside.csv', index=False)
+
+    trips_inside = trips[trips['person_id'].isin(population_with_trips_O_and_D['person_id'])]
+
+    trips_inside.to_csv(analysis_zone_path + '\\microzensus\\trips_all_activities_inside.csv', index=False)
+
+    trips_inside_outside = trips[trips['person_id'].isin(population_with_trips_O_or_D['person_id'])]
+
+    trips_inside_outside.to_csv(analysis_zone_path + '\\microzensus\\trips_at_least_one_activities_inside.csv', index=False)
 
     # Capitalize and remove underscores from mode names
-    df_mz_trips['mode'] = df_mz_trips['mode'].str.replace('_', ' ').str.upper()
+    filtered_trips_inside['mode'] = filtered_trips_inside['mode'].str.replace('_', ' ').str.upper()
 
     # Calculate total counts for each mode
-    mode_counts = df_mz_trips['mode'].value_counts().reset_index()
+    mode_counts = filtered_trips_inside['mode'].value_counts().reset_index()
     mode_counts.columns = ['Mode', 'Count']
 
     # Plot total counts
@@ -249,18 +294,17 @@ if __name__ == '__main__':
     fig2.update_layout(width=600, height=600)
     # fig2.show()
 
-
     # Convert seconds to datetime and resample times to 15-minute bins
-    df_mz_trips['departure_time'] = pd.to_datetime(df_mz_trips['departure_time'], unit='s').dt.floor('30T').dt.time
-    df_mz_trips['arrival_time'] = pd.to_datetime(df_mz_trips['arrival_time'], unit='s').dt.floor('30T').dt.time
+    filtered_trips_inside['departure_time'] = pd.to_datetime(filtered_trips_inside['departure_time'], unit='s').dt.floor('30T').dt.time
+    filtered_trips_inside['arrival_time'] = pd.to_datetime(filtered_trips_inside['arrival_time'], unit='s').dt.floor('30T').dt.time
     logging.info("The departure and arrival times are converted to datetime and resampled into bins successfully")
 
     # Count occurrences in each 15-minute bin
-    departure_counts = df_mz_trips.groupby('departure_time').size().reset_index(name='Count')
+    departure_counts = filtered_trips_inside.groupby('departure_time').size().reset_index(name='Count')
     departure_counts['Type'] = 'Departures'
     departure_counts = departure_counts.rename(columns={'departure_time': 'Time'})
 
-    arrival_counts = df_mz_trips.groupby('arrival_time').size().reset_index(name='Count')
+    arrival_counts = filtered_trips_inside.groupby('arrival_time').size().reset_index(name='Count')
     arrival_counts['Type'] = 'Arrivals'
     arrival_counts = arrival_counts.rename(columns={'arrival_time': 'Time'})
     logging.info("The arrival_counts and departure_counts are calculated successfully")
@@ -283,10 +327,10 @@ if __name__ == '__main__':
     # fig.show()
 
     # Capitalize and remove underscores from purpose names
-    df_mz_trips['purpose'] = df_mz_trips['purpose'].str.replace('_', ' ').str.upper()
+    filtered_trips_inside['purpose'] = filtered_trips_inside['purpose'].str.replace('_', ' ').str.upper()
 
     # Calculate total counts for each purpose
-    purpose_counts = df_mz_trips['purpose'].value_counts().reset_index()
+    purpose_counts = filtered_trips_inside['purpose'].value_counts().reset_index()
     purpose_counts.columns = ['Purpose', 'Count']
 
     # Plot total counts
@@ -315,9 +359,9 @@ if __name__ == '__main__':
 
     logging.info(f"There exist {df_activity_chains.activity_chain.nunique()} number of unique activity chains.")
 
-    filtered_trips[['HHNR', 'WEGNR', 'purpose']]
-
-    filtered_trips[trips.person_id == 101196]
+    # filtered_trips[['HHNR', 'WEGNR', 'purpose']]
+    #
+    # filtered_trips[trips.person_id == 101196]
 
     # Calculate total counts for each activity chain
     chain_counts = df_activity_chains['activity_chain'].value_counts().reset_index()

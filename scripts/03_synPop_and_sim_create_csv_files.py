@@ -11,7 +11,7 @@ if __name__ == '__main__':
     data_path, simulation_zone_name, scenario, sim_output_folder, percentile, analysis_zone_name, csv_folder, clean_csv_folder, shapeFileName = read_config()
 
     # Create directory for the zone
-    scenario_path: str = os.path.join(data_path, simulation_zone_name, scenario, percentile)
+    # scenario_path: str = os.path.join(data_path, simulation_zone_name, scenario, percentile)
     output_folder_path: str = os.path.join(data_path, simulation_zone_name, sim_output_folder)
 
     # Read the XML data with a matsim library
