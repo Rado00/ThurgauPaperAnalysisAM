@@ -1,6 +1,6 @@
 import pandas as pd
 import os
-from common import *
+from functions.commonFunctions import *
 
 if __name__ == '__main__':
     setup_logging(get_log_filename())

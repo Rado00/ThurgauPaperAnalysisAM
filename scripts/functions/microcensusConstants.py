@@ -3,12 +3,16 @@ import pyproj
 # TODO: Pandas is quite good at working with categorical data. Refactor everything to make use of that.
 # It will not only be more readable but will also bring a speedup!
 
+# MICROCENSUS CRS
 CH1903 = "epsg:21781"
 LV05 = CH1903
 CH1903_PLUS = "epsg:2056"
 LV95 = CH1903_PLUS
 WGS84 = "epsg:4326"
 
+
+
+# MICROCENSUS CONSTANTS
 MAXIMUM_HOUSEHOLD_SIZE = 12
 MINIMUM_AGE_PER_HOUSEHOLD = 16
 ACTIVE_AGE = 60

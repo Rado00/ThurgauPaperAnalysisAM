@@ -15,9 +15,9 @@ def setup_logging(log_filename):
     logging.info("All setting of the logging is done")
 
 def get_log_filename():
-    # Get the full path of the script
-    file_path = __file__
-    # Extract only the file name
+    # Get the script file that was executed (even if this is imported)
+    file_path = sys.argv[0]
+    # Extract only the filename
     log_filename = os.path.basename(file_path)
     log_filename = log_filename.replace(".py", ".log")
     return log_filename

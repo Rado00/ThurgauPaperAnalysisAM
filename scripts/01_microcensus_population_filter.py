@@ -8,18 +8,18 @@ output data:
 - microzensus/population.csv
 - plots/plots_Thurgau/microcensus_population_plots.png
 """
-import logging
 # Import necessary libraries
 import math
 import pyproj
-import nbformat
 import numpy as np
 import pandas as pd
 import geopandas as gpd
 from shapely.geometry import Point
 import plotly.graph_objs as go
 from plotly.subplots import make_subplots
-from common import *
+
+from functions.process_microcensus import *
+from functions.commonFunctions import *
 import warnings
 pd.set_option('display.max_columns', None)
 
@@ -27,35 +27,12 @@ warnings.filterwarnings("ignore")
 
 # Get the path to the current script folder
 current_script_folder = os.getcwd()
-dataFunctions_folder_path = os.path.join(current_script_folder, 'dataFunctions')
-sys.path.append(os.path.abspath(dataFunctions_folder_path))
+functions_folder_path = os.path.join(current_script_folder, 'functions')
+sys.path.append(os.path.abspath(functions_folder_path))
 
-# Now you can import the modules from the 'dataFunctions' folder
-import dataFunctions.constants as c
-import dataFunctions.spatial.cantons
-import dataFunctions.spatial.municipalities
-import dataFunctions.spatial.municipality_types
-import dataFunctions.spatial.ovgk
-import dataFunctions.spatial.utils
-import dataFunctions.spatial.zones
-import dataFunctions.utils
+# Now you can import the modules from the 'functions' folder
 
-
-def configure(context):
-    context.config("data_path")
-    context.stage("data.spatial.municipalities")
-    context.stage("data.spatial.zones")
-    context.stage("data.spatial.municipality_types")
-    context.stage("data.statpop.density")
-    context.stage("data.spatial.ovgk")
-
-
-def fix_marital_status(df):
-    """ Makes young people, who are separated, be treated as single! """
-    df.loc[
-        (df["marital_status"] == c.MARITAL_STATUS_SEPARATE) & (df["age"] < c.SEPARATE_SINGLE_THRESHOLD)
-        , "marital_status"] = c.MARITAL_STATUS_SINGLE
-    df.loc[:, "marital_status"] = df.loc[:, "marital_status"].astype(int)
+import functions.microcensusConstants as c
 
 
 def execute_person(path):
@@ -63,12 +40,6 @@ def execute_person(path):
     file_path_Ziel = os.path.join(path, "microzensus", "zielpersonen.csv")
     print(f"Constructed file path: {file_path_Ziel}")
     df_mz_persons = pd.read_csv(file_path_Ziel, sep=",", encoding="latin1", parse_dates=["USTag"])
-
-    # "alter" : "age"
-    # "gesl" : "sex"
-    # "HHNR" : "person_id"
-    # "WP" : "person_weight"
-    # "USTag" : "date"
 
     df_mz_persons["age"] = df_mz_persons["alter"]
     df_mz_persons["sex"] = df_mz_persons["gesl"] - 1  # Make zero-based
@@ -212,12 +183,12 @@ def execute_household(path):
         "number_of_bikes_class"] = c.BIKE_AVAILABILITY_FOR_ALL
 
     # Household size class
-    dataFunctions.utils.assign_household_class(df_mz_households)
+    assign_household_class(df_mz_households)
 
     # Region information
     # (acc. to Analyse der SP-Befragung 2015 zur Verkehrsmodus- und Routenwahl)
     df_mz_households["canton_id"] = df_mz_households["W_KANTON"]
-    final_df_mz_households = dataFunctions.spatial.cantons.impute_sp_region(df_mz_households)
+    final_df_mz_households = impute_sp_region(df_mz_households)
 
     return final_df_mz_households[[
         "person_id", "household_size", "number_of_cars", "number_of_bikes", "income_class",

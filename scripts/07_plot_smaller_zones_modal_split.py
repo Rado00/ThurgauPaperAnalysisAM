@@ -8,7 +8,7 @@ import plotly.express as px
 import plotly.graph_objects as go
 import geopandas as gpd
 from shapely.geometry import Point
-from common import *
+from functions.commonFunctions import *
 import warnings
 
 pd.set_option('display.max_columns', 100)
