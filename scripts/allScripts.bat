@@ -11,7 +11,7 @@ REM Run each script in sequence
 
 
 REM echo Running 01_microcensus_population_filter.py...
-REM python 01_microcensus_population_filter.py
+REM python 01_microcensus_pre-process.py
 REM if %ERRORLEVEL% neq 0 goto :error
 
 REM echo Running 02_microcensus_trips_filter.py...
