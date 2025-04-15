@@ -1,0 +1,134 @@
+
+EXPLANATION OF THURGAU ANALYSIS SCRIPTS
+-----------------------------------------
+
+
+
+01_microcensus_population_filter.py
+-----------------------------------------
+🧭 Purpose
+This script processes Swiss Microcensus population and household data for a specific region (e.g., Thurgau), filters it spatially using a shapefile, and produces:
+	- A cleaned CSV dataset: population.csv
+Histograms of variable distributions: microcensus_population_plots.png
+🧰 1. Setup and Imports
+Imports various libraries:
+Data: pandas, numpy
+Geospatial: geopandas, shapely
+Visualization: plotly
+Project-specific: common.py, dataFunctions/, logging
+📁 2. Configuration and Constants
+Sets up paths to access:
+Microcensus files: zielpersonen.csv and haushalte.csv
+Shapefile: e.g., Thurgau.shp
+Adds utility modules from the dataFunctions directory.
+👥 3. Person-Level Data Preparation (execute_person)
+Reads zielpersonen.csv
+Extracts and renames relevant variables (e.g., age, sex, marital status)
+Applies recoding and classifications:
+Age classes
+Car availability
+Education levels
+Parking availability
+Various subscriptions (GA, Halbtax, etc.)
+Creates derived columns like:
+weekend
+driving_license
+marital_status fix for younger separated people
+Returns a DataFrame of individual-level data
+🏘️ 4. Household-Level Data Preparation (execute_household)
+Reads haushalte.csv
+Extracts and renames:
+Household size, cars, bikes
+Income class (cleaned)
+Coordinates (transformed from CH1903 to LV95)
+Calculates class categories:
+Car and bike ownership class
+Household size class
+Assigns region info using sp_region from spatial functions
+Returns a DataFrame of household-level data
+🔀 5. Merging & Spatial Filtering
+Merges person and household datasets on person_id
+Loads a shapefile defining the analysis zone
+Creates Point geometries for household home locations
+Filters out individuals not located inside the shapefile polygon
+💾 6. Save Cleaned Data
+Saves the merged and filtered dataset to:
+bash
+Copia
+Modifica
+<analysis_zone_path>/microzensus/population.csv
+📊 7. Variable Distributions Visualization
+Defines two lists:
+variables_p: personal variables
+variables_hh: household variables
+Combines into a single list: variables
+Dynamically creates subplots:
+3 columns, N rows based on variable count
+For each variable:
+Plots a histogram using plotly
+Saves plot to:
+bash
+Copia
+Modifica
+plots/plots_<analysis_zone_name>/microcensus_population_plots.png
+🧾 8. Logging
+Uses logging to confirm successful steps:
+Loading data
+Filtering and merging
+Saving results
+✅ Summary
+Step	What It Does
+Person data processing	Extracts and recodes individual attributes from zielpersonen.csv
+Household data processing	Extracts household-level attributes from haushalte.csv
+Coordinate transformation	Converts household coordinates to LV95 projection
+Spatial filtering	Filters to keep only residents within the shapefile area
+Merging data	Combines person and household data
+Saving population	Outputs final filtered population.csv
+Plotting distributions	Saves histograms of household/person variables
+
+
+In Microcensus no children below 6 year old
+Number of persons 57090 inside zielpersonen.csv and haushalte.csv, also the same in the population.csv data frame.
+
+
+02_microcensus_trips_filter.py
+-----------------------------------------
+wege.csv 193.880 rows (trips)
+etappen.csv 279.173 (legs)
+
+03_synPop_and_sim_create_csv_files.py
+-----------------------------------------
+
+04_generate_clean_csv_files.py
+-----------------------------------------
+
+05_synt_and_sim_mode_share_by_time_distance.py
+-----------------------------------------
+
+
+
+06_plot_mode_share_time_distance_synt.py
+-----------------------------------------
+
+
+07_plot_smaller_zones_modal_split.py
+-----------------------------------------
+
+08_plot_the_clean_csv_files.py
+-----------------------------------------
+
+09_CSVs_in_a_column.py
+-----------------------------------------
+
+10_DRT_Data_Analysis.py
+-----------------------------------------
+
+
+02_MICROCENSUS_TRIPS_FILTER
+Right now we filter all the trips that have both origin AND destination inside the shape file, but if a 
+
+
+MODAL SPLIT 
+We need to compare only plans doing everything inside
+
+How many output activities 
