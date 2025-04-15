@@ -38,8 +38,12 @@ Number of persons 57090 inside zielpersonen.csv and haushalte.csv, also the same
 
 02_microcensus_trips_filter.py
 -----------------------------------------
-wege.csv 193.880 rows (trips)
+wege.csv 193.880 rows (trips) -- Swiss trips for 57k
 etappen.csv 279.173 (legs)
+
+
+
+
 
 03_synPop_and_sim_create_csv_files.py
 -----------------------------------------
