@@ -1,10 +1,10 @@
 """
-input data: (For example)
+Input data: (For example)
 - microzensus\wege.csv
 - microzensus\etappen.csv
 - shapefiles\shapefile.shp
 
-output data:
+Output data:
 - microzensus\trips.csv
 - plots\plots_{analysis_zone_name}\purpose_distribution_Total_microcensus.png
 - plots\plots_{analysis_zone_name}\purpose_distribution_pct_microcensus.png
@@ -33,6 +33,14 @@ current_script_folder = os.getcwd()
 dataFunctions_folder_path = os.path.join(current_script_folder, 'dataFunctions')
 sys.path.append(os.path.abspath(dataFunctions_folder_path))
 
+
+def get_log_filename():
+    # Get the full path of the script
+    file_path = __file__
+    # Extract only the file name
+    log_filename = os.path.basename(file_path)
+    log_filename = log_filename.replace(".py", ".log")
+    return log_filename
 
 def execute(path):
     # Specify encoding

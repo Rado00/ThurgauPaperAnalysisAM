@@ -33,10 +33,10 @@ sys.path.append(os.path.abspath(dataFunctions_folder_path))
 # Now you can import the modules from the 'dataFunctions' folder
 import dataFunctions.constants as c
 import dataFunctions.spatial.cantons
-import dataFunctions.spatial.municipalities
-import dataFunctions.spatial.municipality_types
-import dataFunctions.spatial.ovgk
-import dataFunctions.spatial.utils
+# import dataFunctions.spatial.municipalities
+# import dataFunctions.spatial.municipality_types
+# import dataFunctions.spatial.ovgk
+# import dataFunctions.spatial.utils
 import dataFunctions.spatial.zones
 import dataFunctions.utils
 
@@ -225,6 +225,15 @@ def execute_household(path):
         "sp_region", "canton_id"]]
 
 
+def get_log_filename():
+    # Get the full path of the script
+    file_path = __file__
+    # Extract only the file name
+    log_filename = os.path.basename(file_path)
+    log_filename = log_filename.replace(".py", ".log")
+    return log_filename
+
+
 if __name__ == '__main__':
     setup_logging(get_log_filename())
 
@@ -241,10 +250,10 @@ if __name__ == '__main__':
     df.to_csv(analysis_zone_path + '\\microzensus\\all_population.csv', index=False)
 
     # Load geographic data from a shapefile
-    shapefile_path = os.path.join(analysis_zone_path,
-                                  f"ShapeFiles\\{shapeFileName}")  # please replace with your shapefile path
-
-    gdf = gpd.read_file(shapefile_path, engine="pyogrio")
+    # shapefile_path = os.path.join(analysis_zone_path,
+    #                               f"ShapeFiles\\{shapeFileName}")  # please replace with your shapefile path
+    #
+    # gdf = gpd.read_file(shapefile_path, engine="pyogrio")
 
     # Ensure the GeoDataFrame is in the CH1903 coordinate system
     # If the gdf is not in CH1903, you would convert it like this:
@@ -252,79 +261,18 @@ if __name__ == '__main__':
 
     # Get the polygon the area
     # area_polygon = gdf[gdf['scenario'] == 'zurich_city'].iloc[0]['geometry']
-    area_polygon = gdf.iloc[0]['geometry']
+    # area_polygon = gdf.iloc[0]['geometry']
 
-    # Create Point geometries for home locations
-    df['home_point'] = df.apply(lambda row: Point(row['home_x'], row['home_y']), axis=1)
-
-    # Convert the DataFrame to a GeoDataFrame
-    gdf_points = gpd.GeoDataFrame(df, geometry='home_point', crs=gdf.crs)
-
-    # Filter trips where home points are within the given city polygon
-    df = gdf_points[gdf_points['home_point'].within(area_polygon)]
-    df = pd.DataFrame(df.drop(columns='home_point'))
+    # # Create Point geometries for home locations
+    # df['home_point'] = df.apply(lambda row: Point(row['home_x'], row['home_y']), axis=1)
+    #
+    # # Convert the DataFrame to a GeoDataFrame
+    # gdf_points = gpd.GeoDataFrame(df, geometry='home_point', crs=gdf.crs)
+    #
+    # # Filter trips where home points are within the given city polygon
+    # df = gdf_points[gdf_points['home_point'].within(area_polygon)]
+    # df = pd.DataFrame(df.drop(columns='home_point'))
 
     # df.to_csv(analysis_zone_path + '\\microzensus\\population.csv')
-    logging.info(f"Population data saved successfully in the {analysis_zone_path} directory and microzensus folder.")
+    # logging.info(f"Population data saved successfully in the {analysis_zone_path} directory and microzensus folder.")
 
-    # !pip install --upgrade nbformat
-    variables_hh = [
-        "person_id", "household_size", "number_of_cars", "number_of_bikes", "income_class",
-        "home_x", "home_y", "household_size_class", "number_of_cars_class", "number_of_bikes_class", "household_weight",
-        "sp_region", "canton_id"]
-
-    variables_p = [
-        "age", "sex",
-        "marital_status",
-        "driving_license",
-        "car_availability",
-        "employed",
-        "highest_education",
-        "parking_work", "parking_cost_work",
-        "parking_education", "parking_cost_education",
-        "subscriptions_ga",
-        "subscriptions_halbtax",
-        "subscriptions_verbund",
-        "subscriptions_strecke",
-        "subscriptions_gleis7",
-        "subscriptions_junior",
-        "subscriptions_other",
-        "subscriptions_ga_class",
-        "subscriptions_verbund_class",
-        "subscriptions_strecke_class",
-        "age_class", "person_weight",
-        "weekend", "date"
-    ]
-
-    # Assuming df is your DataFrame and variables is your list of variables to plot
-    variables = variables_hh + variables_p  # Combine your two lists of variables
-
-    # Calculate the number of rows needed for the subplots (3 columns)
-    num_rows = math.ceil(len(variables) / 3)
-
-    # Create a subplot figure with the calculated number of rows and 3 columns
-    fig = make_subplots(rows=num_rows, cols=3, subplot_titles=variables)
-
-    # Add a histogram to each subplot for the respective variable
-    for i, var in enumerate(variables):
-        row = math.ceil((i + 1) / 3)
-        col = (i % 3) + 1
-        fig.add_trace(
-            go.Histogram(x=df[var], name=var),
-            row=row, col=col
-        )
-
-    # Update layout if needed
-    fig.update_layout(
-        title_text='Distributions of Variables',
-        height=300 * num_rows,  # Adjust the height based on the number of rows
-    )
-
-    # Show the figure
-    directory = os.getcwd()
-    parent_directory = os.path.dirname(directory)
-    plots_directory = os.path.join(parent_directory, f'plots\\plots_{analysis_zone_name}')
-    if not os.path.exists(plots_directory):
-        os.makedirs(plots_directory)
-    fig.write_image(f"{plots_directory}\\microcensus_population_plots.png", scale=4)
-    logging.info(f"Plots saved successfully in the {plots_directory} directory.")

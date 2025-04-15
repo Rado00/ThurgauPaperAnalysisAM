@@ -14,13 +14,6 @@ def setup_logging(log_filename):
                         format='%(levelname)s   %(asctime)s   %(message)s')
     logging.info("All setting of the logging is done")
 
-def get_log_filename():
-    # Get the full path of the script
-    file_path = __file__
-    # Extract only the file name
-    log_filename = os.path.basename(file_path)
-    log_filename = log_filename.replace(".py", ".log")
-    return log_filename
 
 def read_config(path='config.ini'):
     directory = os.getcwd()
