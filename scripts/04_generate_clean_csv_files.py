@@ -215,7 +215,7 @@ if __name__ == '__main__':
 
     new_path = os.path.join(data_path, analysis_zone_name, 'microzensus')
     try:
-        df_population_mic = pd.read_csv(f"{new_path}\\population.csv")
+        df_population_mic = pd.read_csv(f"{new_path}\\all_population.csv")
         df_trips_mic = pd.read_csv(f"{new_path}\\trips.csv")
     except Exception as e:
         logging.error("Error reading csv files: " + str(e))

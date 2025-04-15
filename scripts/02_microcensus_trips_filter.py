@@ -243,8 +243,13 @@ if __name__ == '__main__':
 
     rest_of_trips = trips.drop(filtered_trips_inside.index)
 
+    # The ids of the people who have trips inside the area
     ids_inside = set(filtered_trips_inside['person_id'])
+
+    # The ids of the people who have trips outside the area
     ids_rest = set(rest_of_trips['person_id'])
+
+    # The ids of the people who have trips inside the area but not outside
     unique_ids = ids_inside.difference(ids_rest)
 
     filtered_trips_inside.to_csv(analysis_zone_path + '\\microzensus\\trips_inside_O_and_D.csv')
@@ -263,22 +268,31 @@ if __name__ == '__main__':
     logging.info(f"Trips saved successfully in the microzensus folder in the {analysis_zone_path} directory successfully")
 
     all_population = pd.read_csv(f"{analysis_zone_path}\\microzensus\\all_population.csv")
+    population_home_inside = pd.read_csv(f"{analysis_zone_path}\\microzensus\\population_home_inside.csv")
 
+    # Filter the population to include only those with trips inside the area
     population_with_trips_O_and_D = all_population[all_population['person_id'].isin(unique_ids)]
 
     population_with_trips_O_and_D.to_csv(analysis_zone_path + '\\microzensus\\population_all_activities_inside.csv', index=False)
 
+    # Filter the population to include only those with trips origin inside or destination inside the area
     population_with_trips_O_or_D = all_population[all_population['person_id'].isin(filtered_trips_inside_outside['person_id'])]
 
     population_with_trips_O_or_D.to_csv(analysis_zone_path + '\\microzensus\\population_at_least_one_activities_inside.csv', index=False)
 
+    # Filter the trips to include only those with origin inside or destination inside the area
     trips_inside = trips[trips['person_id'].isin(population_with_trips_O_and_D['person_id'])]
 
     trips_inside.to_csv(analysis_zone_path + '\\microzensus\\trips_all_activities_inside.csv', index=False)
 
+    # Filter the trips to include only those with origin inside or destination inside the area
     trips_inside_outside = trips[trips['person_id'].isin(population_with_trips_O_or_D['person_id'])]
 
     trips_inside_outside.to_csv(analysis_zone_path + '\\microzensus\\trips_at_least_one_activities_inside.csv', index=False)
+
+    trips_population_home_inside = trips[trips['person_id'].isin(population_home_inside['person_id'])]
+
+    trips_population_home_inside.to_csv(analysis_zone_path + '\\microzensus\\trips_population_home_inside.csv', index=False)
 
     # Capitalize and remove underscores from mode names
     filtered_trips_inside['mode'] = filtered_trips_inside['mode'].str.replace('_', ' ').str.upper()

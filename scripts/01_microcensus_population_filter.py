@@ -9,6 +9,8 @@ output data:
 """
 # Import necessary libraries
 import pandas as pd
+from shapely.geometry import Point
+
 from functions.process_microcensus import *
 from functions.commonFunctions import *
 import warnings
@@ -210,29 +212,28 @@ if __name__ == '__main__':
     df.to_csv(analysis_zone_path + '\\microzensus\\all_population.csv', index=False)
 
     # Load geographic data from a shapefile
-    # shapefile_path = os.path.join(analysis_zone_path,
-    #                               f"ShapeFiles\\{shapeFileName}")  # please replace with your shapefile path
-    #
-    # gdf = gpd.read_file(shapefile_path, engine="pyogrio")
+    shapefile_path = os.path.join(analysis_zone_path,
+                                  f"ShapeFiles\\{shapeFileName}")  # please replace with your shapefile path
+
+    gdf = gpd.read_file(shapefile_path, engine="pyogrio")
 
     # Ensure the GeoDataFrame is in the CH1903 coordinate system
     # If the gdf is not in CH1903, you would convert it like this:
     # gdf = gdf.to_crs(epsg=21781)  # EPSG 21781 is the code for CH1903/LV03
 
     # Get the polygon the area
-    # area_polygon = gdf[gdf['scenario'] == 'zurich_city'].iloc[0]['geometry']
-    # area_polygon = gdf.iloc[0]['geometry']
+    area_polygon = gdf.iloc[0]['geometry']
 
-    # # Create Point geometries for home locations
-    # df['home_point'] = df.apply(lambda row: Point(row['home_x'], row['home_y']), axis=1)
-    #
-    # # Convert the DataFrame to a GeoDataFrame
-    # gdf_points = gpd.GeoDataFrame(df, geometry='home_point', crs=gdf.crs)
-    #
-    # # Filter trips where home points are within the given city polygon
-    # df = gdf_points[gdf_points['home_point'].within(area_polygon)]
-    # df = pd.DataFrame(df.drop(columns='home_point'))
+    # Create Point geometries for home locations
+    df['home_point'] = df.apply(lambda row: Point(row['home_x'], row['home_y']), axis=1)
 
-    # df.to_csv(analysis_zone_path + '\\microzensus\\population.csv')
-    # logging.info(f"Population data saved successfully in the {analysis_zone_path} directory and microzensus folder.")
+    # Convert the DataFrame to a GeoDataFrame
+    gdf_points = gpd.GeoDataFrame(df, geometry='home_point', crs=gdf.crs)
+
+    # Filter trips where home points are within the given city polygon
+    df = gdf_points[gdf_points['home_point'].within(area_polygon)]
+    df = pd.DataFrame(df.drop(columns='home_point'))
+
+    df.to_csv(analysis_zone_path + '\\microzensus\\population_home_inside.csv')
+    logging.info(f"Population data saved successfully in the {analysis_zone_path} directory and microzensus folder.")
 

@@ -14,8 +14,7 @@ def setup_logging(log_filename):
                         format='%(levelname)s   %(asctime)s   %(message)s')
     logging.info("All setting of the logging is done")
 
-<<<<<<< HEAD:scripts/common.py
-=======
+
 def get_log_filename():
     # Get the script file that was executed (even if this is imported)
     file_path = sys.argv[0]
@@ -23,7 +22,7 @@ def get_log_filename():
     log_filename = os.path.basename(file_path)
     log_filename = log_filename.replace(".py", ".log")
     return log_filename
->>>>>>> 308e8f92ddc5a1bc274491b1c662887dda4ed741:scripts/functions/commonFunctions.py
+
 
 def read_config(path='config.ini'):
     directory = os.getcwd()
