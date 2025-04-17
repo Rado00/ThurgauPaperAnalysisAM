@@ -264,9 +264,6 @@ if __name__ == '__main__':
     # Create activity chains
     df_activity_chains = filtered_trips_inside.groupby(['person_id']).apply(create_activity_chain).reset_index()
 
-    filtered_trips_inside.to_csv(analysis_zone_path + '\\microzensus\\trips_inside_O_and_D.csv')
-    logging.info(f"Trips saved successfully in the microzensus folder in the {analysis_zone_path} directory successfully")
-
     all_population = pd.read_csv(f"{analysis_zone_path}\\microzensus\\all_population.csv")
     population_home_inside = pd.read_csv(f"{analysis_zone_path}\\microzensus\\population_home_inside.csv")
 
