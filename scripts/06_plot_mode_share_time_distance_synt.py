@@ -28,10 +28,10 @@ if __name__ == '__main__':
     if not os.path.exists(plots_directory):
         os.makedirs(plots_directory)
 
-    data_path_clean = os.path.join(data_path, analysis_zone_name, clean_csv_folder, percentile)
+    data_path_clean = os.path.join(data_path, analysis_zone_name, "microzensus")
 
     # Read the clean csv files
-    df_trips_mic = pd.read_csv(f'{data_path_clean}\\trips_mic.csv')
+    df_trips_mic = pd.read_csv(f'{data_path_clean}\\trips_all_activities_inside_Mic.csv')
     logging.info(f"Reading the df_trips_mic csv file was successful.")
 
     df_mic_mode_share = df_trips_mic[
@@ -43,22 +43,28 @@ if __name__ == '__main__':
     df_mic_mode_share['travel_time'] = (pd.to_datetime(df_mic_mode_share['arrival_time']) - pd.to_datetime(
         df_mic_mode_share['departure_time'])).dt.total_seconds()
 
-    df_synt_mode_share = pd.read_csv(f'{pre_processed_data_path}\\travel_time_distance_mode_synt.csv')
-    df_sim_mode_share = pd.read_csv(f'{pre_processed_data_path}\\travel_time_distance_mode_sim.csv')
+    # df_synt_mode_share = pd.read_csv(f'{pre_processed_data_path}\\travel_time_distance_mode_synt.csv')
+    df_sim_mode_share = pd.read_csv(f'{pre_processed_data_path}\\trips_all_activities_inside_sim.csv')
 
     modes_to_remove = ['truck', 'outside']
 
-    df_synt_mode_share = df_synt_mode_share[~df_synt_mode_share['mode'].isin(modes_to_remove)]
+    df_sim_mode_share['longest_distance_mode'] = df_sim_mode_share['longest_distance_mode'].fillna(df_sim_mode_share['modes'])
+
+    df_sim_mode_share = df_sim_mode_share.rename(columns={'longest_distance_mode': 'mode'})
+
+    # df_synt_mode_share = df_synt_mode_share[~df_synt_mode_share['mode'].isin(modes_to_remove)]
     df_sim_mode_share = df_sim_mode_share[~df_sim_mode_share['mode'].isin(modes_to_remove)]
 
     # Capitalize and remove underscores from mode names for both dataframes
     df_mic_mode_share['mode'] = df_trips_mic['mode'].str.replace('_', ' ').str.title()
-    df_synt_mode_share['mode'] = df_synt_mode_share['mode'].str.replace('_', ' ').str.title()
+    # df_synt_mode_share['mode'] = df_synt_mode_share['mode'].str.replace('_', ' ').str.title()
     df_sim_mode_share['mode'] = df_sim_mode_share['mode'].str.replace('_', ' ').str.title()
 
     logging.info(f"Modes of the all dataframes have been capitalized and underscores have been removed.")
 
-    df_synt_mode_share['travel_time'] = pd.to_timedelta(df_synt_mode_share['travel_time']).dt.total_seconds()
+    df_sim_mode_share = df_sim_mode_share.rename(columns={'trav_time': 'travel_time'})
+
+    # df_synt_mode_share['travel_time'] = pd.to_timedelta(df_synt_mode_share['travel_time']).dt.total_seconds()
     df_sim_mode_share['travel_time'] = pd.to_timedelta(df_sim_mode_share['travel_time']).dt.total_seconds()
     logging.info(f"Travel time has been converted to seconds.")
 
@@ -81,11 +87,13 @@ if __name__ == '__main__':
                                                       mode_share_weighted_distance_mic[
                                                           'Total Weighted Distance'].sum()) * 100
 
-    mode_share_distance_synt = df_synt_mode_share.groupby('mode')[
-        'distance'].sum().reset_index()
-    mode_share_distance_synt.columns = ['Mode', 'Total Distance']
-    mode_share_distance_synt['Percentage'] = (mode_share_distance_synt['Total Distance'] / mode_share_distance_synt[
-        'Total Distance'].sum()) * 100
+    # mode_share_distance_synt = df_synt_mode_share.groupby('mode')[
+    #     'distance'].sum().reset_index()
+    # mode_share_distance_synt.columns = ['Mode', 'Total Distance']
+    # mode_share_distance_synt['Percentage'] = (mode_share_distance_synt['Total Distance'] / mode_share_distance_synt[
+    #     'Total Distance'].sum()) * 100
+
+    df_sim_mode_share = df_sim_mode_share.rename(columns={'traveled_distance': 'distance'})
 
     mode_share_distance_sim = df_sim_mode_share.groupby('mode')[
         'distance'].sum().reset_index()
@@ -119,14 +127,14 @@ if __name__ == '__main__':
     ))
 
     # Add bars for synthetic legs modes percentage
-    fig.add_trace(go.Bar(
-        x=mode_share_distance_synt['Mode'],
-        y=mode_share_distance_synt['Percentage'],
-        name='Synthetic',
-        text=mode_share_distance_synt['Percentage'].round(1),
-        textposition='outside',
-        marker_color='red'
-    ))
+    # fig.add_trace(go.Bar(
+    #     x=mode_share_distance_synt['Mode'],
+    #     y=mode_share_distance_synt['Percentage'],
+    #     name='Synthetic',
+    #     text=mode_share_distance_synt['Percentage'].round(1),
+    #     textposition='outside',
+    #     marker_color='red'
+    # ))
 
     # Add bars for synthetic legs modes percentage
     fig.add_trace(go.Bar(
@@ -177,11 +185,11 @@ if __name__ == '__main__':
                                                   mode_share_weighted_time_mic[
                                                       'Total Weighted Travel Time'].sum()) * 100
 
-    mode_share_time_synt = df_synt_mode_share.groupby('mode')[
-        'travel_time'].sum().reset_index()
-    mode_share_time_synt.columns = ['Mode', 'Total Travel Time']
-    mode_share_time_synt['Percentage'] = (mode_share_time_synt['Total Travel Time'] / mode_share_time_synt[
-        'Total Travel Time'].sum()) * 100
+    # mode_share_time_synt = df_synt_mode_share.groupby('mode')[
+    #     'travel_time'].sum().reset_index()
+    # mode_share_time_synt.columns = ['Mode', 'Total Travel Time']
+    # mode_share_time_synt['Percentage'] = (mode_share_time_synt['Total Travel Time'] / mode_share_time_synt[
+    #     'Total Travel Time'].sum()) * 100
 
     mode_share_time_sim = df_sim_mode_share.groupby('mode')[
         'travel_time'].sum().reset_index()
@@ -213,14 +221,14 @@ if __name__ == '__main__':
     ))
 
     # Add bars for synthetic legs modes percentage
-    fig.add_trace(go.Bar(
-        x=mode_share_time_synt['Mode'],
-        y=mode_share_time_synt['Percentage'],
-        name='Synthetic',
-        text=mode_share_time_synt['Percentage'].round(1),
-        textposition='outside',
-        marker_color='red'
-    ))
+    # fig.add_trace(go.Bar(
+    #     x=mode_share_time_synt['Mode'],
+    #     y=mode_share_time_synt['Percentage'],
+    #     name='Synthetic',
+    #     text=mode_share_time_synt['Percentage'].round(1),
+    #     textposition='outside',
+    #     marker_color='red'
+    # ))
 
     # Add bars for synthetic legs modes percentage
     fig.add_trace(go.Bar(
@@ -253,17 +261,20 @@ if __name__ == '__main__':
     mode_share_weighted_time_mic.columns = ['Mode', 'Total Weighted Travel Time Microcensus Weighted',
                                             'Percentage Weighted Microcensus']
     mode_share_time_sim.columns = ['Mode', 'Total Travel Time Simulation', 'Percentage Simulation']
-    mode_share_time_synt.columns = ['Mode', 'Total Travel Time Synthetic', 'Percentage Synthetic']
+    # mode_share_time_synt.columns = ['Mode', 'Total Travel Time Synthetic', 'Percentage Synthetic']
 
     mode_share_comparison_time = mode_share_time_mic.merge(mode_share_weighted_time_mic, on='Mode', how='outer').merge(
         mode_share_time_sim, on='Mode',
-        how='outer').merge(mode_share_time_synt, on='Mode', how='outer')
+        how='outer')
+
+    # .merge(mode_share_time_synt, on='Mode', how='outer')
 
     # Time is in seconds
     mode_share_comparison_time.columns = ['Mode', 'Total Travel Time Microcensus', 'Percentage Microcensus',
                                           'Total Weighted Travel Time Microcensus', 'Percentage Weighted Microcensus',
-                                          'Total Travel Time Simulation', 'Percentage Simulation',
-                                          'Total Travel Time Synthetic', 'Percentage Synthetic']
+                                          'Total Travel Time Simulation', 'Percentage Simulation']
+
+    # , 'Total Travel Time Synthetic', 'Percentage Synthetic'
 
     mode_share_comparison_time = mode_share_comparison_time.round(2)
     now = datetime.now().strftime("%Y_%m_%d_%H_%M_%S")
@@ -275,18 +286,21 @@ if __name__ == '__main__':
     mode_share_weighted_distance_mic.columns = ['Mode', 'Total Weighted Distance Microcensus',
                                                 'Percentage Weighted Microcensus']
     mode_share_distance_sim.columns = ['Mode', 'Total Distance Simulation', 'Percentage Simulation']
-    mode_share_distance_synt.columns = ['Mode', 'Total Distance Synthetic', 'Percentage Synthetic']
+    # mode_share_distance_synt.columns = ['Mode', 'Total Distance Synthetic', 'Percentage Synthetic']
 
     mode_share_comparison_distance = mode_share_distance_mic.merge(mode_share_weighted_distance_mic, on='Mode',
                                                                    how='outer').merge(
         mode_share_distance_sim, on='Mode',
-        how='outer').merge(mode_share_distance_synt, on='Mode', how='outer')
+        how='outer')
+
+    # .merge(mode_share_distance_synt, on='Mode', how='outer')
 
     # Distance is in meters
     mode_share_comparison_distance.columns = ['Mode', 'Total Distance Microcensus', 'Percentage Microcensus',
                                               'Total Weighted Distance Microcensus', 'Percentage Weighted Microcensus',
-                                              'Total Distance Simulation', 'Percentage Simulation',
-                                              'Total Distance Synthetic', 'Percentage Synthetic']
+                                              'Total Distance Simulation', 'Percentage Simulation']
+
+    # , 'Total Distance Synthetic', 'Percentage Synthetic'
 
     mode_share_comparison_distance = mode_share_comparison_distance.round(2)
 

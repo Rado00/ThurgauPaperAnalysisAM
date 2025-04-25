@@ -277,6 +277,8 @@ if __name__ == '__main__':
 
     population_with_trips_O_or_D.to_csv(analysis_zone_path + '\\microzensus\\population_at_least_one_activities_inside_Mic.csv', index=False)
 
+    trips = trips.merge(all_population[['person_id', 'household_weight']], on='person_id', how='left')
+
     # Filter the trips to include only those with origin inside or destination inside the area
     trips_inside = trips[trips['person_id'].isin(population_with_trips_O_and_D['person_id'])]
 
