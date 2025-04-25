@@ -252,14 +252,14 @@ if __name__ == '__main__':
     # The ids of the people who have trips inside the area but not outside
     unique_ids = ids_inside.difference(ids_rest)
 
-    filtered_trips_inside.to_csv(analysis_zone_path + '\\microzensus\\trips_inside_O_and_D.csv')
+    filtered_trips_inside.to_csv(analysis_zone_path + '\\microzensus\\trips_inside_O_and_D_Mic.csv')
 
     filtered_trips_inside_outside = trips[
         trips['origin_point'].apply(lambda point: point.within(area_polygon)) |
         trips['destination_point'].apply(lambda point: point.within(area_polygon))
         ]
 
-    filtered_trips_inside_outside.to_csv(analysis_zone_path + '\\microzensus\\trips_inside_O_or_D.csv', index=False)
+    filtered_trips_inside_outside.to_csv(analysis_zone_path + '\\microzensus\\trips_inside_O_or_D_Mic.csv', index=False)
 
     # Create activity chains
     df_activity_chains = filtered_trips_inside.groupby(['person_id']).apply(create_activity_chain).reset_index()
@@ -270,26 +270,26 @@ if __name__ == '__main__':
     # Filter the population to include only those with trips inside the area
     population_with_trips_O_and_D = all_population[all_population['person_id'].isin(unique_ids)]
 
-    population_with_trips_O_and_D.to_csv(analysis_zone_path + '\\microzensus\\population_all_activities_inside.csv', index=False)
+    population_with_trips_O_and_D.to_csv(analysis_zone_path + '\\microzensus\\population_all_activities_inside_Mic.csv', index=False)
 
     # Filter the population to include only those with trips origin inside or destination inside the area
     population_with_trips_O_or_D = all_population[all_population['person_id'].isin(filtered_trips_inside_outside['person_id'])]
 
-    population_with_trips_O_or_D.to_csv(analysis_zone_path + '\\microzensus\\population_at_least_one_activities_inside.csv', index=False)
+    population_with_trips_O_or_D.to_csv(analysis_zone_path + '\\microzensus\\population_at_least_one_activities_inside_Mic.csv', index=False)
 
     # Filter the trips to include only those with origin inside or destination inside the area
     trips_inside = trips[trips['person_id'].isin(population_with_trips_O_and_D['person_id'])]
 
-    trips_inside.to_csv(analysis_zone_path + '\\microzensus\\trips_all_activities_inside.csv', index=False)
+    trips_inside.to_csv(analysis_zone_path + '\\microzensus\\trips_all_activities_inside_Mic.csv', index=False)
 
     # Filter the trips to include only those with origin inside or destination inside the area
     trips_inside_outside = trips[trips['person_id'].isin(population_with_trips_O_or_D['person_id'])]
 
-    trips_inside_outside.to_csv(analysis_zone_path + '\\microzensus\\trips_at_least_one_activities_inside.csv', index=False)
+    trips_inside_outside.to_csv(analysis_zone_path + '\\microzensus\\trips_at_least_one_activities_inside_Mic.csv', index=False)
 
     trips_population_home_inside = trips[trips['person_id'].isin(population_home_inside['person_id'])]
 
-    trips_population_home_inside.to_csv(analysis_zone_path + '\\microzensus\\trips_population_home_inside.csv', index=False)
+    trips_population_home_inside.to_csv(analysis_zone_path + '\\microzensus\\trips_population_home_inside_Mic.csv', index=False)
 
     # Capitalize and remove underscores from mode names
     filtered_trips_inside['mode'] = filtered_trips_inside['mode'].str.replace('_', ' ').str.upper()
