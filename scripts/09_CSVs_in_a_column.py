@@ -173,7 +173,8 @@ if __name__ == '__main__':
             output_df = output_df.sort_values('Order').drop('Order', axis=1)
             output_df['Value with Comma'] = output_df['Value'].astype(str).str.replace('.', ',', regex=False)
             # Save DataFrame to CSV
-            output_df.to_csv(os.path.join(mode_share_directory, 'modalSplitCalibration.csv'), sep=';', index=False)
+            # TODO Change the sep to ;
+            output_df.to_csv(os.path.join(mode_share_directory, 'modalSplitCalibration.csv'), sep=',', index=False)
             print("Data successfully saved.")
         else:
             print("No data found in the files.")
