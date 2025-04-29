@@ -190,6 +190,8 @@ OUT -->:
 	trips_inside_O_or_D_sim.csv
 	population_with_trips_inside_O_and_D_sim.csv
 	population_with_trips_inside_O_or_D_sim.csv
+	population_home_inside_sim.csv
+	trips_population_home_inside_sim.csv
 
 		
 

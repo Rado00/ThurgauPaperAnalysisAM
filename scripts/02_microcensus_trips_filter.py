@@ -265,7 +265,10 @@ if __name__ == '__main__':
     df_activity_chains = filtered_trips_inside.groupby(['person_id']).apply(create_activity_chain).reset_index()
 
     all_population = pd.read_csv(f"{analysis_zone_path}\\microzensus\\all_population.csv")
+    # Recreate population_home_inside.csv if want to analyse w home inside
     # population_home_inside = pd.read_csv(f"{analysis_zone_path}\\microzensus\\population_home_inside.csv")
+    # trips_population_home_inside = trips[trips['person_id'].isin(population_home_inside['person_id'])]
+    # trips_population_home_inside.to_csv(analysis_zone_path + '\\microzensus\\trips_population_home_inside_Mic.csv', index=False)
 
     # Filter the population to include only those with trips inside the area
     population_with_trips_O_and_D = all_population[all_population['person_id'].isin(unique_ids)]
@@ -289,9 +292,7 @@ if __name__ == '__main__':
 
     trips_inside_outside.to_csv(analysis_zone_path + '\\microzensus\\trips_at_least_one_activities_inside_Mic.csv', index=False)
 
-    # trips_population_home_inside = trips[trips['person_id'].isin(population_home_inside['person_id'])]
 
-    # trips_population_home_inside.to_csv(analysis_zone_path + '\\microzensus\\trips_population_home_inside_Mic.csv', index=False)
 
     # Capitalize and remove underscores from mode names
     filtered_trips_inside['mode'] = filtered_trips_inside['mode'].str.replace('_', ' ').str.upper()
@@ -361,7 +362,8 @@ if __name__ == '__main__':
     # fig1.show()
     directory = os.getcwd()
     parent_directory = os.path.dirname(directory)
-    plots_directory = os.path.join(parent_directory, f'plots\\plots_{analysis_zone_name}')
+    plots_folder_name = sim_output_folder.split("\\")[-1]
+    plots_directory = os.path.join(parent_directory, f'plots\\plots_{plots_folder_name}')
     if not os.path.exists(plots_directory):
         os.makedirs(plots_directory)
     fig1.write_image(f"{plots_directory}\\purpose_distribution_Total_microcensus.png", scale=4)
