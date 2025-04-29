@@ -347,48 +347,32 @@ It could be handy if you're preparing documentation or slides.
 
 06_plot_mode_share_time_distance_synt.py
 -----------------------------------------
-2. Load Pre-Processed Data
-Read three datasets:
-
-Microcensus trips: trips_mic.csv
-
-Synthetic trips: travel_time_distance_mode_synt.csv
-
-Simulation trips: travel_time_distance_mode_sim.csv
+IN -->:
+	Microcensus trips: trips_mic.csv
+	Synthetic trips: travel_time_distance_mode_synt.csv
+	Simulation trips: travel_time_distance_mode_sim.csv
 
 Clean datasets:
+	Remove modes like "truck" and "outside."
+	Standardize mode names (capitalize, remove underscores).
+	Convert travel times to seconds.
 
-Remove modes like "truck" and "outside."
+Compute Mode Share by Distance
+	Microcensus:
+		Total distance
+		Distance weighted by household weight
 
-Standardize mode names (capitalize, remove underscores).
+	Synthetic and Simulation:
+		Compute total distance.
 
-Convert travel times to seconds.
+	For each: Calculate the percentage share per transportation mode.
 
-3. Compute Mode Share by Distance
-Microcensus:
-
-Compute both:
-
-Total distance
-
-Distance weighted by household weight
-
-Synthetic and Simulation:
-
-Compute total distance.
-
-For each: Calculate the percentage share per transportation mode.
-
-4. Plot Mode Share by Distance
-Create a grouped bar plot comparing the distance mode shares between:
-
-Microcensus (weighted)
-
-Microcensus (unweighted)
-
-Synthetic population
-
-Simulation output
+Plot Mode Share by Distance
+	Create a grouped bar plot comparing the distance mode shares between:
+		Microcensus (weighted)
+		Microcensus (unweighted)
+		Synthetic population
+		Simulation output
 
 Save the plot as a high-resolution image (Mode_share_by_Distance.png).
 
@@ -412,81 +396,14 @@ Create another grouped bar plot comparing travel time mode shares.
 
 Save the plot as a high-resolution image (Mode_share_by_Travel_Time.png).
 
-7. Export Comparison Tables
-Create two CSV files comparing:
+OUT -->:
+ Mode_share_time_comparison.csv
 
-Mode share by travel time: Mode_share_time_comparison.csv
-
-Mode share by distance: Mode_share_distance_comparison.csv
-
-Each table summarizes mode shares from Microcensus (weighted and unweighted), Synthetic, and Simulation data.
-
-✅ Overall:
-This script compares and visualizes the transportation mode shares across different datasets (microcensus, synthetic population, and simulation output) by distance traveled and by travel time, and saves the results into plots and CSV files.
-
-Would you also like me to draw a small diagram summarizing this workflow visually? 🎨📊
-It might make it easier to explain or present!
+ Mode_share_distance_comparison.csv
 
 
-06_plot_sim_modal_share_by_trips.py
------------------------------------------
-Sets up a logging file called 06_plot_sim_modal_share_by_trips.log.
 
-2. Prepare Paths
-Defines important folder paths:
 
-Where to find the simulation trips output (output_trips.csv).
-
-Where to find the shapefiles for zones.
-
-Where to save the plots (plots_directory).
-
-3. Load Simulation Trips
-Reads the output_trips.csv file from the simulation output.
-
-Selects relevant columns:
-
-euclidean_distance, longest_distance_mode, start_x, start_y, end_x, end_y.
-
-Renames them for easier handling.
-
-4. Filter and Process Trips
-Keeps only trips for specific modes: car_passenger, pt, walk, car, bike.
-
-Splits trips into:
-
-Start points (start_x, start_y).
-
-End points (end_x, end_y).
-
-Combines start and end points into a single DataFrame (df_duplicate_points_start_end).
-
-Halves the distance for each (since a trip's distance is split between start and end).
-
-Converts mode names to a clean format (e.g., car_passenger → Car Passenger).
-
-5. Assign Trips to Geographic Zones
-For each zone shapefile:
-
-Loads the zone geometry.
-
-Checks if trip points fall inside the zone.
-
-Counts how many trips by mode are inside each zone.
-
-Calculates the percentage share for each mode within the zone.
-
-Saves these results into a dictionary (arcgis_pro_dict).
-
-6. Save Output
-Converts the zone-by-mode results into a JSON format.
-
-Writes the results into sim_modal_share_trips.json, ready for plotting or mapping.
-
-✅ Final Output:
-A JSON file with mode share percentages per zone, based on simulation trip data.
-
-Would you also like me to format it like a script explanation (like the one you showed me at the beginning)? 🚀 If yes, I can prepare it right away!
 
 
 07_plot_smaller_zones_modal_split.py

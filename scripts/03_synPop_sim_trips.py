@@ -20,7 +20,7 @@ if __name__ == '__main__':
 
     # Read the XML data with a matsim library
     try:
-        output_trips_sim = pd.read_csv(os.path.join(output_folder_path, "output_trips.csv"), sep=';', low_memory=False, encoding='utf-8', dtype=str)
+        output_trips_sim = pd.read_csv(os.path.join(output_folder_path, "output_trips.csv.gz"), sep=';', low_memory=False, encoding='utf-8', dtype=str, compression='gzip', nrows=1000)
         logging.info("Output Trips data loaded successfully")
     except Exception as e:
         logging.error("Error loading network data: " + str(e))
@@ -34,9 +34,15 @@ if __name__ == '__main__':
     area_polygon = gdf.iloc[0]['geometry']
     logging.info("Shapefile loaded successfully and area_polygon created successfully")
 
+    output_trips_sim['start_x'] = output_trips_sim['start_x'].astype(float)
+    output_trips_sim['start_y'] = output_trips_sim['start_y'].astype(float)
+    output_trips_sim['end_x'] = output_trips_sim['end_x'].astype(float)
+    output_trips_sim['end_y'] = output_trips_sim['end_y'].astype(float)
+
     # Create Point geometries for origin and destination
-    output_trips_sim['origin_point'] = output_trips_sim.apply(lambda row: Point(row['start_x'], row['start_y']), axis=1)
-    output_trips_sim['destination_point'] = output_trips_sim.apply(lambda row: Point(row['end_x'], row['end_y']), axis=1)
+    output_trips_sim['origin_point'] = gpd.points_from_xy(output_trips_sim['start_x'], output_trips_sim['start_y'])
+    output_trips_sim['destination_point'] = gpd.points_from_xy(output_trips_sim['end_x'], output_trips_sim['end_y'])
+
     logging.info("Origin and destination points created successfully")
 
     # First convert coordinates to float
@@ -53,17 +59,20 @@ if __name__ == '__main__':
                                        crs=gdf.crs)
     logging.info("Origin and destination GeoSeries created successfully")
 
-    # Use vectorized 'within'
-    mask_origin_inside = origin_points.within(area_polygon)
-    mask_destination_inside = destination_points.within(area_polygon)
-    logging.info("Masks created successfully")
-
     # Filtered dataframe (O AND D inside)
-    filtered_trips_inside = output_trips_sim[mask_origin_inside & mask_destination_inside]
+    filtered_trips_inside = output_trips_sim[
+        origin_points.within(area_polygon) &
+        destination_points.within(area_polygon)
+        ]
+
     logging.info("Trips filtered successfully based on the shapefile polygon successfully")
 
     # Filtered dataframe (O OR D inside)
-    filtered_trips_inside_outside = output_trips_sim[mask_origin_inside | mask_destination_inside]
+    filtered_trips_inside_outside = output_trips_sim[
+        origin_points.within(area_polygon) &
+        destination_points.within(area_polygon)
+        ]
+
     logging.info("Trips filtered successfully based on the shapefile polygon successfully")
 
     rest_of_trips = output_trips_sim.drop(filtered_trips_inside.index)
@@ -77,58 +86,57 @@ if __name__ == '__main__':
     # The ids of the people who have trips inside the area but not outside
     unique_ids = ids_inside.difference(ids_rest)
 
+    if not os.path.exists(pre_processed_data_path):
+        os.makedirs(pre_processed_data_path)
     filtered_trips_inside.to_csv(f'{pre_processed_data_path}\\trips_inside_O_and_D_sim.csv', index=False)
 
     filtered_trips_inside_outside.to_csv(f'{pre_processed_data_path}\\trips_inside_O_or_D_sim.csv', index=False)
     logging.info("Both Filtered trips saved successfully")
 
-    plans_sim = matsim.plan_reader_dataframe(os.path.join(output_folder_path, "output_persons.csv.gz"))
-    df_persons_sim = plans_sim.persons
+    df_persons_sim = pd.read_csv(os.path.join(output_folder_path, "output_persons.csv.gz"), sep=';', low_memory=False,
+                                   encoding='utf-8', dtype=str, compression='gzip')
+
     logging.info("Output plans data loaded successfully")
 
     # Filter the population to include only those with trips inside the area
-    population_with_trips_O_and_D = df_persons_sim[df_persons_sim['id'].isin(unique_ids)]
+    population_with_trips_O_and_D = df_persons_sim[df_persons_sim['person'].isin(unique_ids)]
     logging.info("Population with trips inside the area filtered successfully")
 
     population_with_trips_O_and_D.to_csv(f'{pre_processed_data_path}\\population_with_trips_inside_O_and_D_sim.csv', index=False)
 
     # Filter the population to include only those with trips origin inside or destination inside the area
     population_with_trips_O_or_D = df_persons_sim[
-        df_persons_sim['id'].isin(filtered_trips_inside_outside['person'])]
+        df_persons_sim['person'].isin(filtered_trips_inside_outside['person'])]
     logging.info("Population with trips inside the area filtered successfully")
 
     population_with_trips_O_or_D.to_csv(f'{pre_processed_data_path}\\population_with_trips_inside_O_or_D_sim.csv', index=False)
 
-    trips_all_activities_inside = output_trips_sim[output_trips_sim['person'].isin(population_with_trips_O_and_D['id'])]
+    trips_all_activities_inside = output_trips_sim[output_trips_sim['person'].isin(population_with_trips_O_and_D['person'])]
 
     trips_all_activities_inside.to_csv(f'{pre_processed_data_path}\\trips_all_activities_inside_sim.csv', index=False)
 
-    trips_at_least_one_activity_inside = output_trips_sim[output_trips_sim['person'].isin(population_with_trips_O_or_D['id'])]
+    trips_at_least_one_activity_inside = output_trips_sim[output_trips_sim['person'].isin(population_with_trips_O_or_D['person'])]
 
     trips_at_least_one_activity_inside.to_csv(f'{pre_processed_data_path}\\trips_at_least_one_activity_inside_sim.csv', index=False)
 
     logging.info("Trips with at least one activity inside the area filtered successfully")
 
-    df_persons_sim['home_x'] = df_persons_sim['home_x'].astype(float)
-    df_persons_sim['home_y'] = df_persons_sim['home_y'].astype(float)
+    # df_persons_sim['home_x'] = df_persons_sim['home_x'].astype(float)
+    # df_persons_sim['home_y'] = df_persons_sim['home_y'].astype(float)
 
-    # Create origin and destination GeoSeries
-    home_points = gpd.GeoSeries(gpd.points_from_xy(df_persons_sim['home_x'], df_persons_sim['home_y']),
-                                  crs=gdf.crs)
+    # # HOME SHP FILTER - TO ADD WHEN NEEDED, BECAUSE NOW CONSUMES A LOT OF TIME
+    # # Create origin and destination GeoSeries
+    # home_points = gpd.GeoSeries(gpd.points_from_xy(df_persons_sim['home_x'], df_persons_sim['home_y']),
+    #                               crs=gdf.crs)
+    # mask_home_inside = home_points.within(area_polygon)
+    # population_home_inside = df_persons_sim[mask_home_inside]
+    # population_home_inside.to_csv(f'{pre_processed_data_path}\\population_home_inside_sim.csv', index=False)
+    # logging.info("Population with home inside the area filtered successfully")
 
-    mask_home_inside = home_points.within(area_polygon)
-
-    population_home_inside = df_persons_sim[mask_home_inside]
-
-    population_home_inside.to_csv(f'{pre_processed_data_path}\\population_home_inside_sim.csv', index=False)
-
-    logging.info("Population with home inside the area filtered successfully")
-
-    trips_population_home_inside = output_trips_sim[output_trips_sim['person'].isin(population_home_inside['id'])]
-
-    trips_population_home_inside.to_csv(f'{pre_processed_data_path}\\trips_population_home_inside_sim.csv', index=False)
-
-    logging.info("Trips with home inside the area filtered successfully")
+    # # TRIPS FOR MODAL SPLIT HOMES INIDE - AS ABOVE
+    # trips_population_home_inside = output_trips_sim[output_trips_sim['person'].isin(population_home_inside['person'])]
+    # trips_population_home_inside.to_csv(f'{pre_processed_data_path}\\trips_population_home_inside_sim.csv', index=False)
+    # logging.info("Trips with home inside the area filtered successfully")
 
 
 

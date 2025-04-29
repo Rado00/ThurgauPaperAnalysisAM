@@ -38,13 +38,9 @@ echo Running 06_plot_mode_share_time_distance_synt.py...
 python 06_plot_mode_share_time_distance_synt.py
 if %ERRORLEVEL% neq 0 goto :error
 
-echo Running 06_plot_mode_share_time_distance_synt.py...
-python 06_plot_mode_share_time_distance_synt.py
-if %ERRORLEVEL% neq 0 goto :error
-
-echo Running 07_plot_smaller_zones_modal_split.py...
-python 07_plot_smaller_zones_modal_split.py
-if %ERRORLEVEL% neq 0 goto :error
+REM echo Running 07_plot_smaller_zones_modal_split.py...
+REM python 07_plot_smaller_zones_modal_split.py
+REM if %ERRORLEVEL% neq 0 goto :error
 
 echo Running 08_plot_the_clean_csv_files.py...
 python 08_plot_the_clean_csv_files.py
@@ -54,9 +50,9 @@ echo Running 09_CSVs_in_a_column.py...
 python 09_CSVs_in_a_column.py
 if %ERRORLEVEL% neq 0 goto :error
 
-echo Running 10_DRT_Data_Analysis.py...
-python 10_DRT_Data_Analysis.py
-if %ERRORLEVEL% neq 0 goto :error
+REM echo Running 10_DRT_Data_Analysis.py...
+REM python 10_DRT_Data_Analysis.py
+REM if %ERRORLEVEL% neq 0 goto :error
 
 echo All scripts executed successfully!
 exit /b 0
