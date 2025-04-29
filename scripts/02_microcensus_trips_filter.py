@@ -265,7 +265,7 @@ if __name__ == '__main__':
     df_activity_chains = filtered_trips_inside.groupby(['person_id']).apply(create_activity_chain).reset_index()
 
     all_population = pd.read_csv(f"{analysis_zone_path}\\microzensus\\all_population.csv")
-    population_home_inside = pd.read_csv(f"{analysis_zone_path}\\microzensus\\population_home_inside.csv")
+    # population_home_inside = pd.read_csv(f"{analysis_zone_path}\\microzensus\\population_home_inside.csv")
 
     # Filter the population to include only those with trips inside the area
     population_with_trips_O_and_D = all_population[all_population['person_id'].isin(unique_ids)]
@@ -289,9 +289,9 @@ if __name__ == '__main__':
 
     trips_inside_outside.to_csv(analysis_zone_path + '\\microzensus\\trips_at_least_one_activities_inside_Mic.csv', index=False)
 
-    trips_population_home_inside = trips[trips['person_id'].isin(population_home_inside['person_id'])]
+    # trips_population_home_inside = trips[trips['person_id'].isin(population_home_inside['person_id'])]
 
-    trips_population_home_inside.to_csv(analysis_zone_path + '\\microzensus\\trips_population_home_inside_Mic.csv', index=False)
+    # trips_population_home_inside.to_csv(analysis_zone_path + '\\microzensus\\trips_population_home_inside_Mic.csv', index=False)
 
     # Capitalize and remove underscores from mode names
     filtered_trips_inside['mode'] = filtered_trips_inside['mode'].str.replace('_', ' ').str.upper()

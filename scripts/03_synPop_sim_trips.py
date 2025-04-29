@@ -82,7 +82,7 @@ if __name__ == '__main__':
     filtered_trips_inside_outside.to_csv(f'{pre_processed_data_path}\\trips_inside_O_or_D_sim.csv', index=False)
     logging.info("Both Filtered trips saved successfully")
 
-    plans_sim = matsim.plan_reader_dataframe(os.path.join(output_folder_path, "output_plans.xml.gz"))
+    plans_sim = matsim.plan_reader_dataframe(os.path.join(output_folder_path, "output_persons.csv.gz"))
     df_persons_sim = plans_sim.persons
     logging.info("Output plans data loaded successfully")
 
