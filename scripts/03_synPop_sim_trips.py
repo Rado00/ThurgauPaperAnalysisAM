@@ -99,3 +99,39 @@ if __name__ == '__main__':
 
     population_with_trips_O_or_D.to_csv(f'{pre_processed_data_path}\\population_with_trips_inside_O_or_D_sim.csv', index=False)
 
+    trips_all_activities_inside = output_trips_sim[output_trips_sim['person'].isin(population_with_trips_O_and_D['id'])]
+
+    trips_all_activities_inside.to_csv(f'{pre_processed_data_path}\\trips_all_activities_inside_sim.csv', index=False)
+
+    trips_at_least_one_activity_inside = output_trips_sim[output_trips_sim['person'].isin(population_with_trips_O_or_D['id'])]
+
+    trips_at_least_one_activity_inside.to_csv(f'{pre_processed_data_path}\\trips_at_least_one_activity_inside_sim.csv', index=False)
+
+    logging.info("Trips with at least one activity inside the area filtered successfully")
+
+    df_persons_sim['home_x'] = df_persons_sim['home_x'].astype(float)
+    df_persons_sim['home_y'] = df_persons_sim['home_y'].astype(float)
+
+    # Create origin and destination GeoSeries
+    home_points = gpd.GeoSeries(gpd.points_from_xy(df_persons_sim['home_x'], df_persons_sim['home_y']),
+                                  crs=gdf.crs)
+
+    mask_home_inside = home_points.within(area_polygon)
+
+    population_home_inside = df_persons_sim[mask_home_inside]
+
+    population_home_inside.to_csv(f'{pre_processed_data_path}\\population_home_inside_sim.csv', index=False)
+
+    logging.info("Population with home inside the area filtered successfully")
+
+    trips_population_home_inside = output_trips_sim[output_trips_sim['person'].isin(population_home_inside['id'])]
+
+    trips_population_home_inside.to_csv(f'{pre_processed_data_path}\\trips_population_home_inside_sim.csv', index=False)
+
+    logging.info("Trips with home inside the area filtered successfully")
+
+
+
+
+
+
