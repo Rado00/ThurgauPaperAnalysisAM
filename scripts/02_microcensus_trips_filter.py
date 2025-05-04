@@ -19,7 +19,7 @@ import logging
 import pyproj
 import numpy as np
 import pandas as pd
-import plotly.express as px
+import matplotlib.pyplot as plt
 import geopandas as gpd
 from shapely.geometry import Point
 from functions.commonFunctions import *
@@ -46,8 +46,8 @@ def execute(path):
     # Specify encoding
     encoding = "latin1"
 
-    df_mz_trips = pd.read_csv(f"{path}\\microzensus\\wege.csv", encoding=encoding)
-    df_mz_stages = pd.read_csv(f"{path}\\microzensus\\etappen.csv", encoding=encoding)
+    df_mz_trips = pd.read_csv(f"{path}\\microzensus\\wege.csv", encoding=encoding, nrows=1000)
+    df_mz_stages = pd.read_csv(f"{path}\\microzensus\\etappen.csv", encoding=encoding, nrows=1000)
     print(df_mz_trips.shape)
 
     df_mz_trips = df_mz_trips[[
@@ -301,20 +301,20 @@ if __name__ == '__main__':
     mode_counts = filtered_trips_inside['mode'].value_counts().reset_index()
     mode_counts.columns = ['Mode', 'Count']
 
-    # Plot total counts
-    fig1 = px.bar(mode_counts, x='Mode', y='Count', title='Mode Share Distribution - Total Counts',
-                  labels={'Count': 'Total Count', 'Mode': 'Mode of Transportation'})
-    fig1.update_layout(width=600, height=600)
-    # fig1.show()
+    # # Plot total counts
+    # fig1 = px.bar(mode_counts, x='Mode', y='Count', title='Mode Share Distribution - Total Counts',
+    #               labels={'Count': 'Total Count', 'Mode': 'Mode of Transportation'})
+    # fig1.update_layout(width=600, height=600)
+    # # fig1.show()
 
     # Calculate percentage distribution for each mode
     mode_counts['Percentage'] = (mode_counts['Count'] / mode_counts['Count'].sum()) * 100
 
-    # Plot percentage distribution
-    fig2 = px.bar(mode_counts, x='Mode', y='Percentage', title='Mode Share Distribution - Percentage',
-                  labels={'Percentage': 'Percentage (%)', 'Mode': 'Mode of Transportation'})
-    fig2.update_layout(width=600, height=600)
-    # fig2.show()
+    # # Plot percentage distribution
+    # fig2 = px.bar(mode_counts, x='Mode', y='Percentage', title='Mode Share Distribution - Percentage',
+    #               labels={'Percentage': 'Percentage (%)', 'Mode': 'Mode of Transportation'})
+    # fig2.update_layout(width=600, height=600)
+    # # fig2.show()
 
     # Convert seconds to datetime and resample times to 15-minute bins
     filtered_trips_inside['departure_time'] = pd.to_datetime(filtered_trips_inside['departure_time'], unit='s').dt.floor('30T').dt.time
@@ -334,18 +334,16 @@ if __name__ == '__main__':
     # Combine data
     time_counts = pd.concat([departure_counts, arrival_counts], axis=0)
 
-    # Plot using Plotly Express
-    fig = px.bar(time_counts, x='Time', y='Count', color='Type',
-                 title='Departure and Arrival Times over a Day',
-                 labels={'Count': 'Count', 'Time': 'Time of Day'},
-                 barmode='group')
-
-    # Customize x-axis ticks and scale y-axis
-    fig.update_xaxes(type='category', tickangle=45, dtick=1)
-    fig.update_yaxes(range=[0, time_counts['Count'].max()])
-
-    # Show plot
-    fig.update_layout(width=1200, height=600)
+    # # Plot using Plotly Express
+    # fig = px.bar(time_counts, x='Time', y='Count', color='Type',
+    #              title='Departure and Arrival Times over a Day',
+    #              labels={'Count': 'Count', 'Time': 'Time of Day'},
+    #              barmode='group')
+    #
+    # # Customize x-axis ticks and scale y-axis
+    # fig.update_xaxes(type='category', tickangle=45, dtick=1)
+    # fig.update_yaxes(range=[0, time_counts['Count'].max()])
+    # fig.update_layout(width=1200, height=600)
     # fig.show()
 
     # Capitalize and remove underscores from purpose names
@@ -356,30 +354,37 @@ if __name__ == '__main__':
     purpose_counts.columns = ['Purpose', 'Count']
 
     # Plot total counts
-    fig1 = px.bar(purpose_counts, x='Purpose', y='Count', title='Purpose Distribution - Total Counts',
-                  labels={'Count': 'Total Count', 'Purpose': 'Purpose'})
-    fig1.update_layout(width=600, height=600)
-    # fig1.show()
     directory = os.getcwd()
     parent_directory = os.path.dirname(directory)
     plots_folder_name = sim_output_folder.split("\\")[-1]
     plots_directory = os.path.join(parent_directory, f'plots\\plots_{plots_folder_name}')
     if not os.path.exists(plots_directory):
         os.makedirs(plots_directory)
-    fig1.write_image(f"{plots_directory}\\purpose_distribution_Total_microcensus.png", scale=4)
+    plt.figure(figsize=(10, 6))
+    plt.bar(purpose_counts['Purpose'], purpose_counts['Count'], color='skyblue')
+    plt.title('Purpose Distribution - Total Counts')
+    plt.xlabel('Purpose')
+    plt.ylabel('Count')
+    plt.xticks(rotation=45, ha='right')
+    plt.tight_layout()
+    plt.savefig(f"{plots_directory}\\purpose_distribution_Total_microcensus.png")
+    plt.close()
+
     logging.info(f"Purpose distribution total microcensus plotted successfully and saved in the {plots_directory} directory")
 
     # Calculate percentage distribution for each purpose
     purpose_counts['Percentage'] = (purpose_counts['Count'] / purpose_counts['Count'].sum()) * 100
 
     # Plot percentage distribution
-    fig2 = px.bar(purpose_counts, x='Purpose', y='Percentage', title='Purpose Distribution - Percentage',
-                  labels={'Percentage': 'Percentage (%)', 'Purpose': 'Purpose'})
-    fig2.update_layout(width=600, height=600)
-    # fig2.show()
-
-    fig2.write_image(f"{plots_directory}\\purpose_distribution_pct_microcensus.png", scale=4)
-
+    plt.figure(figsize=(10, 6))
+    plt.bar(purpose_counts['Purpose'], purpose_counts['Percentage'], color='lightgreen')
+    plt.title('Purpose Distribution - Percentage')
+    plt.xlabel('Purpose')
+    plt.ylabel('Percentage (%)')
+    plt.xticks(rotation=45, ha='right')
+    plt.tight_layout()
+    plt.savefig(f"{plots_directory}\\purpose_distribution_pct_microcensus.png")
+    plt.close()
     logging.info(f"There exist {df_activity_chains.activity_chain.nunique()} number of unique activity chains.")
 
     # filtered_trips[['HHNR', 'WEGNR', 'purpose']]
@@ -391,9 +396,14 @@ if __name__ == '__main__':
     chain_counts.columns = ['Activity Chain', 'Count']
 
     # Plot total counts
-    fig = px.bar(chain_counts, x='Activity Chain', y='Count', title='Activity Chain Distribution - Total Counts',
-                 labels={'Count': 'Total Count', 'Activity Chain': 'Activity Chain'})
-    fig.update_layout(width=1600, height=800)
-    # fig.show()
-    fig.write_image(f"{plots_directory}\\activity_chain_distribution_Total_microcensus.png", scale=4)
-    logging.info(f"Activity chain distribution total microcensus plotted successfully and saved in the {plots_directory} directory")
+    plt.figure(figsize=(16, 8))
+    plt.bar(chain_counts['Activity Chain'], chain_counts['Count'], color='cornflowerblue')
+    plt.title('Activity Chain Distribution - Total Counts')
+    plt.xlabel('Activity Chain')
+    plt.ylabel('Total Count')
+    plt.xticks(rotation=45, ha='right')
+    plt.tight_layout()
+    plt.savefig(f"{plots_directory}\\activity_chain_distribution_Total_microcensus.png")
+    plt.close()
+    logging.info(
+        f"Activity chain distribution total microcensus plotted successfully and saved in the {plots_directory} directory")
