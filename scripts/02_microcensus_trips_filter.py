@@ -46,8 +46,8 @@ def execute(path):
     # Specify encoding
     encoding = "latin1"
 
-    df_mz_trips = pd.read_csv(f"{path}\\microzensus\\wege.csv", encoding=encoding, nrows=1000)
-    df_mz_stages = pd.read_csv(f"{path}\\microzensus\\etappen.csv", encoding=encoding, nrows=1000)
+    df_mz_trips = pd.read_csv(f"{path}\\microzensus\\wege.csv", encoding=encoding)
+    df_mz_stages = pd.read_csv(f"{path}\\microzensus\\etappen.csv", encoding=encoding)
     print(df_mz_trips.shape)
 
     df_mz_trips = df_mz_trips[[
