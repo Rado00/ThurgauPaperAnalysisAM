@@ -301,20 +301,8 @@ if __name__ == '__main__':
     mode_counts = filtered_trips_inside['mode'].value_counts().reset_index()
     mode_counts.columns = ['Mode', 'Count']
 
-    # # Plot total counts
-    # fig1 = px.bar(mode_counts, x='Mode', y='Count', title='Mode Share Distribution - Total Counts',
-    #               labels={'Count': 'Total Count', 'Mode': 'Mode of Transportation'})
-    # fig1.update_layout(width=600, height=600)
-    # # fig1.show()
-
     # Calculate percentage distribution for each mode
     mode_counts['Percentage'] = (mode_counts['Count'] / mode_counts['Count'].sum()) * 100
-
-    # # Plot percentage distribution
-    # fig2 = px.bar(mode_counts, x='Mode', y='Percentage', title='Mode Share Distribution - Percentage',
-    #               labels={'Percentage': 'Percentage (%)', 'Mode': 'Mode of Transportation'})
-    # fig2.update_layout(width=600, height=600)
-    # # fig2.show()
 
     # Convert seconds to datetime and resample times to 15-minute bins
     filtered_trips_inside['departure_time'] = pd.to_datetime(filtered_trips_inside['departure_time'], unit='s').dt.floor('30T').dt.time
@@ -333,18 +321,6 @@ if __name__ == '__main__':
 
     # Combine data
     time_counts = pd.concat([departure_counts, arrival_counts], axis=0)
-
-    # # Plot using Plotly Express
-    # fig = px.bar(time_counts, x='Time', y='Count', color='Type',
-    #              title='Departure and Arrival Times over a Day',
-    #              labels={'Count': 'Count', 'Time': 'Time of Day'},
-    #              barmode='group')
-    #
-    # # Customize x-axis ticks and scale y-axis
-    # fig.update_xaxes(type='category', tickangle=45, dtick=1)
-    # fig.update_yaxes(range=[0, time_counts['Count'].max()])
-    # fig.update_layout(width=1200, height=600)
-    # fig.show()
 
     # Capitalize and remove underscores from purpose names
     filtered_trips_inside['purpose'] = filtered_trips_inside['purpose'].str.replace('_', ' ').str.upper()
