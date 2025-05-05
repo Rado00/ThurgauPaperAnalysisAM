@@ -202,15 +202,15 @@ Microcensus:
 
 Compute both:
 
-Total travel time
+	Total travel time
 
-Travel time weighted by household weight
+	Travel time weighted by household weight
 
-Synthetic and Simulation:
+	Synthetic and Simulation:
 
-Compute total travel time.
+	Compute total travel time.
 
-For each: Calculate the percentage share per transportation mode.
+	For each: Calculate the percentage share per transportation mode.
 
 6. Plot Mode Share by Travel Time
 Create another grouped bar plot comparing travel time mode shares.
@@ -229,81 +229,44 @@ OUT -->:
 
 09_plot_smaller_zones_modal_split.py
 -----------------------------------------
-Setup and Load Configurations:
 
-Loads general settings (paths, folders) using read_config().
-
-Sets up logging to track progress.
-
-Prepares paths to the necessary directories (e.g., where shapefiles and CSVs are stored).
-
-Read Mode Share Data:
-
-Loads two datasets:
-
-Synthetic population mode share (travel_time_distance_mode_synt.csv)
-
-Simulated mode share (travel_time_distance_mode_sim.csv)
-
-Logs how many rows were read.
+IN-->:
+		travel_time_distance_mode_synt.csv
+		travel_time_distance_mode_sim.csv
 
 Clean and Standardize the Data:
 
-Removes unwanted modes like truck and outside.
-
-Formats the mode names (e.g., capitalize and remove underscores).
-
-Converts travel times from timedelta to seconds.
-
-Creates a geometry (Point) from x and y coordinates for spatial filtering.
+	Removes unwanted modes like truck and outside.
+	Formats the mode names (e.g., capitalize and remove underscores).
+	Converts travel times from timedelta to seconds.
+	Creates a geometry (Point) from x and y coordinates for spatial filtering.
 
 Prepare Geographic Data:
-
-Loads shapefiles for different analysis zones (Zone01, Zone02, ..., Zone25).
-
-For each zone:
-
-Loads its polygon boundary.
-
-Filters the synthetic and simulated trips that fall within that zone.
+	Loads shapefiles for different analysis zones (Zone01, Zone02, ..., Zone25).
+	Filters the synthetic and simulated trips that fall within that zone.
 
 Calculate and Compare Mode Shares (for each zone):
 
-By Distance:
+	By Distance:
+		Calculates total distance per mode for both synthetic and simulated trips.
+		Computes the percentage share of each mode.
+		Plots a grouped bar chart comparing Synthetic vs Simulation (Distance share).
 
-Calculates total distance per mode for both synthetic and simulated trips.
+	By Travel Time:
+		Calculates total travel time per mode.
+		Computes percentage share of each mode.
+		Plots a grouped bar chart comparing Synthetic vs Simulation (Travel Time share).
 
-Computes the percentage share of each mode.
+	By Number of Trips:
+		Counts the number of trips per mode.
+		Computes percentage share by trip count.
+		Plots a grouped bar chart comparing Synthetic vs Simulation (Number of Trips).
 
-Plots a grouped bar chart comparing Synthetic vs Simulation (Distance share).
-
-By Travel Time:
-
-Calculates total travel time per mode.
-
-Computes percentage share of each mode.
-
-Plots a grouped bar chart comparing Synthetic vs Simulation (Travel Time share).
-
-By Number of Trips:
-
-Counts the number of trips per mode.
-
-Computes percentage share by trip count.
-
-Plots a grouped bar chart comparing Synthetic vs Simulation (Number of Trips).
-
-Save Outputs:
-
-Saves the generated plots for each zone:
-
-Distance share plot.
-
-Travel time share plot.
-
-Trip number share plot.
-
-Saves detailed CSVs comparing synthetic and simulated mode shares.
+OUT-->:
+		Distance share plot.
+		Travel time share plot.
+		Trip number share plot.
+		Saves detailed CSVs comparing synthetic and simulated mode shares.
 
 Export a JSON for ArcGIS Pro:
 
