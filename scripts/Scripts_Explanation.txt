@@ -6,22 +6,22 @@ FLOW OF THURGAU ANALYSIS SCRIPTS
 
 01_microcensus_population_filter.py (1 TIME FOR SHP)
 -----------------------------------------
-IN --> microzensus/zielpersonen.csv , microzensus/haushalte.csv
+IN --> 	microzensus/zielpersonen.csv , microzensus/haushalte.csv
 		process and merge
 OUT --> microzensus/all_population.csv
 
 
 02_microcensus_trips_filter.py (1 TIME FOR SHP)
 -----------------------------------------
-IN --> microcensus/wege.csv , microcensus/etappen.csv, all_population.csv
+IN --> 	microcensus/wege.csv , microcensus/etappen.csv, all_population.csv
 		process and divide mic trips based on agents' plan
 OUT -->:
-	microcensus/row_trips.csv (all trips)
-	microcensus/trips_inside_O_and_D.csv
-	microcensus/trips_inside_O_or_D.csv
-	microcensus/population_all_activities_inside.csv
-	microcensus/population_at_least_one_activities_inside.csv
-	Various plots in the plots/ folder
+		microcensus/row_trips.csv (all trips)
+		microcensus/trips_inside_O_and_D.csv
+		microcensus/trips_inside_O_or_D.csv
+		microcensus/population_all_activities_inside.csv
+		microcensus/population_at_least_one_activities_inside.csv
+		Various plots in the plots/ folder
 	
 CanDo: add filter based on home (commented code)
 
@@ -29,125 +29,80 @@ CanDo: add filter based on home (commented code)
 
 03_synPop_and_sim_create_csv_files.py (SynPop CSVs only 1 TIME FOR SHP - to be commented)
 -----------------------------------------
-IN --> output_households.xml.gz , output_plans.xml.gz
+IN --> 	output_households.xml.gz , output_plans.xml.gz
 		no filters
 OUT -->:
 		0_PreProcess_CSVs_SyntheticAndOutputs\100pct\df_activity_sim.csv
 		...\df_legs_sim.csv
-		df_persons_sim.csv
-		df_routes_sim.csv
+		...\df_persons_sim.csv
+		...\df_routes_sim.csv
 		
-        df_activity_synt.csv
-        df_legs_synt.csv
-        df_persons_synt.csv
-        df_routes_synt.csv
-        df_households_synt.csv
+        ...\df_activity_synt.csv
+        ...\df_legs_synt.csv
+        ...\df_persons_synt.csv
+        ...\df_routes_synt.csv
+        ...\df_households_synt.csv
 		
 
-04_synPop_sim_trips.py
+04_synPop_sim_trips.py (Home population and trips commented because now not necessary)
 -----------------------------------------
 
 IN --> "sim"\output_trips.csv, output_persons.csv.gz
 		WE CHECKED output_plans.persons and output_persons and they are both 398.245 of which 22999 are trucks
 		different trips filters 
 OUT -->:
-	trips_inside_O_and_D_sim.csv
-	trips_inside_O_or_D_sim.csv
-	population_with_trips_inside_O_and_D_sim.csv
-	population_with_trips_inside_O_or_D_sim.csv
-	population_home_inside_sim.csv
-	trips_population_home_inside_sim.csv
+		0_PreProcess_CSVs_SyntheticAndOutputs\100pct\trips_inside_O_and_D_sim.csv
+		...\trips_inside_O_or_D_sim.csv
+		...\population_with_trips_inside_O_and_D_sim.csv
+		...\population_with_trips_inside_O_or_D_sim.csv
+		...\trips_at_least_one_activity_inside_sim.csv
+		...\trips_all_activities_inside_sim.csv
+		**cmntd** ...\population_home_inside_sim.csv
+		**cmntd** ...\trips_population_home_inside_sim.csv
 
 		
 
-04_generate_clean_csv_files.py
+05_generate_clean_csv_files.py
 -----------------------------------------
-2. Define helper functions
-process_time_data(df):
-Converts departure and travel times from strings into seconds and computes arrival times.
-
-map_person_id_to_activities(df_activities, df_persons):
-Maps household IDs from persons to activities based on home coordinates and fills missing values.
-
-process_activity_and_legs_data(df_activity, df_legs, values_to_remove, modes_to_remove):
-
-Removes unwanted activity types (e.g., freight_loading, outside) and modes (e.g., truck, outside).
-
 Ensures persons with only one "Home" activity are handled properly.
 
-safe_convert_time(time_str):
-Safely converts a time string into a 30-minute rounded datetime.time object.
+IN-->:
+		0_PreProcess_CSVs_SyntheticAndOutputs\100pct\df_activity_sim.csv
+		...\df_legs_sim.csv
+		...\df_persons_sim.csv
+		...\df_routes_sim.csv
+		
+		...\df_activity_synt.csv (SynPop CSVs only 1 TIME FOR SHP - to be commented)
+        ...\df_legs_synt.csv
+        ...\df_persons_synt.csv
+        ...\df_routes_synt.csv
+        ...\df_households_synt.csv
+		
 
-group_cars(value):
-Groups car numbers ≥3 into a single category 3+.
+		...\population_with_trips_inside_O_and_D_sim.csv
+		...\population_with_trips_inside_O_or_D_sim.csv
+		...\trips_at_least_one_activity_inside_sim.csv
+		...\trips_all_activities_inside_sim.csv
+		df_population_mic
+		df_trips_mic.
 
+processes various things
 create_activity_chain_mic(group) and create_activity_chain_syn(group):
 Create activity chain summaries from trip/activity sequences.
 
-execute_household_just_person_household_weight(path):
-Reads household weights from the microcensus.
-
-3. Main script execution
-3.1 Read paths and configuration
-Loads paths for simulation and analysis data based on a configuration file.
-
-3.2 Read CSV data
-Reads the simulated synthetic data:
-df_activity_sim, df_legs_sim, df_persons_sim, df_routes_sim.
-Reads the Microcensus data:
-df_population_mic, df_trips_mic.
-
-3.3 Preprocess travel times
-Processes departure and travel times in simulation data.
-
-3.4 Map person IDs to activities
-Matches activities to persons via home coordinates.
-
-3.5 Clean activities and legs
-Removes unwanted activity types and travel modes from simulation data.
-
-3.6 Reformat time columns
-Rounds departure and arrival times of microcensus trips to 30-minute bins.
-
-3.7 Clean mode and type labels
-Capitalizes mode/type names and removes underscores.
-
-3.8 Remove invalid persons
-Filters persons under age 6 from the simulation dataset.
-
-3.9 Standardize variables
-Standardizes variables like number_of_cars and sex labels.
-
-3.10 Filter invalid "Home" activities
-Removes home activities that incorrectly have both start_time and end_time.
-
-3.11 Create Activity Chains
-Summarizes trips into "activity chains" (e.g., H-W-H).
-
-3.12 Merge household weights
-Adds household weights to the microcensus trip data.
-
-3.13 Save cleaned CSV outputs
-Writes the cleaned datasets:
-	trips_mic.csv
-	activity_chains_sim.csv
-	activity_chains_mic.csv
-	population_clean_mic.csv
-	population_clean_sim.csv
-	legs_clean_sim.csv
+OUT-->:
+		trips_mic.csv
+		activity_chains_sim.csv
+		activity_chains_mic.csv
+		population_clean_mic.csv
+		population_clean_sim.csv
+		legs_clean_sim.csv
 
 (Commented out: synthetic population outputs)
 
-✅ In short:
-This script cleans, standardizes, maps, processes, and outputs both simulation and microcensus datasets for downstream analyses (e.g., mode choice calibration, trip generation).
-
-Would you also like a quick diagram showing the flow of the main data transformations? 📈
-(It could make it even easier to visualize.) 🚀
 
 
-
-
-05_synt_and_sim_mode_share_by_time_distance.py
+06_synt_and_sim_mode_share_by_time_distance.py
 -----------------------------------------
 2. Define Helper Function
 compute_avg_coordinates(start_link, end_link, link_data):
@@ -206,11 +161,12 @@ Would you also like a small diagram showing this flow visually? 🎯
 It could be handy if you're preparing documentation or slides.
 
 
+07_NotUsed_plot_sim_modal_share_by_trips
+--------------------------------------------
 
 
 
-
-06_plot_mode_share_time_distance_synt.py
+08_plot_mode_share_time_distance_synt.py
 -----------------------------------------
 IN -->:
 	Microcensus trips: trips_mic.csv
@@ -271,7 +227,7 @@ OUT -->:
 
 
 
-07_plot_smaller_zones_modal_split.py
+09_plot_smaller_zones_modal_split.py
 -----------------------------------------
 Setup and Load Configurations:
 
@@ -366,7 +322,7 @@ Would you also like a visual diagram summarizing this full workflow in a nice sc
 (very useful if you have to present or document it later!)
 
 
-08_plot_the_clean_csv_files.py
+10_plot_the_clean_csv_files.py
 -----------------------------------------
 2. Load Data
 Reads various CSV files:
@@ -458,7 +414,7 @@ Would you also like me to help you structure all these steps into a nice formatt
 (Example: a clean script description or README)
 
 
-09_CSVs_in_a_column.py
+11_CSVs_in_a_column.py
 -----------------------------------------
 2. Load configuration
 Reads configuration parameters like:

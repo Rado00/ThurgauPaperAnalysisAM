@@ -1,0 +1,53 @@
+05_generate_clean_csv_files.py
+-----------------------------------------
+2. FUNCTIONS THAT DO:
+travel times from strings into seconds and computes arrival times.
+
+map_person_id_to_activities(df_activities, df_persons):
+
+process_activity_and_legs_data(df_activity, df_legs, values_to_remove, modes_to_remove):
+
+Removes unwanted activity types (e.g., freight_loading, outside) and modes (e.g., truck, outside).
+
+Ensures persons with only one "Home" activity are handled properly.
+
+safe_convert_time(time_str):
+Safely converts a time string into a 30-minute rounded datetime.time object.
+
+group_cars(value):
+Groups car numbers ≥3 into a single category 3+.
+
+create_activity_chain_mic(group) and create_activity_chain_syn(group):
+Create activity chain summaries from trip/activity sequences.
+
+3. Main script execution
+
+3.3 Preprocess travel times
+Processes departure and travel times in simulation data.
+
+3.4 Map person IDs to activities
+Matches activities to persons via home coordinates.
+
+3.5 Clean activities and legs
+Removes unwanted activity types and travel modes from simulation data.
+
+3.6 Reformat time columns
+Rounds departure and arrival times of microcensus trips to 30-minute bins.
+
+3.7 Clean mode and type labels
+Capitalizes mode/type names and removes underscores.
+
+3.8 Remove invalid persons
+Filters persons under age 6 from the simulation dataset.
+
+3.9 Standardize variables
+Standardizes variables like number_of_cars and sex labels.
+
+3.10 Filter invalid "Home" activities
+Removes home activities that incorrectly have both start_time and end_time.
+
+3.11 Create Activity Chains
+Summarizes trips into "activity chains" (e.g., H-W-H).
+
+3.12 Merge household weights
+Adds household weights to the microcensus trip data.
