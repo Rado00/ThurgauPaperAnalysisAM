@@ -14,49 +14,49 @@ REM echo Running 01_microcensus_population_filter.py...
 REM python 01_microcensus_pre-process.py
 REM if %ERRORLEVEL% neq 0 goto :error
 
-echo Running 02_microcensus_trips_filter.py...
-python 02_microcensus_trips_filter.py
-if %ERRORLEVEL% neq 0 goto :error
-
-REM echo Running 03_synPop_and_sim_create_csv_files.py...
-REM python 03_synPop_and_sim_create_csv_files.py
+REM echo Running 02_microcensus_trips_filter.py...
+REM python 02_microcensus_trips_filter.py
 REM if %ERRORLEVEL% neq 0 goto :error
 
-echo Running 03_synPop_sim_trips.py...
-python 03_synPop_sim_trips.py
+echo Running 03_synPop_and_sim_create_csv_files.py...
+python 03_synPop_and_sim_create_csv_files.py
 if %ERRORLEVEL% neq 0 goto :error
 
-REM echo Running 04_generate_clean_csv_files.py...
-REM python 04_generate_clean_csv_files.py
+echo Running 04_synPop_sim_trips.py...
+python 04_synPop_sim_trips.py
+if %ERRORLEVEL% neq 0 goto :error
+
+REM echo Running 05_generate_clean_csv_files.py...
+REM python 05_generate_clean_csv_files.py
 REM if %ERRORLEVEL% neq 0 goto :error
 
-REM echo Running 05_synt_and_sim_mode_share_by_time_distance.py...
-REM python 05_synt_and_sim_mode_share_by_time_distance.py
+REM echo Running 06_synt_and_sim_mode_share_by_time_distance.py...
+REM python 06_synt_and_sim_mode_share_by_time_distance.py
 REM if %ERRORLEVEL% neq 0 goto :error
 
-echo Running 06_plot_mode_share_time_distance_synt.py...
-python 06_plot_mode_share_time_distance_synt.py
+REM echo Running 07_NotUsed_plot_sim_modal_share_by_trips.py...
+REM python 07_NotUsed_plot_sim_modal_share_by_trips.py
+REM if %ERRORLEVEL% neq 0 goto :error
+
+echo Running 08_plot_mode_share_time_distance_synt.py...
+python 08_plot_mode_share_time_distance_synt.py
 if %ERRORLEVEL% neq 0 goto :error
 
-echo Running 06_plot_mode_share_time_distance_synt.py...
-python 06_plot_mode_share_time_distance_synt.py
+REM echo Running 09_plot_smaller_zones_modal_split.py...
+REM python 09_plot_smaller_zones_modal_split.py
+REM if %ERRORLEVEL% neq 0 goto :error
+
+echo Running 10_plot_the_clean_csv_files.py...
+python 10_plot_the_clean_csv_files.py
 if %ERRORLEVEL% neq 0 goto :error
 
-echo Running 07_plot_smaller_zones_modal_split.py...
-python 07_plot_smaller_zones_modal_split.py
+echo Running 11_CSVs_in_a_column.py...
+python 11_CSVs_in_a_column.py
 if %ERRORLEVEL% neq 0 goto :error
 
-echo Running 08_plot_the_clean_csv_files.py...
-python 08_plot_the_clean_csv_files.py
-if %ERRORLEVEL% neq 0 goto :error
-
-echo Running 09_CSVs_in_a_column.py...
-python 09_CSVs_in_a_column.py
-if %ERRORLEVEL% neq 0 goto :error
-
-echo Running 10_DRT_Data_Analysis.py...
-python 10_DRT_Data_Analysis.py
-if %ERRORLEVEL% neq 0 goto :error
+REM echo Running 12_DRT_Data_Analysis.py...
+REM python 12_DRT_Data_Analysis.py
+REM if %ERRORLEVEL% neq 0 goto :error
 
 echo All scripts executed successfully!
 exit /b 0

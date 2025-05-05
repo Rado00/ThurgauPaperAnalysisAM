@@ -1,0 +1,90 @@
+02_microcensus_trips_filter.py
+-----------------------------------------
+Purpose: Prepare and filter microcensus trips and stages for further simulation, focusing on trips within a target area.
+
+wege.csv 193.880 rows (trips) -- Swiss trips for 57k
+etappen.csv 279.173 (legs)
+
+
+	1. Load Microcensus Data
+		Load trips (wege.csv) and stages (etappen.csv) from the microcensus data folder.
+		Keep only essential columns like trip modes, purposes, coordinates, distances, etc.
+
+	2. Recode Transport Modes
+		Assign simplified transport modes based on wmittel codes (e.g., car, pt, bike, walk, unknown).
+		Create a mode_detailed variable for more detailed distinctions (e.g., taxi, plane).
+
+	3. Identify Car Passenger Trips
+		Identify if a person was a passenger (stage with f51300 == 8).
+		Label these trips accordingly as "car_passenger".
+
+	4. Recode Trip Purposes
+		Simplify the trip purposes (e.g., work, education, shop, leisure, home, other).
+		If the return purpose (wzweck2) is given, reassign trip as returning "home".
+
+	5. Adjust Times and IDs
+		Convert departure and arrival times from minutes to seconds.
+		Add person_id and trip_id fields.
+
+	6. Transform Coordinates: 	Convert origin, destination, and home coordinates from CH1903 to CH1903+ CRS using pyproj.
+
+	7. Compute Crowfly Distances
+		Calculate the straight-line (Euclidean) distance between trip origins and destinations.
+
+	8. Calculate Activity Durations
+		For each activity, estimate the duration as the difference between arrival and next trip’s departure time.
+
+	9. Filter Individuals with not reliable data
+		Remove persons who have:
+			Trips with "unknown" mode.
+			Trips that do not end at home.
+			Trips that do not start from home.
+			
+		FOR THURGAU ENL:
+	(193880, 116)
+	(143098, 5)
+	  Removed 213 persons with trips with unknown mode or unknown purpose
+	  Removed 1302 persons with trips not ending with 'home'
+	  Removed 4238 persons with trips not starting at home location
+
+
+	10. Add Parking Costs (???)
+		Merge parking cost information from the stages dataset (f51330).
+		Set missing parking costs to 0.
+
+	11. Adjust Network Distance
+		Convert reported distances to meters.
+
+	12. Filter Based on Shapefile (Target Area)
+		Filter trips:
+			Trips entirely inside the area (origin AND destination inside).
+			Trips partially inside (origin OR destination inside).
+			Save both filtered datasets separately.
+
+	13. Generate Activity Chains
+		For each person, generate a simple chain of activity purposes (e.g., H-W-H-S-H).
+
+	14. Filter Population Files
+		Read all_population.csv 
+		Create and save:
+			Individuals whose trips start and end inside.
+			Individuals with at least one trip inside.
+			Trips associated with these individuals.
+
+	15. Visualizations
+		Plot and save:
+			Mode share (total counts and percentages).
+			Departure and arrival times throughout the day.
+			Trip purposes (total counts and percentages).
+			Activity chain distributions.
+			
+IN --> microcensus/wege.csv , microcensus/etappen.csv, all_population.csv
+		process and divide mic trips based on agents' plan
+OUT -->:
+	microcensus/row_trips.csv (all trips)
+	microcensus/trips_inside_O_and_D.csv
+
+@@ -120,6 +22,8 @@ OUT -->:
+	microcensus/population_all_activities_inside.csv
+	microcensus/population_at_least_one_activities_inside.csv
+	Various plots in the plots/ folder

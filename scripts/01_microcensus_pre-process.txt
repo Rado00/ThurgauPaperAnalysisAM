@@ -1,0 +1,34 @@
+01_microcensus_population_filter.py
+-----------------------------------------
+
+1. Load and Process Microcensus Data
+	With execute_person(path) we:
+		Loads zielpersonen.csv (individuals)
+		Renames and re-codes key variables:
+			age, sex, marital_status, employed, etc.
+			Access to transport modes (e.g., car_availability, driving_license)
+			Subscriptions (GA, Halbtax, etc.)
+			Weekend flag and education level
+			Creates age classes and fixes marital status for young individuals
+		Returns a cleaned DataFrame of individuals
+		
+	🏘With execute_household(path) we:
+		Loads haushalte.csv (households)
+		Renames and calculates:
+			Household size, cars, bikes, income
+			Converts coordinates from CH1903 to LV95 (CH1903+)
+			Classifies cars, bikes, household size
+			Infers spatial region (sp_region)
+		Returns a cleaned DataFrame of households
+
+2. Merge Person + Household Data from 2 to one Data Frame
+	Merges individuals with their household info on person_id
+	Saves the full merged population to all_population.csv
+
+IMPORTANT
+In Microcensus no children below 6 year old
+Number of persons 57090 inside zielpersonen.csv and haushalte.csv, also the same in the population.csv data frame.
+
+IN --> microzensus/zielpersonen.csv , microzensus/haushalte.csv
+
+OUT --> microzensus/all_population.csv

@@ -1,118 +1,20 @@
 
-EXPLANATION OF THURGAU ANALYSIS SCRIPTS
+FLOW OF THURGAU ANALYSIS SCRIPTS
 -----------------------------------------
 
 
 
-01_microcensus_population_filter.py
+01_microcensus_population_filter.py (1 TIME FOR SHP)
 -----------------------------------------
-
-1. Load and Process Microcensus Data
-	With execute_person(path) we:
-		Loads zielpersonen.csv (individuals)
-		Renames and re-codes key variables:
-			age, sex, marital_status, employed, etc.
-			Access to transport modes (e.g., car_availability, driving_license)
-			Subscriptions (GA, Halbtax, etc.)
-			Weekend flag and education level
-			Creates age classes and fixes marital status for young individuals
-		Returns a cleaned DataFrame of individuals
-		
-	🏘With execute_household(path) we:
-		Loads haushalte.csv (households)
-		Renames and calculates:
-			Household size, cars, bikes, income
-			Converts coordinates from CH1903 to LV95 (CH1903+)
-			Classifies cars, bikes, household size
-			Infers spatial region (sp_region)
-		Returns a cleaned DataFrame of households
-
-2. Merge Person + Household Data from 2 to one Data Frame
-	Merges individuals with their household info on person_id
-	Saves the full merged population to all_population.csv
-
-IMPORTANT
-In Microcensus no children below 6 year old
-Number of persons 57090 inside zielpersonen.csv and haushalte.csv, also the same in the population.csv data frame.
-
 IN --> microzensus/zielpersonen.csv , microzensus/haushalte.csv
-
+		process and merge
 OUT --> microzensus/all_population.csv
 
 
-02_microcensus_trips_filter.py
+02_microcensus_trips_filter.py (1 TIME FOR SHP)
 -----------------------------------------
-Purpose: Prepare and filter microcensus trips and stages for further simulation, focusing on trips within a target area.
-
-wege.csv 193.880 rows (trips) -- Swiss trips for 57k
-etappen.csv 279.173 (legs)
-
-
-	1. Load Microcensus Data
-		Load trips (wege.csv) and stages (etappen.csv) from the microcensus data folder.
-		Keep only essential columns like trip modes, purposes, coordinates, distances, etc.
-
-	2. Recode Transport Modes
-		Assign simplified transport modes based on wmittel codes (e.g., car, pt, bike, walk, unknown).
-		Create a mode_detailed variable for more detailed distinctions (e.g., taxi, plane).
-
-	3. Identify Car Passenger Trips
-		Identify if a person was a passenger (stage with f51300 == 8).
-		Label these trips accordingly as "car_passenger".
-
-	4. Recode Trip Purposes
-		Simplify the trip purposes (e.g., work, education, shop, leisure, home, other).
-		If the return purpose (wzweck2) is given, reassign trip as returning "home".
-
-	5. Adjust Times and IDs
-		Convert departure and arrival times from minutes to seconds.
-		Add person_id and trip_id fields.
-
-	6. Transform Coordinates: 	Convert origin, destination, and home coordinates from CH1903 to CH1903+ CRS using pyproj.
-
-	7. Compute Crowfly Distances
-		Calculate the straight-line (Euclidean) distance between trip origins and destinations.
-
-	8. Calculate Activity Durations
-		For each activity, estimate the duration as the difference between arrival and next trip’s departure time.
-
-	9. Filter Individuals with not reliable data
-		Remove persons who have:
-			Trips with "unknown" mode.
-			Trips that do not end at home.
-			Trips that do not start from home.
-
-	10. Add Parking Costs (???)
-		Merge parking cost information from the stages dataset (f51330).
-		Set missing parking costs to 0.
-
-	11. Adjust Network Distance
-		Convert reported distances to meters.
-
-	12. Filter Based on Shapefile (Target Area)
-		Filter trips:
-			Trips entirely inside the area (origin AND destination inside).
-			Trips partially inside (origin OR destination inside).
-			Save both filtered datasets separately.
-
-	13. Generate Activity Chains
-		For each person, generate a simple chain of activity purposes (e.g., H-W-H-S-H).
-
-	14. Filter Population Files
-		Read all_population.csv 
-		Create and save:
-			Individuals whose trips start and end inside.
-			Individuals with at least one trip inside.
-			Trips associated with these individuals.
-
-	15. Visualizations
-		Plot and save:
-			Mode share (total counts and percentages).
-			Departure and arrival times throughout the day.
-			Trip purposes (total counts and percentages).
-			Activity chain distributions.
-			
 IN --> microcensus/wege.csv , microcensus/etappen.csv, all_population.csv
+		process and divide mic trips based on agents' plan
 OUT -->:
 	microcensus/row_trips.csv (all trips)
 	microcensus/trips_inside_O_and_D.csv
@@ -120,76 +22,41 @@ OUT -->:
 	microcensus/population_all_activities_inside.csv
 	microcensus/population_at_least_one_activities_inside.csv
 	Various plots in the plots/ folder
+	
+CanDo: add filter based on home (commented code)
 
 
 
-
-
-03_synPop_and_sim_create_csv_files.py
+03_synPop_and_sim_create_csv_files.py (SynPop CSVs only 1 TIME FOR SHP - to be commented)
 -----------------------------------------
-(Not using it now)	
 IN --> output_households.xml.gz , output_plans.xml.gz
+		no filters
 OUT -->:
-		df_activity_sim.csv
-		df_legs_sim.csv
+		0_PreProcess_CSVs_SyntheticAndOutputs\100pct\df_activity_sim.csv
+		...\df_legs_sim.csv
 		df_persons_sim.csv
 		df_routes_sim.csv
 		
+        df_activity_synt.csv
+        df_legs_synt.csv
+        df_persons_synt.csv
+        df_routes_synt.csv
+        df_households_synt.csv
+		
 
-03_synPop_sim_trips.py
+04_synPop_sim_trips.py
 -----------------------------------------
 
-2. Load Simulation Trips Data
-	Read the MATSim output_trips.csv file into a pandas DataFrame (output_trips_sim).
-
-	If loading fails, the script logs an error and exits.
-
-3. Load Area Polygon
-	Load a shapefile (geographic boundary) using geopandas.
-
-	Extract the first geometry from the shapefile as the area_polygon.
-
-4. Create Points from Trip Coordinates
-	Create Point geometries for:
-
-	Origin (start_x, start_y)
-
-	Destination (end_x, end_y)
-
-	Add these as new columns to output_trips_sim.
-
-5. Coordinate Conversion
-	Ensure that trip coordinate columns (start_x, start_y, end_x, end_y) are floats for correct spatial operations.
-
-6. Create Origin and Destination GeoSeries
-	Convert origins and destinations into GeoSeries using the loaded shapefile CRS (Coordinate Reference System).
-
-7. Spatial Filtering
-	Filter trips:
-		O and D inside: Both origin and destination inside the polygon.
-		O or D inside: Either origin or destination inside the polygon.
-		Save these filtered trip datasets as CSV files.
-
-8. Identify Population Subsets
-	Identify persons who have trips both origin and destination inside (unique_ids).
-	Identify persons who have trips at least origin or destination inside.
-
-9. Load Simulation Population Plans
-	Load MATSim population plans (output_plans.xml.gz) using matsim.plan_reader_dataframe().
-	WE CHECKED output_plans.persons and output_persons and they are both 398.245 of which 22999 are trucks
-
-10. Filter and Save Population Subsets
-	Save population files:
-		Population with trips inside both origin and destination.
-		Population with trips inside either origin or destination.
-		Save these filtered populations as separate CSV files.
-
-IN --> output_trips.csv , output_persons.csv.gz
+IN --> "sim"\output_trips.csv, output_persons.csv.gz
+		WE CHECKED output_plans.persons and output_persons and they are both 398.245 of which 22999 are trucks
+		different trips filters 
 OUT -->:
 	trips_inside_O_and_D_sim.csv
 	trips_inside_O_or_D_sim.csv
 	population_with_trips_inside_O_and_D_sim.csv
 	population_with_trips_inside_O_or_D_sim.csv
+	population_home_inside_sim.csv
+	trips_population_home_inside_sim.csv
 
 		
 
@@ -345,48 +212,32 @@ It could be handy if you're preparing documentation or slides.
 
 06_plot_mode_share_time_distance_synt.py
 -----------------------------------------
-2. Load Pre-Processed Data
-Read three datasets:
-
-Microcensus trips: trips_mic.csv
-
-Synthetic trips: travel_time_distance_mode_synt.csv
-
-Simulation trips: travel_time_distance_mode_sim.csv
+IN -->:
+	Microcensus trips: trips_mic.csv
+	Synthetic trips: travel_time_distance_mode_synt.csv
+	Simulation trips: travel_time_distance_mode_sim.csv
 
 Clean datasets:
+	Remove modes like "truck" and "outside."
+	Standardize mode names (capitalize, remove underscores).
+	Convert travel times to seconds.
 
-Remove modes like "truck" and "outside."
+Compute Mode Share by Distance
+	Microcensus:
+		Total distance
+		Distance weighted by household weight
 
-Standardize mode names (capitalize, remove underscores).
+	Synthetic and Simulation:
+		Compute total distance.
 
-Convert travel times to seconds.
+	For each: Calculate the percentage share per transportation mode.
 
-3. Compute Mode Share by Distance
-Microcensus:
-
-Compute both:
-
-Total distance
-
-Distance weighted by household weight
-
-Synthetic and Simulation:
-
-Compute total distance.
-
-For each: Calculate the percentage share per transportation mode.
-
-4. Plot Mode Share by Distance
-Create a grouped bar plot comparing the distance mode shares between:
-
-Microcensus (weighted)
-
-Microcensus (unweighted)
-
-Synthetic population
-
-Simulation output
+Plot Mode Share by Distance
+	Create a grouped bar plot comparing the distance mode shares between:
+		Microcensus (weighted)
+		Microcensus (unweighted)
+		Synthetic population
+		Simulation output
 
 Save the plot as a high-resolution image (Mode_share_by_Distance.png).
 
@@ -410,81 +261,14 @@ Create another grouped bar plot comparing travel time mode shares.
 
 Save the plot as a high-resolution image (Mode_share_by_Travel_Time.png).
 
-7. Export Comparison Tables
-Create two CSV files comparing:
+OUT -->:
+ Mode_share_time_comparison.csv
 
-Mode share by travel time: Mode_share_time_comparison.csv
-
-Mode share by distance: Mode_share_distance_comparison.csv
-
-Each table summarizes mode shares from Microcensus (weighted and unweighted), Synthetic, and Simulation data.
-
-✅ Overall:
-This script compares and visualizes the transportation mode shares across different datasets (microcensus, synthetic population, and simulation output) by distance traveled and by travel time, and saves the results into plots and CSV files.
-
-Would you also like me to draw a small diagram summarizing this workflow visually? 🎨📊
-It might make it easier to explain or present!
+ Mode_share_distance_comparison.csv
 
 
-06_plot_sim_modal_share_by_trips.py
------------------------------------------
-Sets up a logging file called 06_plot_sim_modal_share_by_trips.log.
 
-2. Prepare Paths
-Defines important folder paths:
 
-Where to find the simulation trips output (output_trips.csv).
-
-Where to find the shapefiles for zones.
-
-Where to save the plots (plots_directory).
-
-3. Load Simulation Trips
-Reads the output_trips.csv file from the simulation output.
-
-Selects relevant columns:
-
-euclidean_distance, longest_distance_mode, start_x, start_y, end_x, end_y.
-
-Renames them for easier handling.
-
-4. Filter and Process Trips
-Keeps only trips for specific modes: car_passenger, pt, walk, car, bike.
-
-Splits trips into:
-
-Start points (start_x, start_y).
-
-End points (end_x, end_y).
-
-Combines start and end points into a single DataFrame (df_duplicate_points_start_end).
-
-Halves the distance for each (since a trip's distance is split between start and end).
-
-Converts mode names to a clean format (e.g., car_passenger → Car Passenger).
-
-5. Assign Trips to Geographic Zones
-For each zone shapefile:
-
-Loads the zone geometry.
-
-Checks if trip points fall inside the zone.
-
-Counts how many trips by mode are inside each zone.
-
-Calculates the percentage share for each mode within the zone.
-
-Saves these results into a dictionary (arcgis_pro_dict).
-
-6. Save Output
-Converts the zone-by-mode results into a JSON format.
-
-Writes the results into sim_modal_share_trips.json, ready for plotting or mapping.
-
-✅ Final Output:
-A JSON file with mode share percentages per zone, based on simulation trip data.
-
-Would you also like me to format it like a script explanation (like the one you showed me at the beginning)? 🚀 If yes, I can prepare it right away!
 
 
 07_plot_smaller_zones_modal_split.py
