@@ -1,0 +1,56 @@
+04_synPop_sim_trips.py
+-----------------------------------------
+
+2. Load Simulation Trips Data
+	Read the MATSim output_trips.csv file into a pandas DataFrame (output_trips_sim).
+
+	If loading fails, the script logs an error and exits.
+
+3. Load Area Polygon
+	Load a shapefile (geographic boundary) using geopandas.
+
+	Extract the first geometry from the shapefile as the area_polygon.
+
+4. Create Points from Trip Coordinates
+	Create Point geometries for:
+
+	Origin (start_x, start_y)
+
+	Destination (end_x, end_y)
+
+	Add these as new columns to output_trips_sim.
+
+5. Coordinate Conversion
+	Ensure that trip coordinate columns (start_x, start_y, end_x, end_y) are floats for correct spatial operations.
+
+6. Create Origin and Destination GeoSeries
+	Convert origins and destinations into GeoSeries using the loaded shapefile CRS (Coordinate Reference System).
+
+7. Spatial Filtering
+	Filter trips:
+		O and D inside: Both origin and destination inside the polygon.
+		O or D inside: Either origin or destination inside the polygon.
+		Save these filtered trip datasets as CSV files.
+
+8. Identify Population Subsets
+	Identify persons who have trips both origin and destination inside (unique_ids).
+	Identify persons who have trips at least origin or destination inside.
+
+9. Load Simulation Population Plans
+	Load MATSim population plans (output_plans.xml.gz) using matsim.plan_reader_dataframe().
+	WE CHECKED output_plans.persons and output_persons and they are both 398.245 of which 22999 are trucks
+
+10. Filter and Save Population Subsets
+	Save population files:
+		Population with trips inside both origin and destination.
+		Population with trips inside either origin or destination.
+		Save these filtered populations as separate CSV files.
+
+IN --> output_trips.csv , output_persons.csv.gz
+OUT -->:
+	trips_inside_O_and_D_sim.csv
+	trips_inside_O_or_D_sim.csv
+	population_with_trips_inside_O_and_D_sim.csv
+	population_with_trips_inside_O_or_D_sim.csv
+	population_home_inside_sim.csv
+	trips_population_home_inside_sim.csv

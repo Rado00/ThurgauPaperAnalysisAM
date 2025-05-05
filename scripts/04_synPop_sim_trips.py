@@ -121,10 +121,10 @@ if __name__ == '__main__':
 
     logging.info("Trips with at least one activity inside the area filtered successfully")
 
+    # # HOME SHP FILTER - TO ADD WHEN NEEDED, BECAUSE NOW CONSUMES A LOT OF TIME
     # df_persons_sim['home_x'] = df_persons_sim['home_x'].astype(float)
     # df_persons_sim['home_y'] = df_persons_sim['home_y'].astype(float)
 
-    # # HOME SHP FILTER - TO ADD WHEN NEEDED, BECAUSE NOW CONSUMES A LOT OF TIME
     # # Create origin and destination GeoSeries
     # home_points = gpd.GeoSeries(gpd.points_from_xy(df_persons_sim['home_x'], df_persons_sim['home_y']),
     #                               crs=gdf.crs)
