@@ -14,7 +14,6 @@ if __name__ == '__main__':
     analysis_zone_path = os.path.join(data_path, analysis_zone_name)
 
     # Create directory for the zone
-    # scenario_path: str = os.path.join(data_path, simulation_zone_name, scenario, percentile)
     output_folder_path: str = os.path.join(data_path, simulation_zone_name, sim_output_folder)
     pre_processed_data_path = os.path.join(data_path, analysis_zone_name, csv_folder, percentile)
 
