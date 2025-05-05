@@ -20,7 +20,7 @@ if __name__ == '__main__':
 
     # Read the XML data with a matsim library
     try:
-        output_trips_sim = pd.read_csv(os.path.join(output_folder_path, "output_trips.csv"), sep=';', low_memory=False, encoding='utf-8', dtype=str)
+        output_trips_sim = pd.read_csv(os.path.join(output_folder_path, "output_trips.csv"), sep=';', low_memory=False, encoding='utf-8', dtype=str, nrows=1000)
         logging.info("Output Trips data loaded successfully")
     except Exception as e:
         logging.error("Error loading network data: " + str(e))

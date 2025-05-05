@@ -32,7 +32,7 @@ if __name__ == '__main__':
 
     # Read the clean csv files
     data_path_clean = os.path.join(data_path, analysis_zone_name, clean_csv_folder, percentile)
-    df_trips_mic = pd.read_csv(f'{data_path_clean}\\trips_mic.csv')
+    df_trips_mic = pd.read_csv(f'{data_path_clean}\\trips_all_activities_inside_Mic.csv')
     # df_trips_synt = pd.read_csv(f'{data_path_clean}\\trips_synt.csv')
     # df_trips_sim = pd.read_csv(f'{data_path_clean}\\trips_sim.csv')
 
