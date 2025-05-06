@@ -44,8 +44,9 @@ OUT -->:
         ...\df_households_synt.csv
 		
 
-04_synPop_sim_trips.py (Home population and trips commented because now not necessary)
+04_synPop_sim_trips.py (1h)(Home population and trips commented because now not necessary)
 -----------------------------------------
+nrows = 1000 nei test
 
 IN --> "sim"\output_trips.csv, output_persons.csv.gz
 		WE CHECKED output_plans.persons and output_persons and they are both 398.245 of which 22999 are trucks
@@ -379,62 +380,16 @@ Would you also like me to help you structure all these steps into a nice formatt
 
 11_CSVs_in_a_column.py
 -----------------------------------------
-2. Load configuration
-Reads configuration parameters like:
+IN-->:
+		mode_share_trip_comparison.csv
+		Mode_share_distance_comparison.csv
+		Mode_share_time_comparison.csv
 
-data_path, simulation_zone_name, scenario, sim_output_folder, etc.
+mode_mappings, ,to. , organises in a single CSV
 
-Locates the output folder where previous plots and mode share CSV files are stored.
+OUT-->:
+		mode_share_directory\modalSplitCalibration.csv
 
-3. Define target files and labels
-Lists three important CSV files to work with:
-
-mode_share_trip_comparison.csv
-
-Mode_share_distance_comparison.csv
-
-Mode_share_time_comparison.csv
-
-Sets a dictionary (mode_mappings) to map mode indices (0-4) to mode names (Bike, Car, etc.).
-
-Specifies the desired output order for the final CSV (desired_order list).
-
-4. Load and process data
-For each file in the list:
-
-If the file exists:
-
-Reads the file into a pandas DataFrame.
-
-Iterates through all columns and rows.
-
-For each item:
-
-Identifies what the value represents (e.g., "% Distance Bike Mic weighted", "% Trips Car Sim").
-
-Assigns a proper label (title) depending on the file and column name.
-
-Appends each labeled value into a list (consolidated_data).
-
-5. Create and save a single CSV
-If there is data collected:
-
-Creates a new DataFrame with two columns: Title and Value.
-
-Sorts the rows based on the specified desired order.
-
-Replaces decimal points with commas (European format) in a new column Value with Comma.
-
-Saves the result as modalSplitCalibration.csv in the mode_share_directory.
-
-If no data is found:
-
-Prints a message.
-
-🧠 Short version:
-This script consolidates results from multiple mode share comparison CSV files into a single organized CSV (modalSplitCalibration.csv) that contains all key indicators sorted and ready for further calibration or reporting.
-
-Would you also like me to give you a suggested title and description you can paste at the top of the script to make it even clearer? 🚀
 
 
 10_DRT_Data_Analysis.py
