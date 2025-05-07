@@ -17,10 +17,12 @@ IN --> 	microcensus/wege.csv , microcensus/etappen.csv, all_population.csv
 		process and divide mic trips based on agents' plan
 OUT -->:
 		microcensus/row_trips.csv (all trips)
-		microcensus/trips_inside_O_and_D.csv
-		microcensus/trips_inside_O_or_D.csv
-		microcensus/population_all_activities_inside.csv
-		microcensus/population_at_least_one_activities_inside.csv
+		microcensus/trips_inside_O_and_D_Mic.csv
+		microcensus/trips_inside_O_or_D_Mic.csv
+		microcensus/population_at_least_one_activities_inside_Mic.csv
+		microcensus/population_all_activities_inside_Mic.csv
+		microcensus/trips_all_activities_inside_Mic.csv
+		microcensus/trips_at_least_one_activities_inside_Mic.csv
 		Various plots in the plots/ folder
 	
 CanDo: add filter based on home (commented code)
@@ -80,12 +82,17 @@ IN-->:
         ...\df_households_synt.csv
 		
 
-		...\population_with_trips_inside_O_and_D_sim.csv
-		...\population_with_trips_inside_O_or_D_sim.csv
-		...\trips_at_least_one_activity_inside_sim.csv
-		...\trips_all_activities_inside_sim.csv
-		df_population_mic
-		df_trips_mic.
+		microcensus/population_at_least_one_activities_inside_Mic.csv
+		microcensus/population_all_activities_inside_Mic.csv
+		microcensus/trips_all_activities_inside_Mic.csv
+		microcensus/trips_at_least_one_activities_inside_Mic.csv
+		
+		0_PreProcess_CSVs_SyntheticAndOutputs\population_with_trips_inside_O_and_D_sim.csv
+		0_PreProcess_CSVs_SyntheticAndOutputs\population_with_trips_inside_O_or_D_sim.csv
+		0_PreProcess_CSVs_SyntheticAndOutputs\trips_at_least_one_activity_inside_sim.csv
+		0_PreProcess_CSVs_SyntheticAndOutputs\trips_all_activities_inside_sim.csv
+		microcensus\df_population_mic
+		microcensus\df_trips_mic.
 
 processes various things
 create_activity_chain_mic(group) and create_activity_chain_syn(group):
@@ -96,8 +103,11 @@ OUT-->:
 		activity_chains_sim.csv
 		activity_chains_mic.csv
 		population_clean_mic.csv
-		population_clean_sim.csv
+		population_clean_sim.csv	
 		legs_clean_sim.csv
+		
+		1_Cleaned_CSVs\trips_at_least_one_activity_inside_sim.csv
+		1_Cleaned_CSVs\trips_all_activities_inside_sim.csv
 
 (Commented out: synthetic population outputs)
 
@@ -106,60 +116,28 @@ OUT-->:
 06_synt_and_sim_mode_share_by_time_distance.py
 -----------------------------------------
 2. Define Helper Function
-compute_avg_coordinates(start_link, end_link, link_data):
+	compute_avg_coordinates(start_link, end_link, link_data):
+	Takes the coordinates of a start and end link from a dictionary.
+	Calculates the average X and Y coordinate between start and end link (for midpoint mapping).
 
-Takes the coordinates of a start and end link from a dictionary.
+IN-->:
+		output_plans.xml.gz
+		working with population.xml.gz (COMMENTED AFTER 1ST)
 
-Calculates the average X and Y coordinate between start and end link (for midpoint mapping).
-
-Handles missing values.
-
-3. Load Configurations
-Reads important folder paths and scenario names using read_config().
-
-Sets up logging to track the script's progress.
-
-4. Load MATSim Simulation Data
-From output folder (i.e., after the simulation):
-
-Loads output plans (output_plans.xml.gz) using matsim.plan_reader_dataframe.
-
-Extracts:
-
-legs (movements)
-
-routes (travel paths)
-
-activities (activities at locations)
+	Extracts:
+		legs (movements)
+		routes (travel paths)
+		activities (activities at locations)
 
 5. Prepare Link Coordinates
-Builds a dictionary (link_dict_sim_str) mapping each link ID to its (X, Y) coordinates.
-
-This is used later to assign spatial coordinates to each trip.
-
-6. Prepare and Save Simulation Trip Data
-Merges the routes and legs dataframes.
-
-Selects key variables:
-
-ID, plan ID, start link, end link, departure time, travel time, distance, and mode.
-
-Renames trav_time_x to travel_time.
+	Builds a dictionary (link_dict_sim_str) mapping each link ID to its (X, Y) coordinates.
+	This is used later to assign spatial coordinates to each trip.
 
 Adds average coordinates (X, Y) between start and end links for each trip.
 
-Saves the final dataframe as a CSV file travel_time_distance_mode_sim.csv in the output directory.
+OUT-->:
+		travel_time_distance_mode_sim.csv
 
-⚠️ Notes:
-Synthetic trips part (working with population.xml.gz) is commented out!
-→ Only simulation output trips (output_plans.xml.gz) are processed.
-
-Output:
-
-A cleaned CSV file containing trip-level mode, time, distance, and spatial information from the simulation.
-
-Would you also like a small diagram showing this flow visually? 🎯
-It could be handy if you're preparing documentation or slides.
 
 
 07_NotUsed_plot_sim_modal_share_by_trips
@@ -174,54 +152,10 @@ IN -->:
 	Synthetic trips: travel_time_distance_mode_synt.csv
 	Simulation trips: travel_time_distance_mode_sim.csv
 
-Clean datasets:
-	Remove modes like "truck" and "outside."
-	Standardize mode names (capitalize, remove underscores).
-	Convert travel times to seconds.
-
-Compute Mode Share by Distance
-	Microcensus:
-		Total distance
-		Distance weighted by household weight
-
-	Synthetic and Simulation:
-		Compute total distance.
-
-	For each: Calculate the percentage share per transportation mode.
-
-Plot Mode Share by Distance
-	Create a grouped bar plot comparing the distance mode shares between:
-		Microcensus (weighted)
-		Microcensus (unweighted)
-		Synthetic population
-		Simulation output
-
-Save the plot as a high-resolution image (Mode_share_by_Distance.png).
-
-5. Compute Mode Share by Travel Time
-Microcensus:
-
-Compute both:
-
-	Total travel time
-
-	Travel time weighted by household weight
-
-	Synthetic and Simulation:
-
-	Compute total travel time.
-
-	For each: Calculate the percentage share per transportation mode.
-
-6. Plot Mode Share by Travel Time
-Create another grouped bar plot comparing travel time mode shares.
-
-Save the plot as a high-resolution image (Mode_share_by_Travel_Time.png).
-
 OUT -->:
- Mode_share_time_comparison.csv
-
- Mode_share_distance_comparison.csv
+		Mode_share_by_Travel_Time.png
+		Mode_share_time_comparison.csv
+		Mode_share_distance_comparison.csv
 
 
 

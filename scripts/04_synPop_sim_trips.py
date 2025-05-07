@@ -101,14 +101,14 @@ if __name__ == '__main__':
     population_with_trips_O_and_D = df_persons_sim[df_persons_sim['person'].isin(unique_ids)]
     logging.info("Population with trips inside the area filtered successfully")
 
-    population_with_trips_O_and_D.to_csv(f'{pre_processed_data_path}\\population_with_trips_inside_O_and_D_sim.csv', index=False)
+    population_with_trips_O_and_D.to_csv(f'{pre_processed_data_path}\\population_all_activities_inside_sim.csv', index=False)
 
     # Filter the population to include only those with trips origin inside or destination inside the area
     population_with_trips_O_or_D = df_persons_sim[
         df_persons_sim['person'].isin(filtered_trips_inside_outside['person'])]
     logging.info("Population with trips inside the area filtered successfully")
 
-    population_with_trips_O_or_D.to_csv(f'{pre_processed_data_path}\\population_with_trips_inside_O_or_D_sim.csv', index=False)
+    population_with_trips_O_or_D.to_csv(f'{pre_processed_data_path}\\population_at_least_one_activity_inside_sim.csv', index=False)
 
     trips_all_activities_inside = output_trips_sim[output_trips_sim['person'].isin(population_with_trips_O_and_D['person'])]
 
