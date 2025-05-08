@@ -22,6 +22,24 @@ Create activity chain summaries from trip/activity sequences.
 
 3. Main script execution
 
+IN-->:
+		0_PreProcess_CSVs_SyntheticAndOutputs\100pct\df_activity_sim.csv
+		...\df_legs_sim.csv
+		...\df_persons_sim.csv
+		...\df_routes_sim.csv
+		
+		...\df_activity_synt.csv (SynPop CSVs only 1 TIME FOR SHP - to be commented)
+        ...\df_legs_synt.csv
+        ...\df_persons_synt.csv
+        ...\df_routes_synt.csv
+        ...\df_households_synt.csv
+		
+
+		...\population_with_trips_inside_O_and_D_sim.csv
+		...\population_with_trips_inside_O_or_D_sim.csv
+		...\trips_at_least_one_activity_inside_sim.csv
+		...\trips_all_activities_inside_sim.csv
+
 3.3 Preprocess travel times
 Processes departure and travel times in simulation data.
 
@@ -51,3 +69,11 @@ Summarizes trips into "activity chains" (e.g., H-W-H).
 
 3.12 Merge household weights
 Adds household weights to the microcensus trip data.
+
+OUT-->:
+		trips_mic.csv
+		activity_chains_sim.csv
+		activity_chains_mic.csv
+		population_clean_mic.csv
+		population_clean_sim.csv
+		legs_clean_sim.csv

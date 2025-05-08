@@ -1,0 +1,44 @@
+08_plot_mode_share_time_distance_synt.py
+-----------------------------------------
+IN -->:
+	Microcensus trips: trips_mic.csv
+	Synthetic trips: travel_time_distance_mode_synt.csv
+	Simulation trips: travel_time_distance_mode_sim.csv
+
+Clean datasets:
+	Remove modes like "truck" and "outside."
+	Standardize mode names (capitalize, remove underscores).
+	Convert travel times to seconds.
+
+Compute Mode Share by Distance
+	Microcensus:
+		Total distance
+		Distance weighted by household weight
+
+	Synthetic and Simulation:
+		Compute total distance.
+
+	For each: Calculate the percentage share per transportation mode.
+
+Plot Mode Share by Distance
+	Create a grouped bar plot comparing the distance mode shares between:
+		Microcensus (weighted)
+		Microcensus (unweighted)
+		Synthetic population
+		Simulation output
+
+Save the plot as a high-resolution image (Mode_share_by_Distance.png).
+
+5. Compute Mode Share by Travel Time
+Microcensus:
+
+Compute for Synthetic and Simulation:
+	Total travel time
+	Travel time weighted by household weight
+	For each: Calculate the percentage share per transportation mode.
+
+
+OUT -->:
+		Mode_share_by_Travel_Time.png
+		Mode_share_time_comparison.csv
+		Mode_share_distance_comparison.csv
