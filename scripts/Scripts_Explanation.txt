@@ -86,28 +86,33 @@ IN-->:
 		microcensus/population_all_activities_inside_Mic.csv
 		microcensus/trips_all_activities_inside_Mic.csv
 		microcensus/trips_at_least_one_activities_inside_Mic.csv
+		microcensus\df_population_mic
+		microcensus\df_trips_mic.
 		
 		0_PreProcess_CSVs_SyntheticAndOutputs\population_with_trips_inside_O_and_D_sim.csv
 		0_PreProcess_CSVs_SyntheticAndOutputs\population_with_trips_inside_O_or_D_sim.csv
 		0_PreProcess_CSVs_SyntheticAndOutputs\trips_at_least_one_activity_inside_sim.csv
 		0_PreProcess_CSVs_SyntheticAndOutputs\trips_all_activities_inside_sim.csv
-		microcensus\df_population_mic
-		microcensus\df_trips_mic.
 
 processes various things
 create_activity_chain_mic(group) and create_activity_chain_syn(group):
 Create activity chain summaries from trip/activity sequences.
 
 OUT-->:
-		trips_mic.csv
-		activity_chains_sim.csv
-		activity_chains_mic.csv
-		population_clean_mic.csv
-		population_clean_sim.csv	
-		legs_clean_sim.csv
+		1_Cleaned_CSVs\trips_mic.csv
+		1_Cleaned_CSVs\activity_chains_sim.csv
+		1_Cleaned_CSVs\activity_chains_mic.csv
+		1_Cleaned_CSVs\population_clean_mic.csv
+		1_Cleaned_CSVs\population_clean_sim.csv	
+		1_Cleaned_CSVs\legs_clean_sim.csv
 		
 		1_Cleaned_CSVs\trips_at_least_one_activity_inside_sim.csv
 		1_Cleaned_CSVs\trips_all_activities_inside_sim.csv
+		
+		1_Cleaned_CSVs\trips_synt.csv
+		1_Cleaned_CSVs\activity_chains_syn.csv
+		1_Cleaned_CSVs\population_clean_synth.csv
+		1_Cleaned_CSVs\legs_clean_synt.csv
 
 (Commented out: synthetic population outputs)
 
