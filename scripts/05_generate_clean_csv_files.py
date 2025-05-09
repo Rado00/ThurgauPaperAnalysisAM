@@ -360,11 +360,8 @@ if __name__ == '__main__':
         columns={'trav_time': 'travel_time', 'euclidean_distance': 'distance', 'longest_distance_mode': 'mode'},
         inplace=True)
     filtered_trips_at_least_one_activitiy_inside_sim.dropna(subset=['mode'], inplace=True)
-    filtered_filtered_trips_all_activities_inside_sim = filtered_trips_at_least_one_activitiy_inside_sim[
+    filtered_trips_all_activities_inside_sim = filtered_trips_at_least_one_activitiy_inside_sim[
         ~filtered_trips_at_least_one_activitiy_inside_sim['mode'].isin(['truck'])]
-    filtered_filtered_trips_all_activities_inside_sim.to_csv(
-        f'{pre_processed_data_path}\\travel_time_all_activities_inside_distance_mode_sim.csv', index=False)
-    logging.info("Dataframe of simulation is saved as csv file successfully")
 
     filtered_trips_at_least_one_activitiy_inside_sim = df_trips_at_least_one_activity_inside_sim[[
         "person", "start_link", "end_link", "dep_time", "trav_time", "euclidean_distance", "longest_distance_mode",
@@ -375,8 +372,8 @@ if __name__ == '__main__':
         columns={'trav_time': 'travel_time', 'euclidean_distance': 'distance', 'longest_distance_mode': 'mode'},
         inplace=True)
     filtered_trips_at_least_one_activitiy_inside_sim.dropna(subset=['mode'], inplace=True)
-    filtered_filtered_trips_at_least_one_activitiy_inside_sim = filtered_trips_at_least_one_activitiy_inside_sim[
+    filtered_trips_at_least_one_activitiy_inside_sim = filtered_trips_at_least_one_activitiy_inside_sim[
         ~filtered_trips_at_least_one_activitiy_inside_sim['mode'].isin(['truck'])]
-    filtered_filtered_trips_at_least_one_activitiy_inside_sim.to_csv(
-        f'{pre_processed_data_path}\\travel_time_at_least_one_activity_inside_distance_mode_sim.csv', index=False)
-    logging.info("Dataframe of simulation is saved as csv file successfully")
+
+    filtered_trips_at_least_one_activitiy_inside_sim.to_csv(f'{data_path_clean}\\trips_at_least_one_activity_inside_sim.csv', index=False)  # no changes here, but moved to data_path_clean
+    filtered_trips_all_activities_inside_sim.to_csv(f'{data_path_clean}\\trips_all_activities_inside_sim.csv', index=False)  # no changes here, but moved to data_path_clean

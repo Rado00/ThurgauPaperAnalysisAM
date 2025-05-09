@@ -142,6 +142,7 @@ Adds average coordinates (X, Y) between start and end links for each trip.
 
 OUT-->:
 		travel_time_distance_mode_sim.csv
+		travel_time_distance_mode_synt.csv
 
 
 
