@@ -34,10 +34,6 @@ REM echo Running 06_synt_and_sim_mode_share_by_time_distance.py...
 REM python 06_synt_and_sim_mode_share_by_time_distance.py
 REM if %ERRORLEVEL% neq 0 goto :error
 
-REM echo Running 07_NotUsed_plot_sim_modal_share_by_trips.py...
-REM python 07_NotUsed_plot_sim_modal_share_by_trips.py
-REM if %ERRORLEVEL% neq 0 goto :error
-
 echo Running 08_plot_mode_share_time_distance_synt.py...
 python 08_plot_mode_share_time_distance_synt.py
 if %ERRORLEVEL% neq 0 goto :error
