@@ -1,3 +1,7 @@
+"""
+This code extracts and processes synthetic trip data from a MATSim population simulation,
+calculates trip midpoints, and saves information including mode, time, distance, and location into a CSV.
+"""
 # Import necessary libraries
 import matsim
 from functions.commonFunctions import *

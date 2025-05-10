@@ -1,9 +1,9 @@
 08_plot_mode_share_time_distance_synt.py
 -----------------------------------------
 IN -->:
-	Microcensus trips: trips_mic.csv
+	Microcensus trips: trips_all_activities_inside_Mic.csv
 	Synthetic trips: travel_time_distance_mode_synt.csv
-	Simulation trips: travel_time_distance_mode_sim.csv
+	Simulation trips: trips_all_activities_inside_sim.csv
 
 Clean datasets:
 	Remove modes like "truck" and "outside."
@@ -40,5 +40,6 @@ Compute for Synthetic and Simulation:
 
 OUT -->:
 		Mode_share_by_Travel_Time.png
+		Mode_share_by_Distance.png
 		Mode_share_time_comparison.csv
 		Mode_share_distance_comparison.csv

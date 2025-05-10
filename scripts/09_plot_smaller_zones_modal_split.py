@@ -59,7 +59,7 @@ if __name__ == '__main__':
     logging.info(f"Converted travel time to seconds")
 
     df_synt_mode_share['x_y'] = df_synt_mode_share.apply(lambda row: Point(row['x'], row['y']), axis=1)
-    df_sim_mode_share['x_y'] = df_sim_mode_share.apply(lambda row: Point(row['x'], row['y']), axis=1)
+    df_sim_mode_share['x_y'] = df_sim_mode_share.apply(lambda row: Point(row['start_x'], row['start_y']), axis=1)
 
     arcgis_pro_dict = {}
 
