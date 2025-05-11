@@ -10,6 +10,9 @@ if __name__ == '__main__':
 
     data_path, simulation_zone_name, scenario, sim_output_folder, percentile, analysis_zone_name, csv_folder, clean_csv_folder, shapeFileName = read_config()
 
+    ####### set to FALSE AFTER FIRST SYNT ANALYSIS #############################################
+    read_SynPop = False  # True or False
+
     # Create directory for the zone
     scenario_path: str = os.path.join(data_path, simulation_zone_name, scenario, percentile)
     output_folder_path: str = os.path.join(data_path, simulation_zone_name, sim_output_folder)
@@ -21,11 +24,11 @@ if __name__ == '__main__':
         plans_sim = matsim.plan_reader_dataframe(os.path.join(output_folder_path, "output_plans.xml.gz"))
         logging.info("Output plans data loaded successfully")
 
-####### COMMENT AFTER FIRST SYNT ANALYSIS #############################################ààà
-        # households_synt = matsim.household_reader(os.path.join(scenario_path, "households.xml.gz")) # dataframe types conversion failed
-        # logging.info("Synthetic Household data loaded successfully")
-        # plans = matsim.plan_reader_dataframe(os.path.join(scenario_path, f"population.xml.gz"))
-        # logging.info("Synthetic Population data loaded successfully")
+        if read_SynPop:
+            households_synt = matsim.household_reader(os.path.join(scenario_path, "households.xml.gz")) # dataframe types conversion failed
+            logging.info("Synthetic Household data loaded successfully")
+            plans = matsim.plan_reader_dataframe(os.path.join(scenario_path, f"population.xml.gz"))
+            logging.info("Synthetic Population data loaded successfully")
 
     except Exception as e:
         logging.error("Error loading data: " + str(e))
@@ -38,12 +41,12 @@ if __name__ == '__main__':
         df_persons_sim = plans_sim.persons
         df_routes_sim = plans_sim.routes
 
-####### COMMENT AFTER FIRST SYNT ANALYSIS #############################################ààà
-        # df_activity_synt = plans.activities
-        # df_legs_synt = plans.legs
-        # df_persons_synt = plans.persons
-        # df_routes_synt = plans.routes
-        # df_households_synt = households_synt.households
+        if read_SynPop:
+            df_activity_synt = plans.activities
+            df_legs_synt = plans.legs
+            df_persons_synt = plans.persons
+            df_routes_synt = plans.routes
+            df_households_synt = households_synt.households
 
         logging.info("Dataframes created successfully")
     except Exception as e:
@@ -63,12 +66,12 @@ if __name__ == '__main__':
         df_persons_sim.to_csv(f'{pre_processed_data_path}\\df_persons_sim.csv', index=False)
         df_routes_sim.to_csv(f'{pre_processed_data_path}\\df_routes_sim.csv', index=False)
 
-####### COMMENT AFTER FIRST SYNT ANALYSIS #############################################ààà
-        # df_activity_synt.to_csv(f'{pre_processed_data_path}\\df_activity_synt.csv', index=False)
-        # df_legs_synt.to_csv(f'{pre_processed_data_path}\\df_legs_synt.csv', index=False)
-        # df_persons_synt.to_csv(f'{pre_processed_data_path}\\df_persons_synt.csv', index=False)
-        # df_routes_synt.to_csv(f'{pre_processed_data_path}\\df_routes_synt.csv', index=False)
-        # df_households_synt.to_csv(f'{pre_processed_data_path}\\df_households_synt.csv', index=False)
+        if read_SynPop:
+            df_activity_synt.to_csv(f'{pre_processed_data_path}\\df_activity_synt.csv', index=False)
+            df_legs_synt.to_csv(f'{pre_processed_data_path}\\df_legs_synt.csv', index=False)
+            df_persons_synt.to_csv(f'{pre_processed_data_path}\\df_persons_synt.csv', index=False)
+            df_routes_synt.to_csv(f'{pre_processed_data_path}\\df_routes_synt.csv', index=False)
+            df_households_synt.to_csv(f'{pre_processed_data_path}\\df_households_synt.csv', index=False)
 
 
         logging.info("All the csv files created successfully")

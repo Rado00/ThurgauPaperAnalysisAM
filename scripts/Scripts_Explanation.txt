@@ -19,11 +19,11 @@ OUT -->:
 		microcensus/row_trips.csv (all trips)
 		microcensus/trips_inside_O_and_D_Mic.csv
 		microcensus/trips_inside_O_or_D_Mic.csv
-		microcensus/population_at_least_one_activities_inside_Mic.csv
-		microcensus/population_all_activities_inside_Mic.csv
-		microcensus/trips_all_activities_inside_Mic.csv
-		microcensus/trips_at_least_one_activities_inside_Mic.csv
-		Various plots in the plots/ folder
+		microcensus/population_all_activities_inside_Mic.csv  (3337)
+		microcensus/population_at_least_one_activity_inside_Mic.csv (4.757)
+		microcensus/trips_all_activities_inside_Mic.csv (12.769)
+		microcensus/trips_at_least_one_activity_inside_Mic.csv (18.532)
+		3 plots in the plots/ folder
 	
 CanDo: add filter based on home (commented code)
 
@@ -230,10 +230,8 @@ Would you also like a visual diagram summarizing this full workflow in a nice sc
 
 10_plot_the_clean_csv_files.py
 -----------------------------------------
-2. Load Data
-Reads various CSV files:
-
-Trips (trips_mic.csv, trips_synt.csv)
+IN-->:
+trips_mic.csv, trips_synt.csv)
 
 Activity chains (activity_chains_syn.csv, activity_chains_sim.csv, activity_chains_mic.csv)
 
