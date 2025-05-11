@@ -14,8 +14,6 @@ warnings.filterwarnings('ignore')
 if __name__ == '__main__':
     setup_logging(get_log_filename())
 
-    read_SynPop = False  # Change to True if needed
-
     data_path, simulation_zone_name, scenario, sim_output_folder, percentile, analysis_zone_name, csv_folder, clean_csv_folder, shapeFileName, read_SynPop = read_config()
     logging.info(f"Reading config file from {data_path} path was successful.")
 

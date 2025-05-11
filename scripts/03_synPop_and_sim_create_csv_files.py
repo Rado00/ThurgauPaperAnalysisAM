@@ -16,8 +16,6 @@ if __name__ == '__main__':
 
     # Read the XML data with a matsim library
     try:
-        households_sim = matsim.household_reader(os.path.join(output_folder_path, "output_households.xml.gz")) # dataframe types conversion failed
-        logging.info("Output household data loaded successfully")
         plans_sim = matsim.plan_reader_dataframe(os.path.join(output_folder_path, "output_plans.xml.gz"))
         logging.info("Output plans data loaded successfully")
 
@@ -34,13 +32,11 @@ if __name__ == '__main__':
     # Create the separated dataframe files of the loaded data
     try:
         df_activity_sim = plans_sim.activities
-        df_legs_sim = plans_sim.legs
         df_persons_sim = plans_sim.persons
         df_routes_sim = plans_sim.routes
 
         if read_SynPop:
             df_activity_synt = plans.activities
-            df_legs_synt = plans.legs
             df_persons_synt = plans.persons
             df_routes_synt = plans.routes
             df_households_synt = households_synt.households
@@ -59,13 +55,11 @@ if __name__ == '__main__':
     # Create the csv files from the dataframes
     try:
         df_activity_sim.to_csv(f'{pre_processed_data_path}\\df_activity_sim.csv', index=False)
-        df_legs_sim.to_csv(f'{pre_processed_data_path}\\df_legs_sim.csv', index=False)
         df_persons_sim.to_csv(f'{pre_processed_data_path}\\df_persons_sim.csv', index=False)
         df_routes_sim.to_csv(f'{pre_processed_data_path}\\df_routes_sim.csv', index=False)
 
         if read_SynPop:
             df_activity_synt.to_csv(f'{pre_processed_data_path}\\df_activity_synt.csv', index=False)
-            df_legs_synt.to_csv(f'{pre_processed_data_path}\\df_legs_synt.csv', index=False)
             df_persons_synt.to_csv(f'{pre_processed_data_path}\\df_persons_synt.csv', index=False)
             df_routes_synt.to_csv(f'{pre_processed_data_path}\\df_routes_synt.csv', index=False)
             df_households_synt.to_csv(f'{pre_processed_data_path}\\df_households_synt.csv', index=False)

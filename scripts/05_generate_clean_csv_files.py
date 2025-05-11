@@ -184,9 +184,6 @@ def extract_just_personID_and_household_weight_from_hausalteCSV(path):
 
 if __name__ == '__main__':
 
-    ####### set to FALSE AFTER FIRST SYNT ANALYSIS #############################################
-    read_SynPop = False  # True or False
-
     setup_logging(get_log_filename())
 
     data_path, simulation_zone_name, scenario, sim_output_folder, percentile, analysis_zone_name, csv_folder, clean_csv_folder, shapeFileName, read_SynPop = read_config()
