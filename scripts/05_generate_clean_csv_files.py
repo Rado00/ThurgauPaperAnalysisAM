@@ -227,9 +227,9 @@ if __name__ == '__main__':
 
     try:
         df_population_all_activities_inside_mic = pd.read_csv(f"{microcensus_path}\\population_all_activities_inside_Mic.csv")
-        df_population_at_least_one_activities_inside_mic = pd.read_csv(f"{microcensus_path}\\population_at_least_one_activities_inside_Mic.csv")
+        df_population_at_least_one_activities_inside_mic = pd.read_csv(f"{microcensus_path}\\population_at_least_one_activity_inside_Mic.csv")
         df_trips_all_activities_inside_mic = pd.read_csv(f"{microcensus_path}\\trips_all_activities_inside_Mic.csv")
-        df_trips_at_least_one_activities_inside_mic = pd.read_csv(f"{microcensus_path}\\trips_at_least_one_activities_inside_Mic.csv")
+        df_trips_at_least_one_activities_inside_mic = pd.read_csv(f"{microcensus_path}\\trips_at_least_one_activity_inside_Mic.csv")
     except Exception as e:
         logging.error("Error reading csv files: " + str(e))
         sys.exit()
@@ -326,14 +326,14 @@ if __name__ == '__main__':
     if not os.path.exists(data_path_clean):
         os.makedirs(data_path_clean)
     # Write the CSV files
-    df_trips_at_least_one_activities_inside_mic.to_csv(f'{data_path_clean}\\trips_at_least_one_activities_inside_mic.csv', index=False)
+    df_trips_at_least_one_activities_inside_mic.to_csv(f'{data_path_clean}\\trips_at_least_one_activity_inside_mic.csv', index=False)
     df_trips_all_activities_inside_mic.to_csv(f'{data_path_clean}\\trips_all_activities_inside_mic.csv', index=False)
 
-    df_activity_chains_at_least_one_activities_mic.to_csv(f'{data_path_clean}\\activity_chains_at_least_one_activities_mic.csv', index=False)
+    df_activity_chains_at_least_one_activities_mic.to_csv(f'{data_path_clean}\\activity_chains_at_least_one_activity_inside_mic.csv', index=False)
     df_activity_chains_all_activities_inside_mic.to_csv(f'{data_path_clean}\\activity_chains_all_activities_inside_mic.csv', index=False)
 
     df_population_all_activities_inside_mic.to_csv(f'{data_path_clean}\\population_all_activities_inside_mic.csv', index=False)
-    df_population_at_least_one_activities_inside_mic.to_csv(f'{data_path_clean}\\population_at_least_one_activities_inside_mic.csv', index=False)
+    df_population_at_least_one_activities_inside_mic.to_csv(f'{data_path_clean}\\population_at_least_one_activity_inside_mic.csv', index=False)
 
     if read_SynPop:
         df_trips_synt.to_csv(f'{data_path_clean}\\trips_synt.csv', index=False)

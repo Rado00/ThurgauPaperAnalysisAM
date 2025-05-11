@@ -278,7 +278,7 @@ if __name__ == '__main__':
     # Filter the population to include only those with trips origin inside or destination inside the area
     population_with_trips_O_or_D = all_population[all_population['person_id'].isin(filtered_trips_inside_outside['person_id'])]
 
-    population_with_trips_O_or_D.to_csv(analysis_zone_path + '\\microzensus\\population_at_least_one_activities_inside_Mic.csv', index=False)
+    population_with_trips_O_or_D.to_csv(analysis_zone_path + '\\microzensus\\population_at_least_one_activity_inside_Mic.csv', index=False)
 
     trips = trips.merge(all_population[['person_id', 'household_weight']], on='person_id', how='left')
 
@@ -290,7 +290,7 @@ if __name__ == '__main__':
     # Filter the trips to include only those with origin inside or destination inside the area
     trips_inside_outside = trips[trips['person_id'].isin(population_with_trips_O_or_D['person_id'])]
 
-    trips_inside_outside.to_csv(analysis_zone_path + '\\microzensus\\trips_at_least_one_activities_inside_Mic.csv', index=False)
+    trips_inside_outside.to_csv(analysis_zone_path + '\\microzensus\\trips_at_least_one_activity_inside_Mic.csv', index=False)
 
 
 
