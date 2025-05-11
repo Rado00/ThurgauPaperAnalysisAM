@@ -9,7 +9,6 @@ import plotly.graph_objects as go
 from plotly.subplots import make_subplots
 
 
-
 if __name__ == '__main__':
     setup_logging(get_log_filename())
 

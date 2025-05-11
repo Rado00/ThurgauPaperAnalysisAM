@@ -16,10 +16,7 @@ warnings.filterwarnings('ignore')
 if __name__ == '__main__':
     setup_logging(get_log_filename())
 
-    ####### set to FALSE AFTER FIRST SYNT ANALYSIS #############################################
-    read_SynPop = False  # True or False
-
-    data_path, simulation_zone_name, scenario, sim_output_folder, percentile, analysis_zone_name, csv_folder, clean_csv_folder, shapeFileName = read_config()
+    data_path, simulation_zone_name, scenario, sim_output_folder, percentile, analysis_zone_name, csv_folder, clean_csv_folder, shapeFileName, read_SynPop = read_config()
     analysis_zone_path = os.path.join(data_path, analysis_zone_name)
     logging.info(f"Reading config file from {data_path} path was successful.")
 
