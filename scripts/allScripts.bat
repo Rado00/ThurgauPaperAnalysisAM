@@ -26,13 +26,13 @@ echo Running 04_synPop_sim_trips.py...
 python 04_synPop_sim_trips.py
 if %ERRORLEVEL% neq 0 goto :error
 
-REM echo Running 05_generate_clean_csv_files.py...
-REM python 05_generate_clean_csv_files.py
-REM if %ERRORLEVEL% neq 0 goto :error
+echo Running 05_generate_clean_csv_files.py...
+python 05_generate_clean_csv_files.py
+if %ERRORLEVEL% neq 0 goto :error
 
-REM echo Running 06_synt_and_sim_mode_share_by_time_distance.py...
-REM python 06_synt_and_sim_mode_share_by_time_distance.py
-REM if %ERRORLEVEL% neq 0 goto :error
+echo Running 06_synt_and_sim_mode_share_by_time_distance.py...
+python 06_synt_and_sim_mode_share_by_time_distance.py
+if %ERRORLEVEL% neq 0 goto :error
 
 echo Running 08_plot_mode_share_time_distance_synt.py...
 python 08_plot_mode_share_time_distance_synt.py
@@ -60,5 +60,3 @@ exit /b 0
 :error
 echo A script failed with error level %ERRORLEVEL%. Exiting.
 exit /b %ERRORLEVEL%
-
-04_2_synPop_sim_analysis.py

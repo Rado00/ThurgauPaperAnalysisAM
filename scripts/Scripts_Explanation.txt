@@ -49,6 +49,7 @@ OUT -->:
 04_synPop_sim_trips.py (1h)(Home population and trips commented because now not necessary)
 -----------------------------------------
 nrows = 1000 nei test
+8 minuti adesso (senza synt e home)
 
 IN --> "sim"\output_trips.csv, output_persons.csv.gz
 		WE CHECKED output_plans.persons and output_persons and they are both 398.245 of which 22999 are trucks
@@ -120,6 +121,7 @@ OUT-->:
 
 06_synt_and_sim_mode_share_by_time_distance.py
 -----------------------------------------
+7 min
 2. Define Helper Function
 	compute_avg_coordinates(start_link, end_link, link_data):
 	Takes the coordinates of a start and end link from a dictionary.
