@@ -32,8 +32,6 @@ if __name__ == '__main__':
     # Create the separated dataframe files of the loaded data
     try:
         df_activity_sim = plans_sim.activities
-        df_persons_sim = plans_sim.persons
-        df_routes_sim = plans_sim.routes
 
         if read_SynPop:
             df_activity_synt = plans.activities
@@ -55,15 +53,12 @@ if __name__ == '__main__':
     # Create the csv files from the dataframes
     try:
         df_activity_sim.to_csv(f'{pre_processed_data_path}\\df_activity_sim.csv', index=False)
-        df_persons_sim.to_csv(f'{pre_processed_data_path}\\df_persons_sim.csv', index=False)
-        df_routes_sim.to_csv(f'{pre_processed_data_path}\\df_routes_sim.csv', index=False)
 
         if read_SynPop:
             df_activity_synt.to_csv(f'{pre_processed_data_path}\\df_activity_synt.csv', index=False)
             df_persons_synt.to_csv(f'{pre_processed_data_path}\\df_persons_synt.csv', index=False)
             df_routes_synt.to_csv(f'{pre_processed_data_path}\\df_routes_synt.csv', index=False)
             df_households_synt.to_csv(f'{pre_processed_data_path}\\df_households_synt.csv', index=False)
-
 
         logging.info("All the csv files created successfully")
     except Exception as e:
