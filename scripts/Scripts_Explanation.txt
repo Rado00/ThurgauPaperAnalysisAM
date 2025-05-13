@@ -57,8 +57,8 @@ IN --> "sim"\output_trips.csv, output_persons.csv.gz
 OUT -->:
 		0_PreProcess_CSVs_SyntheticAndOutputs\100pct\trips_inside_O_and_D_sim.csv
 		...\trips_inside_O_or_D_sim.csv
-		...\population_with_trips_inside_O_and_D_sim.csv
-		...\population_with_trips_inside_O_or_D_sim.csv
+		...\population_all_activities_inside_sim.csv
+		...\population_at_least_one_activity_inside_sim.csv
 		...\trips_at_least_one_activity_inside_sim.csv
 		...\trips_all_activities_inside_sim.csv
 		**cmntd** ...\population_home_inside_sim.csv
@@ -90,8 +90,8 @@ IN-->:
 		microcensus\df_population_mic
 		microcensus\df_trips_mic.
 		
-		0_PreProcess_CSVs_SyntheticAndOutputs\population_with_trips_inside_O_and_D_sim.csv
-		0_PreProcess_CSVs_SyntheticAndOutputs\population_with_trips_inside_O_or_D_sim.csv
+		0_PreProcess_CSVs_SyntheticAndOutputs\population_all_activities_inside_sim.csv
+		0_PreProcess_CSVs_SyntheticAndOutputs\population_at_least_one_activity_inside_sim.csv
 		0_PreProcess_CSVs_SyntheticAndOutputs\trips_at_least_one_activity_inside_sim.csv
 		0_PreProcess_CSVs_SyntheticAndOutputs\trips_all_activities_inside_sim.csv
 
