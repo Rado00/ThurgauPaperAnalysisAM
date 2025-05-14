@@ -30,30 +30,23 @@ def compute_avg_coordinates(start_link, end_link, link_data):
 if __name__ == '__main__':
     setup_logging(get_log_filename())
 
-    data_path, simulation_zone_name, scenario, sim_output_folder, percentile, analysis_zone_name, csv_folder, clean_csv_folder, shapeFileName, read_SynPop = read_config()
+    data_path, simulation_zone_name, scenario, sim_output_folder, percentile, analysis_zone_name, csv_folder, clean_csv_folder, shapeFileName, read_SynPop, sample_for_debugging = read_config()
 
     # Create directory for the zone
     scenario_path: str = os.path.join(data_path, simulation_zone_name, scenario, percentile)
     output_folder_path: str = os.path.join(data_path, simulation_zone_name, sim_output_folder)
     pre_processed_data_path = os.path.join(data_path, analysis_zone_name, csv_folder, percentile)
 
-    # Read the XML data with a matsim library
-    try:
-        plans = matsim.plan_reader_dataframe(os.path.join(scenario_path, f"population.xml.gz"))
-        logging.info("Population data loaded successfully")
-    except Exception as e:
-        logging.error("Error loading network data: " + str(e))
-        sys.exit()
-
-    # Create the separated dataframe files of the loaded data
-    try:
-        df_routes_synt = plans.routes
-        df_legs_synt = plans.legs
-        df_activity_synt = plans.activities
-        logging.info("Dataframes created successfully")
-    except Exception as e:
-        logging.error("Error creating dataframes: " + str(e))
-        sys.exit()
+    # Read csv files - ToCheck if folder changes to clean_csv_folder
+    if read_SynPop:
+        try:
+            df_routes_synt = pd.read_csv(os.path.join(pre_processed_data_path, "df_routes_synt.csv"))
+            df_legs_synt = pd.read_csv(os.path.join(pre_processed_data_path, "df_legs_synt.csv"))
+            df_activity_synt = pd.read_csv(os.path.join(pre_processed_data_path, "df_activity_synt.csv"))
+            logging.info("Synthetic CSV files loaded successfully.")
+        except Exception as e:
+            logging.error(f"Error reading synthetic CSV files: {str(e)}")
+            sys.exit()
 
     # Create a dictionary of link data for synthetic and simulation
     link_dict_synt = df_activity_synt.set_index("link")[["x", "y"]].apply(

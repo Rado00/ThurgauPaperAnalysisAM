@@ -12,17 +12,18 @@ pd.set_option('display.max_rows', None)
 if __name__ == '__main__':
     setup_logging(get_log_filename())
 
-    data_path, simulation_zone_name, scenario, sim_output_folder, percentile, analysis_zone_name, csv_folder, clean_csv_folder, shapeFileName, read_SynPop = read_config()
+    data_path, simulation_zone_name, scenario, sim_output_folder, percentile, analysis_zone_name, csv_folder, clean_csv_folder, shapeFileName, read_SynPop, sample_for_debugging = read_config()
     analysis_zone_path = os.path.join(data_path, analysis_zone_name)
 
     # Create directory for the zone
     # scenario_path: str = os.path.join(data_path, simulation_zone_name, scenario, percentile)
     output_folder_path: str = os.path.join(data_path, simulation_zone_name, sim_output_folder)
     pre_processed_data_path = os.path.join(data_path, analysis_zone_name, csv_folder, percentile)
+    nrows = 1000 if sample_for_debugging else None
 
     # Read the XML data with a matsim library
     try:
-        output_trips_sim = pd.read_csv(os.path.join(output_folder_path, "output_trips.csv.gz"), sep=';', low_memory=False, encoding='utf-8', dtype=str, compression='gzip')
+        output_trips_sim = pd.read_csv(os.path.join(output_folder_path, "output_trips.csv.gz"), sep=';', low_memory=False, encoding='utf-8', dtype=str, compression='gzip', nrows=nrows)
         logging.info("Output Trips data loaded successfully")
     except Exception as e:
         logging.error("Error loading network data: " + str(e))
@@ -96,7 +97,7 @@ if __name__ == '__main__':
     logging.info("Both Filtered trips saved successfully")
 
     df_persons_sim = pd.read_csv(os.path.join(output_folder_path, "output_persons.csv.gz"), sep=';', low_memory=False,
-                                   encoding='utf-8', dtype=str, compression='gzip')
+                                   encoding='utf-8', dtype=str, compression='gzip', nrows=nrows)
 
     logging.info("Output plans data loaded successfully")
 

@@ -197,7 +197,7 @@ def get_log_filename():
 if __name__ == '__main__':
     setup_logging(get_log_filename())
 
-    data_path, simulation_zone_name, scenario, sim_output_folder, percentile, analysis_zone_name, csv_folder, clean_csv_folder, shapeFileName, read_SynPop = read_config()
+    data_path, simulation_zone_name, scenario, sim_output_folder, percentile, analysis_zone_name, csv_folder, clean_csv_folder, shapeFileName, read_SynPop, sample_for_debugging = read_config()
     analysis_zone_path = os.path.join(data_path, analysis_zone_name)
 
     df_mz_persons = execute_person(analysis_zone_path)
