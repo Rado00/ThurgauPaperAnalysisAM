@@ -192,17 +192,125 @@ if __name__ == '__main__':
         merged = merged.round(2)
         merged.to_csv(output_file, index=False)
 
-    save_comparison_csv(mode_share_time_mic, mode_share_weighted_time_mic, mode_share_time_sim,
-                        *( [mode_share_time_synt] if read_SynPop else [] ),
-                        output_file=f"{mode_share_directory}\\Mode_shares_time.csv")
 
-    save_comparison_csv(mode_share_distance_mic, mode_share_weighted_distance_mic, mode_share_distance_sim,
-                        *( [mode_share_distance_synt] if read_SynPop else [] ),
-                        output_file=f"{mode_share_directory}\\Mode_shares_distance.csv")
+    # ---- SAVE CUSTOMIZED TIME CSV ---- #
+    # Prepare individual columns with correct names
+    mode_share_time_mic = mode_share_time_mic.rename(columns={'Percentage': 'Percentage Mic'})
+    mode_share_weighted_time_mic = mode_share_weighted_time_mic.rename(
+        columns={'Percentage': 'Percentage Mic Weighted'})
+    mode_share_time_sim = mode_share_time_sim.rename(columns={
+        'Percentage': 'Percentage Sim',
+        'Total Travel_Time': 'Total Time Sim'  # This matches what compute_percentage created
+    })
 
-    save_comparison_csv(mode_share_trips_mic_raw, mode_share_trips_mic_weighted, mode_share_trips_sim,
-                        *([mode_share_trips_synt] if read_SynPop else []),
-                        output_file=f"{mode_share_directory}\\mode_shares_by_trip.csv")
+    # Handle synthetic
+    if read_SynPop:
+        mode_share_time_synt = mode_share_time_synt.rename(columns={'Percentage': 'Percentage Synt'})
+    else:
+        unique_modes = pd.concat([mode_share_time_mic['Mode'], mode_share_time_sim['Mode']]).unique()
+        mode_share_time_synt = pd.DataFrame({
+            'Mode': unique_modes,
+            'Percentage Synt': [0.0] * len(unique_modes)
+        })
+
+    # Merge all into final DataFrame
+    from functools import reduce
+
+    dfs_to_merge = [
+        mode_share_time_mic[['Mode', 'Percentage Mic']],
+        mode_share_weighted_time_mic[['Mode', 'Percentage Mic Weighted']],
+        mode_share_time_synt[['Mode', 'Percentage Synt']],
+        mode_share_time_sim[['Mode', 'Total Time Sim', 'Percentage Sim']]
+    ]
+
+    merged_time = reduce(lambda left, right: pd.merge(left, right, on='Mode', how='outer'), dfs_to_merge)
+    merged_time = merged_time.round(2)
+
+    # Save
+    merged_time.to_csv(f"{mode_share_directory}\\Mode_shares_time.csv", index=False)
+    logging.info("Customized Mode_shares_time.csv saved successfully.")
+
+    # ---- SAVE CUSTOMIZED DISTANCE CSV ---- #
+    # Prepare individual columns with correct names
+    mode_share_distance_mic = mode_share_distance_mic.rename(columns={'Percentage': 'Percentage Mic'})
+    mode_share_weighted_distance_mic = mode_share_weighted_distance_mic.rename(
+        columns={'Percentage': 'Percentage Mic Weighted'})
+    mode_share_distance_sim = mode_share_distance_sim.rename(columns={
+        'Percentage': 'Percentage Sim',
+        'Total Distance': 'Total Distance Sim'
+    })
+
+    # If synthetic is active, rename and use real data; otherwise use zero-filled dataframe
+    if read_SynPop:
+        mode_share_distance_synt = mode_share_distance_synt.rename(columns={'Percentage': 'Percentage Synt'})
+    else:
+        # Create synthetic percentage = 0 dataframe for all modes in the other frames
+        unique_modes = pd.concat([mode_share_distance_mic['Mode'], mode_share_distance_sim['Mode']]).unique()
+        mode_share_distance_synt = pd.DataFrame({
+            'Mode': unique_modes,
+            'Percentage Synt': [0.0] * len(unique_modes)
+        })
+
+    # Merge all into final DataFrame
+    from functools import reduce
+
+    dfs_to_merge = [
+        mode_share_distance_mic[['Mode', 'Percentage Mic']],
+        mode_share_weighted_distance_mic[['Mode', 'Percentage Mic Weighted']],
+        mode_share_distance_synt[['Mode', 'Percentage Synt']],
+        mode_share_distance_sim[['Mode', 'Total Distance Sim', 'Percentage Sim']]
+    ]
+
+    merged_distance = reduce(lambda left, right: pd.merge(left, right, on='Mode', how='outer'), dfs_to_merge)
+    merged_distance = merged_distance.round(2)
+
+    # Save
+    merged_distance.to_csv(f"{mode_share_directory}\\Mode_shares_distance.csv", index=False)
+    logging.info("Customized Mode_shares_distance.csv saved successfully.")
+
+    # ---- SAVE CUSTOMIZED TRIP COUNT CSV ---- #
+
+    # Step 1: Rename columns for Mic and Weighted
+    mode_share_trips_mic_raw = mode_share_trips_mic_raw.rename(columns={'Percentage': 'Percentage Mic'})
+    mode_share_trips_mic_weighted = mode_share_trips_mic_weighted.rename(
+        columns={'Percentage': 'Percentage Mic Weighted'})
+
+    # Step 2: Create trip counts for simulation
+    mode_share_trips_sim_counts = df_sim_mode_share['mode'].value_counts().reset_index()
+    mode_share_trips_sim_counts.columns = ['Mode', 'Total Trips Sim']
+
+    mode_share_trips_sim = mode_share_trips_sim.rename(columns={'Percentage': 'Percentage Sim'})
+
+    # Merge sim counts and percentages
+    mode_share_trips_sim = pd.merge(mode_share_trips_sim_counts, mode_share_trips_sim, on='Mode', how='outer')
+
+    # Step 3: Handle synthetic
+    if read_SynPop:
+        mode_share_trips_synt = mode_share_trips_synt.rename(columns={'Percentage': 'Percentage Synt'})
+    else:
+        unique_modes = pd.concat([mode_share_trips_mic_raw['Mode'], mode_share_trips_sim['Mode']]).unique()
+        mode_share_trips_synt = pd.DataFrame({
+            'Mode': unique_modes,
+            'Percentage Synt': [0.0] * len(unique_modes)
+        })
+
+    # Final merge
+    from functools import reduce
+
+    dfs_to_merge = [
+        mode_share_trips_mic_raw[['Mode', 'Percentage Mic']],
+        mode_share_trips_mic_weighted[['Mode', 'Percentage Mic Weighted']],
+        mode_share_trips_synt[['Mode', 'Percentage Synt']],
+        mode_share_trips_sim[['Mode', 'Total Trips Sim', 'Percentage Sim']]
+    ]
+
+    merged_trips = reduce(lambda left, right: pd.merge(left, right, on='Mode', how='outer'), dfs_to_merge)
+    merged_trips = merged_trips.round(2)
+
+    # Save
+    merged_trips.to_csv(f"{mode_share_directory}\\mode_shares_by_trip.csv", index=False)
+    logging.info("Customized mode_shares_by_trip.csv saved successfully.")
+
     logging.info("Trip count comparison CSV saved.")
 
     logging.info("CSV comparison files saved successfully.")
