@@ -52,7 +52,7 @@ def map_person_id_to_activities(df_activities, df_persons, activity_type='Home')
     # Merge the household IDs from df_persons to home_activities based on coordinate match
     merged_home_activities = pd.merge(
         home_activities,
-        df_persons[['hh_id', 'home_x', 'home_y']],
+        df_persons[['person_id', 'home_x', 'home_y']],
         left_on=['x', 'y'],
         right_on=['home_x', 'home_y'],
         how='left'
@@ -60,12 +60,12 @@ def map_person_id_to_activities(df_activities, df_persons, activity_type='Home')
 
     # Create a mapping of plan_id to hh_id
     if merged_home_activities['plan_id'].is_unique:
-        plan_id_to_hh_id = merged_home_activities.set_index('plan_id')['hh_id']
+        plan_id_to_person_id = merged_home_activities.set_index('plan_id')['person_id']
     else:
-        plan_id_to_hh_id = merged_home_activities.groupby('plan_id')['hh_id'].first()
+        plan_id_to_person_id = merged_home_activities.groupby('plan_id')['person_id'].first()
 
     # Map the hh_id as person_id to all activities in df_activities
-    df_activities['person_id'] = df_activities['plan_id'].map(plan_id_to_hh_id)
+    df_activities['person_id'] = df_activities['plan_id'].map(plan_id_to_person_id)
 
     # Propagate the person_id to other activities in the same plan
     df_activities['person_id'] = df_activities.groupby('plan_id')['person_id'].transform(lambda x: x.ffill().bfill())
@@ -93,10 +93,10 @@ def process_activity_and_legs_data(df_activity, df_legs, values_to_remove, modes
     df_activity_filtered = df_activity_filtered[~df_activity_filtered['type'].isin(['outside'])]
 
     # Combine 'Access Walk' and 'Egress Walk' into 'Walk' in legs DataFrame
-    df_legs['mode'] = df_legs['mode'].replace({'access_walk': 'walk', 'egress_walk': 'walk'})
+    df_legs['main_mode'] = df_legs['main_mode'].replace({'access_walk': 'walk', 'egress_walk': 'walk'})
 
     # Remove specified modes from the legs DataFrame
-    df_legs_filtered = df_legs[~df_legs['mode'].isin(modes_to_remove)]
+    df_legs_filtered = df_legs[~df_legs['main_mode'].isin(modes_to_remove)]
 
     # Identify persons who now only have one 'Home' activity
     final_single_home = df_activity_filtered.groupby('person_id').filter(
@@ -201,11 +201,8 @@ if __name__ == '__main__':
     # Read the csv files
     try:
         df_activity_sim = pd.read_csv(f'{pre_processed_data_path}\\df_activity_sim.csv', low_memory=False)
-        df_legs_sim = pd.read_csv(f'{pre_processed_data_path}\\df_legs_sim.csv', low_memory=False)
-        df_persons_sim = pd.read_csv(f'{pre_processed_data_path}\\df_persons_sim.csv', low_memory=False)
         df_population_all_activities_inside_sim = pd.read_csv(f'{pre_processed_data_path}\\population_all_activities_inside_sim.csv', low_memory=False)
         df_population_at_least_one_activity_inside_sim = pd.read_csv(f'{pre_processed_data_path}\\population_at_least_one_activity_inside_sim.csv', low_memory=False)
-        df_routes_sim = pd.read_csv(f'{pre_processed_data_path}\\df_routes_sim.csv', low_memory=False)
         df_trips_all_activities_inside_sim = pd.read_csv(f'{pre_processed_data_path}\\trips_all_activities_inside_sim.csv', low_memory=False)
         df_trips_at_least_one_activity_inside_sim = pd.read_csv(f'{pre_processed_data_path}\\trips_at_least_one_activity_inside_sim.csv', low_memory=False)
 
@@ -224,15 +221,16 @@ if __name__ == '__main__':
 
     try:
         df_population_all_activities_inside_mic = pd.read_csv(f"{microcensus_path}\\population_all_activities_inside_Mic.csv")
-        df_population_at_least_one_activities_inside_mic = pd.read_csv(f"{microcensus_path}\\population_at_least_one_activity_inside_Mic.csv")
+        df_population_at_least_one_activity_inside_mic = pd.read_csv(f"{microcensus_path}\\population_at_least_one_activity_inside_Mic.csv")
         df_trips_all_activities_inside_mic = pd.read_csv(f"{microcensus_path}\\trips_all_activities_inside_Mic.csv")
-        df_trips_at_least_one_activities_inside_mic = pd.read_csv(f"{microcensus_path}\\trips_at_least_one_activity_inside_Mic.csv")
+        df_trips_at_least_one_activity_inside_mic = pd.read_csv(f"{microcensus_path}\\trips_at_least_one_activity_inside_Mic.csv")
     except Exception as e:
         logging.error("Error reading csv files: " + str(e))
         sys.exit()
 
     # Run process_time_data for both df_legs_synt and df_legs_sim
-    df_legs_sim = process_time_data(df_legs_sim)
+    df_trips_all_activities_inside_sim = process_time_data(df_trips_all_activities_inside_sim)
+    df_trips_at_least_one_activity_inside_sim = process_time_data(df_trips_at_least_one_activity_inside_sim)
     if read_SynPop:
         df_legs_synt = process_time_data(df_legs_synt)
 
@@ -256,19 +254,20 @@ if __name__ == '__main__':
         df_persons_synt = df_persons_synt[df_persons_synt['age'] >= 6]
         df_persons_synt['sex'] = df_persons_synt['sex'].replace({'m': 'male', 'f': 'female'})
 
-    df_persons_sim.rename(columns={'id': 'hh_id'}, inplace=True)
-    df_activity_sim_filtered = map_person_id_to_activities(df_activity_sim, df_persons_sim)
+    df_population_all_activities_inside_sim.rename(columns={'person': 'person_id'}, inplace=True)
+    df_activity_population_all_activities_inside_sim = map_person_id_to_activities(df_activity_sim, df_population_all_activities_inside_sim)
     if read_SynPop:
         df_activity_synt_filtered = map_person_id_to_activities(df_activity_synt, df_persons_synt)
 
     values_to_remove = ['freight_unloading', 'freight_loading', 'pt interaction']
     modes_to_remove = ['truck', 'outside']
 
+
     # Process synthetic and simulated data
-    df_activity_sim_filtered, df_legs_sim_filtered = process_activity_and_legs_data(df_activity_sim, df_legs_sim,
+    df_activity_population_all_activities_inside_sim_filtered, df_trips_all_activities_inside_sim_filtered = process_activity_and_legs_data(df_activity_sim, df_trips_all_activities_inside_sim,
                                                                                values_to_remove, modes_to_remove)
-    df_activity_sim = df_activity_sim_filtered
-    df_activity_sim['type'] = df_activity_sim['type'].str.replace('_', ' ').str.title()
+    df_activity_population_all_activities_inside_sim = df_activity_population_all_activities_inside_sim_filtered
+    df_activity_population_all_activities_inside_sim['type'] = df_activity_population_all_activities_inside_sim['type'].str.replace('_', ' ').str.title()
 
 
     if read_SynPop:
@@ -289,12 +288,12 @@ if __name__ == '__main__':
 
 
     # Convert seconds to datetime and resample times to 15-minute bins
-    df_trips_at_least_one_activities_inside_mic = df_trips_at_least_one_activities_inside_mic.dropna()
-    df_trips_at_least_one_activities_inside_mic['departure_time'] = df_trips_at_least_one_activities_inside_mic['departure_time'].apply(safe_convert_time)
-    df_trips_at_least_one_activities_inside_mic['arrival_time'] = df_trips_at_least_one_activities_inside_mic['arrival_time'].apply(safe_convert_time)
-    df_trips_at_least_one_activities_inside_mic['departure_time'] = pd.to_datetime(df_trips_at_least_one_activities_inside_mic['departure_time'], unit='s').dt.floor('30T').dt.time
-    df_trips_at_least_one_activities_inside_mic['arrival_time'] = pd.to_datetime(df_trips_at_least_one_activities_inside_mic['arrival_time'], unit='s').dt.floor('30T').dt.time
-    df_trips_at_least_one_activities_inside_mic['mode'] = df_trips_at_least_one_activities_inside_mic['mode'].str.replace('_', ' ').str.title()
+    df_trips_at_least_one_activity_inside_mic = df_trips_at_least_one_activity_inside_mic.dropna()
+    df_trips_at_least_one_activity_inside_mic['departure_time'] = df_trips_at_least_one_activity_inside_mic['departure_time'].apply(safe_convert_time)
+    df_trips_at_least_one_activity_inside_mic['arrival_time'] = df_trips_at_least_one_activity_inside_mic['arrival_time'].apply(safe_convert_time)
+    df_trips_at_least_one_activity_inside_mic['departure_time'] = pd.to_datetime(df_trips_at_least_one_activity_inside_mic['departure_time'], unit='s').dt.floor('30T').dt.time
+    df_trips_at_least_one_activity_inside_mic['arrival_time'] = pd.to_datetime(df_trips_at_least_one_activity_inside_mic['arrival_time'], unit='s').dt.floor('30T').dt.time
+    df_trips_at_least_one_activity_inside_mic['mode'] = df_trips_at_least_one_activity_inside_mic['mode'].str.replace('_', ' ').str.title()
 
     df_trips_all_activities_inside_mic = df_trips_all_activities_inside_mic.dropna()
     df_trips_all_activities_inside_mic['departure_time'] = df_trips_all_activities_inside_mic['departure_time'].apply(safe_convert_time)
@@ -308,13 +307,13 @@ if __name__ == '__main__':
 
     # Apply the grouping function to the 'number_of_cars' column
     # Mapping '0' to 'male' and '1' to 'female'
-    df_population_at_least_one_activities_inside_mic['number_of_cars'] = df_population_at_least_one_activities_inside_mic['number_of_cars'].apply(group_cars)
-    df_population_at_least_one_activities_inside_mic['sex'] = df_population_at_least_one_activities_inside_mic['sex'].replace({0: 'male', 1: 'female'})
+    df_population_at_least_one_activity_inside_mic['number_of_cars'] = df_population_at_least_one_activity_inside_mic['number_of_cars'].apply(group_cars)
+    df_population_at_least_one_activity_inside_mic['sex'] = df_population_at_least_one_activity_inside_mic['sex'].replace({0: 'male', 1: 'female'})
 
     df_population_all_activities_inside_mic['number_of_cars'] = df_population_all_activities_inside_mic['number_of_cars'].apply(group_cars)
     df_population_all_activities_inside_mic['sex'] = df_population_all_activities_inside_mic['sex'].replace({0: 'male', 1: 'female'})
 
-    df_activity_chains_at_least_one_activities_mic = df_trips_at_least_one_activities_inside_mic.groupby(['person_id']).apply(create_activity_chain_mic).reset_index()
+    df_activity_chains_at_least_one_activity_mic = df_trips_at_least_one_activity_inside_mic.groupby(['person_id']).apply(create_activity_chain_mic).reset_index()
     df_activity_chains_all_activities_inside_mic = df_trips_all_activities_inside_mic.groupby(['person_id']).apply(create_activity_chain_mic).reset_index()
 
     df_activity_chains_sim = df_activity_sim.groupby(['plan_id']).apply(create_activity_chain_syn).reset_index()
@@ -323,14 +322,14 @@ if __name__ == '__main__':
     if not os.path.exists(data_path_clean):
         os.makedirs(data_path_clean)
     # Write the CSV files
-    df_trips_at_least_one_activities_inside_mic.to_csv(f'{data_path_clean}\\trips_at_least_one_activity_inside_mic.csv', index=False)
+    df_trips_at_least_one_activity_inside_mic.to_csv(f'{data_path_clean}\\trips_at_least_one_activity_inside_mic.csv', index=False)
     df_trips_all_activities_inside_mic.to_csv(f'{data_path_clean}\\trips_all_activities_inside_mic.csv', index=False)
 
-    df_activity_chains_at_least_one_activities_mic.to_csv(f'{data_path_clean}\\activity_chains_at_least_one_activity_inside_mic.csv', index=False)
+    df_activity_chains_at_least_one_activity_mic.to_csv(f'{data_path_clean}\\activity_chains_at_least_one_activity_inside_mic.csv', index=False)
     df_activity_chains_all_activities_inside_mic.to_csv(f'{data_path_clean}\\activity_chains_all_activities_inside_mic.csv', index=False)
 
     df_population_all_activities_inside_mic.to_csv(f'{data_path_clean}\\population_all_activities_inside_mic.csv', index=False)
-    df_population_at_least_one_activities_inside_mic.to_csv(f'{data_path_clean}\\population_at_least_one_activity_inside_mic.csv', index=False)
+    df_population_at_least_one_activity_inside_mic.to_csv(f'{data_path_clean}\\population_at_least_one_activity_inside_mic.csv', index=False)
 
     if read_SynPop:
         df_trips_synt.to_csv(f'{data_path_clean}\\trips_synt.csv', index=False)
@@ -338,15 +337,9 @@ if __name__ == '__main__':
         df_persons_synt.to_csv(f'{data_path_clean}\\population_clean_synth.csv', index=False)
         df_legs_synt.to_csv(f'{data_path_clean}\\legs_clean_synt.csv', index=False)
 
-    df_trips_at_least_one_activity_inside_sim.to_csv(f'{data_path_clean}\\trips_at_least_one_activity_inside_sim.csv', index=False)  # no changes here, but moved to data_path_clean
-    df_trips_all_activities_inside_sim.to_csv(f'{data_path_clean}\\trips_all_activities_inside_sim.csv', index=False)  # no changes here, but moved to data_path_clean
-
-    df_persons_sim.to_csv(f'{data_path_clean}\\population_clean_sim.csv', index=False)
     df_activity_chains_sim.to_csv(f'{data_path_clean}\\activity_chains_sim.csv', index=False)
     df_population_all_activities_inside_sim.to_csv(f'{data_path_clean}\\population_all_activities_inside_sim.csv', index=False)
     df_population_at_least_one_activity_inside_sim.to_csv(f'{data_path_clean}\\population_at_least_one_activity_inside_sim.csv', index=False)
-
-    df_legs_sim.to_csv(f'{data_path_clean}\\legs_clean_sim.csv', index=False)
 
     filtered_trips_at_least_one_activitiy_inside_sim = df_trips_all_activities_inside_sim[[
         "person", "start_link", "end_link", "dep_time", "trav_time", "euclidean_distance", "longest_distance_mode",

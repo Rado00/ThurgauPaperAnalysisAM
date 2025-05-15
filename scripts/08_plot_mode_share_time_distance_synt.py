@@ -27,10 +27,10 @@ if __name__ == '__main__':
 
     data_path_clean = os.path.join(data_path, analysis_zone_name, "microzensus")
 
-    df_trips_mic = pd.read_csv(f'{data_path_clean}\\trips_all_activities_inside_mic.csv')
-    logging.info(f"Reading the df_trips_mic csv file was successful.")
+    df_trips_all_activities_inside_mic = pd.read_csv(f'{data_path_clean}\\trips_all_activities_inside_mic.csv')
+    logging.info(f"Reading the df_trips_all_activities_inside_mic csv file was successful.")
 
-    df_mic_mode_share = df_trips_mic[['person_id', 'trip_id', 'purpose', 'departure_time', 'arrival_time', 'crowfly_distance', 'mode', 'household_weight']]
+    df_mic_mode_share = df_trips_all_activities_inside_mic[['person_id', 'trip_id', 'purpose', 'departure_time', 'arrival_time', 'crowfly_distance', 'mode', 'household_weight']]
     df_mic_mode_share.rename(columns={'crowfly_distance': 'distance'}, inplace=True)
 
     df_mic_mode_share['travel_time'] = (pd.to_datetime(df_mic_mode_share['arrival_time']) - pd.to_datetime(df_mic_mode_share['departure_time'])).dt.total_seconds()
@@ -43,7 +43,7 @@ if __name__ == '__main__':
     df_sim_mode_share.rename(columns={'longest_distance_mode': 'mode'}, inplace=True)
 
     modes_to_remove = ['truck', 'outside']
-    df_mic_mode_share['mode'] = df_trips_mic['mode'].str.replace('_', ' ').str.title()
+    df_mic_mode_share['mode'] = df_trips_all_activities_inside_mic['mode'].str.replace('_', ' ').str.title()
     df_sim_mode_share = df_sim_mode_share[~df_sim_mode_share['mode'].isin(modes_to_remove)]
     df_sim_mode_share['mode'] = df_sim_mode_share['mode'].str.replace('_', ' ').str.title()
 
@@ -83,7 +83,13 @@ if __name__ == '__main__':
 
         for i, (df, label) in enumerate(zip(dataframes, labels)):
             y = [df[df['Mode'] == m]['Percentage'].values[0] if m in df['Mode'].values else 0 for m in modes]
-            ax.bar([p + bar_width * i for p in x], y, width=bar_width, label=label)
+            bar_positions = [p + bar_width * i for p in x]
+            bars = ax.bar(bar_positions, y, width=bar_width, label=label)
+
+            # Add percentage labels on top of bars
+            for xpos, height in zip(bar_positions, y):
+                if height > 0:
+                    ax.text(xpos, height + 0.5, f'{height:.1f}%', ha='center', va='bottom', fontsize=9)
 
         ax.set_xticks([p + bar_width * (len(dataframes) - 1) / 2 for p in x])
         ax.set_xticklabels(modes, rotation=45)
@@ -93,6 +99,7 @@ if __name__ == '__main__':
         plt.tight_layout()
         plt.savefig(filename, dpi=300)
         plt.close()
+
 
     distance_plots = [mode_share_weighted_distance_mic, mode_share_distance_mic, mode_share_distance_sim]
     labels = ['Microcensus Weighted', 'Microcensus Single', 'Simulation']
@@ -136,6 +143,48 @@ if __name__ == '__main__':
     )
     logging.info(f"Mode share by travel time figure saved.")
 
+    # ---- TRIP COUNT COMPARISON ---- #
+
+    # 1. Microcensus trip count (raw and weighted)
+    mode_share_trips_mic_raw = df_mic_mode_share['mode'].value_counts(normalize=True).reset_index()
+    mode_share_trips_mic_raw.columns = ['Mode', 'Percentage']
+    mode_share_trips_mic_raw['Percentage'] *= 100
+
+    mode_share_trips_mic_weighted = df_mic_mode_share.groupby('mode')['household_weight'].sum().reset_index()
+    mode_share_trips_mic_weighted.columns = ['Mode', 'Weighted Count']
+    total_weighted = mode_share_trips_mic_weighted['Weighted Count'].sum()
+    mode_share_trips_mic_weighted['Percentage'] = (mode_share_trips_mic_weighted[
+                                                       'Weighted Count'] / total_weighted) * 100
+    mode_share_trips_mic_weighted = mode_share_trips_mic_weighted[['Mode', 'Percentage']]
+
+    # 2. Simulation trip count
+    mode_share_trips_sim = df_sim_mode_share['mode'].value_counts(normalize=True).reset_index()
+    mode_share_trips_sim.columns = ['Mode', 'Percentage']
+    mode_share_trips_sim['Percentage'] *= 100
+
+    # 3. Synthetic (optional)
+    if read_SynPop:
+        mode_share_trips_synt = df_synt_mode_share['mode'].value_counts(normalize=True).reset_index()
+        mode_share_trips_synt.columns = ['Mode', 'Percentage']
+        mode_share_trips_synt['Percentage'] *= 100
+
+    # Plot
+    trip_plots = [mode_share_trips_mic_weighted, mode_share_trips_mic_raw, mode_share_trips_sim]
+    labels = ['Microcensus Weighted', 'Microcensus Raw', 'Simulation']
+    if read_SynPop:
+        trip_plots.append(mode_share_trips_synt)
+        labels.append('Synthetic')
+
+    plot_grouped_bar(
+        trip_plots,
+        labels,
+        'Comparison of Mode Share Distribution - % of Trips',
+        f"{mode_share_directory}\\Mode_share_by_Trips.png",
+        'Percentage (%)'
+    )
+    logging.info(f"Mode share by trip count figure saved.")
+
+
     # ---- SAVE CSVs ---- #
     def save_comparison_csv(*dfs, output_file):
         from functools import reduce
@@ -145,10 +194,15 @@ if __name__ == '__main__':
 
     save_comparison_csv(mode_share_time_mic, mode_share_weighted_time_mic, mode_share_time_sim,
                         *( [mode_share_time_synt] if read_SynPop else [] ),
-                        output_file=f"{mode_share_directory}\\Mode_share_time_comparison.csv")
+                        output_file=f"{mode_share_directory}\\Mode_shares_time.csv")
 
     save_comparison_csv(mode_share_distance_mic, mode_share_weighted_distance_mic, mode_share_distance_sim,
                         *( [mode_share_distance_synt] if read_SynPop else [] ),
-                        output_file=f"{mode_share_directory}\\Mode_share_distance_comparison.csv")
+                        output_file=f"{mode_share_directory}\\Mode_shares_distance.csv")
+
+    save_comparison_csv(mode_share_trips_mic_raw, mode_share_trips_mic_weighted, mode_share_trips_sim,
+                        *([mode_share_trips_synt] if read_SynPop else []),
+                        output_file=f"{mode_share_directory}\\mode_shares_by_trip.csv")
+    logging.info("Trip count comparison CSV saved.")
 
     logging.info("CSV comparison files saved successfully.")

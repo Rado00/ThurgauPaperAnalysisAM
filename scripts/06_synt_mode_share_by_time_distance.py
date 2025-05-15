@@ -48,22 +48,22 @@ if __name__ == '__main__':
             logging.error(f"Error reading synthetic CSV files: {str(e)}")
             sys.exit()
 
-    # Create a dictionary of link data for synthetic and simulation
-    link_dict_synt = df_activity_synt.set_index("link")[["x", "y"]].apply(
-        lambda row: [row["x"], row["y"]], axis=1).to_dict()
+        # Create a dictionary of link data for synthetic and simulation
+        link_dict_synt = df_activity_synt.set_index("link")[["x", "y"]].apply(
+            lambda row: [row["x"], row["y"]], axis=1).to_dict()
 
-    link_dict_synt_str = {str(key): value for key, value in link_dict_synt.items()}
+        link_dict_synt_str = {str(key): value for key, value in link_dict_synt.items()}
 
-    merged_synt_df = pd.merge(df_routes_synt, df_legs_synt, on='id', how='inner')
-    df_synt_mode_share_time_distance = merged_synt_df[['id',  'plan_id', 'start_link', 'end_link', 'dep_time',
-       'trav_time_x', 'distance', 'mode']]
+        merged_synt_df = pd.merge(df_routes_synt, df_legs_synt, on='id', how='inner')
+        df_synt_mode_share_time_distance = merged_synt_df[['id',  'plan_id', 'start_link', 'end_link', 'dep_time',
+           'trav_time_x', 'distance', 'mode']]
 
-    # convert 'trav_time_x' to 'travel_time'
-    df_synt_mode_share_time_distance.rename(columns={'trav_time_x': 'travel_time'}, inplace=True)
+        # convert 'trav_time_x' to 'travel_time'
+        df_synt_mode_share_time_distance.rename(columns={'trav_time_x': 'travel_time'}, inplace=True)
 
-    df_synt_mode_share_time_distance[["x", "y"]] = df_synt_mode_share_time_distance.apply(
-        lambda row: compute_avg_coordinates(row["start_link"], row["end_link"], link_dict_synt_str), axis=1,
-        result_type="expand")
+        df_synt_mode_share_time_distance[["x", "y"]] = df_synt_mode_share_time_distance.apply(
+            lambda row: compute_avg_coordinates(row["start_link"], row["end_link"], link_dict_synt_str), axis=1,
+            result_type="expand")
 
-    df_synt_mode_share_time_distance.to_csv(f'{pre_processed_data_path}\\travel_time_distance_mode_synt.csv', index=False)
-    logging.info("Dataframe saved as csv file successfully")
+        df_synt_mode_share_time_distance.to_csv(f'{pre_processed_data_path}\\travel_time_distance_mode_synt.csv', index=False)
+        logging.info("Dataframe saved as csv file successfully")

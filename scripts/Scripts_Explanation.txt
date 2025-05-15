@@ -32,12 +32,10 @@ CanDo: add filter based on home (commented code)
 03_synPop_and_sim_create_csv_files.py (SynPop CSVs only 1 TIME FOR SHP - to be commented)
 -----------------------------------------
 IN --> 	output_households.xml.gz , output_plans.xml.gz
+		SynPop/households.xml.gz , SynPop/population.xml.gz
 		no filters
 OUT -->:
 		0_PreProcess_CSVs_SyntheticAndOutputs\100pct\df_activity_sim.csv
-		...\df_legs_sim.csv
-		...\df_persons_sim.csv
-		...\df_routes_sim.csv
 		
         ...\df_activity_synt.csv
         ...\df_legs_synt.csv
@@ -48,7 +46,6 @@ OUT -->:
 
 04_synPop_sim_trips.py (1h)(Home population and trips commented because now not necessary)
 -----------------------------------------
-nrows = 1000 nei test
 8 minuti adesso (senza synt e home)
 
 IN --> "sim"\output_trips.csv, output_persons.csv.gz
