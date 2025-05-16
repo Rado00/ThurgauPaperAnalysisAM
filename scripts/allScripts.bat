@@ -2,21 +2,21 @@
 echo Starting the Python analysis pipeline...
 
 REM Activate the Python environment
-call "C:\Users\muaa\Documents\3_MIEI\PythonEnvironments\ThurgauAnalysisEnv\Scripts\activate.bat"
+call "C:\Users\corra\Documents\3_MIEI\PythonEnvironments\ThurgauAnalysisEnv\Scripts\activate.bat"
 
 REM Navigate to the directory containing your scripts
-cd "C:\Users\muaa\Documents\3_MIEI\ThurgauPaperAnalysisAM\scripts"
+cd "C:\Users\corra\Documents\3_MIEI\ThurgauPaperAnalysisAM\scripts"
 
 REM Run each script in sequence
 
 
-REM echo Running 01_microcensus_population_filter.py...
-REM python 01_microcensus_pre-process.py
-REM if %ERRORLEVEL% neq 0 goto :error
+echo Running 01_microcensus_population_filter.py...
+python 01_microcensus_pre-process.py
+if %ERRORLEVEL% neq 0 goto :error
 
-REM echo Running 02_microcensus_trips_filter.py...
-REM python 02_microcensus_trips_filter.py
-REM if %ERRORLEVEL% neq 0 goto :error
+echo Running 02_microcensus_trips_filter.py...
+python 02_microcensus_trips_filter.py
+if %ERRORLEVEL% neq 0 goto :error
 
 echo Running 03_synPop_and_sim_create_csv_files.py...
 python 03_synPop_and_sim_create_csv_files.py
@@ -30,8 +30,8 @@ echo Running 05_generate_clean_csv_files.py...
 python 05_generate_clean_csv_files.py
 if %ERRORLEVEL% neq 0 goto :error
 
-echo Running 06_synt_and_sim_mode_share_by_time_distance.py...
-python 06_synt_and_sim_mode_share_by_time_distance.py
+echo Running 06_synt_mode_share_by_time_distance.py...
+python 06_synt_mode_share_by_time_distance.py
 if %ERRORLEVEL% neq 0 goto :error
 
 echo Running 07_plot_mode_share.py...
