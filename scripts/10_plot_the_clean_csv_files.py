@@ -32,27 +32,22 @@ if __name__ == '__main__':
     # Read the clean csv files
     data_path_clean = os.path.join(data_path, analysis_zone_name, clean_csv_folder, percentile)
 
-    df_trips_mic = pd.read_csv(analysis_zone_path + '\\microzensus\\trips_all_activities_inside_Mic.csv')
+    df_trips_mic = pd.read_csv(f'{data_path_clean}\\trips_all_activities_inside_mic.csv')
 
     if read_SynPop:
         df_trips_synt = pd.read_csv(f'{data_path_clean}\\trips_synt.csv')
-    df_trips_sim = pd.read_csv(f'{data_path_clean}\\trips_sim.csv')
+    df_trips_sim = pd.read_csv(f'{data_path_clean}\\trips_all_activities_inside_sim.csv')
 
-    # TODO: Add Back the lines below, before after modal split
     if read_SynPop:
         df_activity_chains_syn = pd.read_csv(f'{data_path_clean}\\activity_chains_syn.csv')
-    df_activity_chains_sim = pd.read_csv(f'{data_path_clean}\\activity_chains_sim.csv')
-    df_activity_chains_mic = pd.read_csv(f'{data_path_clean}\\activity_chains_mic.csv')
+    df_activity_chains_sim = pd.read_csv(f'{data_path_clean}\\activity_chains_all_activities_inside_mic.csv')
+    df_activity_chains_mic = pd.read_csv(f'{data_path_clean}\\activity_chains_all_activities_inside_mic.csv')
 
-    # TODO: Add Back the lines below, before after modal split
-    df_population_mic = pd.read_csv(f'{data_path_clean}\\population_clean_mic.csv')
+    df_population_mic = pd.read_csv(f'{data_path_clean}\\population_all_activities_inside_mic.csv')
     if read_SynPop:
-        df_persons_synt = pd.read_csv(f'{data_path_clean}\\population_clean_synth.csv')
-        df_legs_synt = pd.read_csv(f'{data_path_clean}\\legs_clean_synt.csv')
-    df_persons_sim = pd.read_csv(f'{data_path_clean}\\population_clean_sim.csv')
-    df_legs_sim = pd.read_csv(f'{data_path_clean}\\legs_clean_sim.csv')
+        df_population_synt = pd.read_csv(f'{data_path_clean}\\population_clean_synth.csv')
+    df_population_sim = pd.read_csv(f'{data_path_clean}\\population_all_activities_inside_sim.csv')
 
-    # TODO: Add Back the lines below, before after modal split
     if read_SynPop:
         df_households_synt = pd.read_csv(f'{pre_processed_data_path}\\df_households_synt.csv')
         df_activity_synt = pd.read_csv(f'{pre_processed_data_path}\\df_activity_synt.csv')
@@ -61,17 +56,17 @@ if __name__ == '__main__':
 
     # TODO: Add Back the lines below, before after modal split
     if read_SynPop:
-        df_persons_synt.loc[df_persons_synt['sex'] == 'male', 'sex'] = 'Male'
-        df_persons_synt.loc[df_persons_synt['sex'] == 'female', 'sex'] = 'Female'
+        df_population_synt.loc[df_population_synt['sex'] == 'male', 'sex'] = 'Male'
+        df_population_synt.loc[df_population_synt['sex'] == 'female', 'sex'] = 'Female'
     df_population_mic.loc[df_population_mic['sex'] == 'male', 'sex'] = 'Male'
     df_population_mic.loc[df_population_mic['sex'] == 'female', 'sex'] = 'Female'
 
     if 'household_weight_x' in df_trips_mic.columns:
         df_trips_mic.rename(columns={'household_weight_x': 'household_weight'}, inplace=True)
 
-    # Count the frequency of each gender for df_persons_synt
+    # Count the frequency of each gender for df_population_synt
     if read_SynPop:
-        gender_counts_synt = df_persons_synt['sex'].value_counts().reset_index()
+        gender_counts_synt = df_population_synt['sex'].value_counts().reset_index()
         gender_counts_synt.columns = ['gender', 'count']
 
     # TODO: Add Back the lines below, before after modal split
@@ -531,46 +526,9 @@ if __name__ == '__main__':
     fig.write_image(f"{plots_directory}\\comparative_trip_purpose_distribution_by_number.png", scale=4)
     logging.info("Trip purpose comparison by number has been plotted successfully.")
     # ------------------------------------------------------------------------------------------------------------------------------------------------
-    # Now calculate the value counts and percentages for the cleaned-up modes
-    if read_SynPop:
-        mode_counts_synt = df_legs_synt['mode'].value_counts().reset_index()
-        mode_counts_synt.columns = ['Mode', 'Count']
-        mode_counts_synt['Percentage'] = (mode_counts_synt['Count'] / mode_counts_synt['Count'].sum()) * 100
-
-    # Group by mode and sum the household weights for each mode
-    mode_counts_mic_with_household_weight = df_trips_mic.groupby('mode')['household_weight'].sum().reset_index()
-    mode_counts_mic_with_household_weight.columns = ['Mode', 'Weighted_Count']
-
-    # Calculate the total weight
-    total_weight = mode_counts_mic_with_household_weight['Weighted_Count'].sum()
-
-    # Calculate percentage distribution based on weighted counts
-    mode_counts_mic_with_household_weight['Percentage'] = (mode_counts_mic_with_household_weight[
-                                                               'Weighted_Count'] / total_weight) * 100
 
     # Create a figure with subplots
     fig = go.Figure()
-
-    # Add bars for microcensus modes percentage
-    fig.add_trace(go.Bar(
-        x=mode_counts_mic_with_household_weight['Mode'],
-        y=mode_counts_mic_with_household_weight['Percentage'],
-        name='Microcensus',
-        text=mode_counts_mic_with_household_weight['Percentage'].round(1),
-        textposition='outside',
-        marker_color='blue'
-    ))
-
-    # Add bars for synthetic legs modes percentage
-    if read_SynPop:
-        fig.add_trace(go.Bar(
-            x=mode_counts_synt['Mode'],
-            y=mode_counts_synt['Percentage'],
-            name='Synthetic',
-            text=mode_counts_synt['Percentage'].round(1),
-            textposition='outside',
-            marker_color='red'
-        ))
 
     # Update the layout for a grouped bar chart
     fig.update_layout(
@@ -601,45 +559,7 @@ if __name__ == '__main__':
     # Create a figure with subplots
     fig = go.Figure()
 
-    # Add bars for microcensus modes percentage
-    fig.add_trace(go.Bar(
-        x=mode_counts_mic_by_number['Mode'],
-        y=mode_counts_mic_by_number['Percentage'],
-        name='Microcensus',
-        text=mode_counts_mic_by_number['Percentage'].round(1),
-        textposition='outside',
-        marker_color='blue'
-    ))
-
-    # Add bars for synthetic legs modes percentage
-    if read_SynPop:
-        fig.add_trace(go.Bar(
-            x=mode_counts_synt['Mode'],
-            y=mode_counts_synt['Percentage'],
-            name='Synthetic',
-            text=mode_counts_synt['Percentage'].round(1),
-            textposition='outside',
-            marker_color='red'
-        ))
-
-    # Update the layout for a grouped bar chart
-    fig.update_layout(
-        barmode='group',
-        title='Comparison of Mode Share Distribution - PercentageBy Number',
-        xaxis_title='Mode of Transportation',
-        yaxis_title='Percentage (%)',
-        legend_title='Dataset',
-        width=1200,
-        height=600
-    )
-
-    # Show the figure
-    # fig.show()
-
-    # Save the figure as an image with higher resolution
-    fig.write_image(f"{plots_directory}\\comparative_trip_mode_share_distribution_by_number.png", scale=4)
-    logging.info("Trip mode share comparison by number has been plotted successfully.")
-    # ------------------------------------------------------------------------------------------------------------------------------------------------
+# ------------------------------------------------------------------------------------------------------------------------------------------------
     # Group by age and sum the weights for each age
     weighted_age_counts_with_household_weight = df_population_mic.groupby('age')['household_weight'].sum().reset_index()
     weighted_age_counts_with_household_weight.columns = ['Age', 'Weighted_Count']
@@ -651,12 +571,12 @@ if __name__ == '__main__':
     weighted_age_counts_with_household_weight['Percentage_weighted'] = (weighted_age_counts_with_household_weight[
                                                                             'Weighted_Count'] / total_weight) * 100
 
-    # Calculate age distribution for df_persons_synt
+    # Calculate age distribution for df_population_synt
     if read_SynPop:
-        age_counts_persons = df_persons_synt['age'].value_counts().sort_index().reset_index()
-        age_counts_persons.columns = ['Age', 'Count_persons']
-        age_counts_persons['Percentage_persons'] = (age_counts_persons['Count_persons'] / age_counts_persons[
-            'Count_persons'].sum()) * 100
+        age_counts_population = df_population_synt['age'].value_counts().sort_index().reset_index()
+        age_counts_population.columns = ['Age', 'Count_population']
+        age_counts_population['Percentage_population'] = (age_counts_population['Count_population'] / age_counts_population[
+            'Count_population'].sum()) * 100
 
     # Create a figure with subplots
     fig = go.Figure()
@@ -669,11 +589,11 @@ if __name__ == '__main__':
         marker_color='blue'
     ))
 
-    # # Add the second bar for df_persons_synt percentage
+    # # Add the second bar for df_population_synt percentage
     if read_SynPop:
         fig.add_trace(go.Bar(
-            x=age_counts_persons['Age'],
-            y=age_counts_persons['Percentage_persons'],
+            x=age_counts_population['Age'],
+            y=age_counts_population['Percentage_population'],
             name='Population Synthetic',
             marker_color='red'
         ))
@@ -714,11 +634,11 @@ if __name__ == '__main__':
         marker_color='blue'
     ))
 
-    # Add the second bar for df_persons_synt percentage
+    # Add the second bar for df_population_synt percentage
     if read_SynPop:
         fig.add_trace(go.Bar(
-            x=age_counts_persons['Age'],
-            y=age_counts_persons['Percentage_persons'],
+            x=age_counts_population['Age'],
+            y=age_counts_population['Percentage_population'],
             name='Population Synthetic',
             marker_color='red'
         ))
@@ -929,212 +849,3 @@ if __name__ == '__main__':
         fig.write_image(f"{plots_directory}\\comparative_activity_chain_distribution.png", scale=4)
         logging.info("Activity chain comparison has been plotted successfully.")
     # ------------------------------------------------------------------------------------------------------------------------------------------------
-    # Now calculate the value counts and percentages for the cleaned-up modes
-    if read_SynPop:
-        mode_counts_synt = df_legs_synt['mode'].value_counts().reset_index()
-        mode_counts_synt.columns = ['Mode', 'Count']
-        mode_counts_synt['Percentage'] = (mode_counts_synt['Count'] / mode_counts_synt['Count'].sum()) * 100
-
-    # Now calculate the value counts and percentages for the cleaned-up modes
-    mode_counts_sim = df_legs_sim['mode'].value_counts().reset_index()
-    mode_counts_sim.columns = ['Mode', 'Count']
-    mode_counts_sim['Percentage'] = (mode_counts_sim['Count'] / mode_counts_sim['Count'].sum()) * 100
-
-    # Group by mode and sum the household weights for each mode
-    weighted_mode_counts_with_household_weight = df_trips_mic.groupby('mode')['household_weight'].sum().reset_index()
-    weighted_mode_counts_with_household_weight.columns = ['Mode', 'Weighted_Count']
-
-    # Calculate the total weight
-    total_weight = weighted_mode_counts_with_household_weight['Weighted_Count'].sum()
-
-    # Calculate percentage distribution based on weighted counts
-    weighted_mode_counts_with_household_weight['Percentage'] = (weighted_mode_counts_with_household_weight[
-                                                                    'Weighted_Count'] / total_weight) * 100
-
-    # Create a figure with subplots
-    fig = go.Figure()
-
-    # Add bars for microcensus modes percentage
-    fig.add_trace(go.Bar(
-        x=weighted_mode_counts_with_household_weight['Mode'],
-        y=weighted_mode_counts_with_household_weight['Percentage'],
-        text=weighted_mode_counts_with_household_weight['Percentage'].round(1),
-        textposition='outside',
-        name='Microcensus',
-        marker_color='blue'
-    ))
-
-    # Add bars for synthetic legs modes percentage
-    if read_SynPop:
-        fig.add_trace(go.Bar(
-            x=mode_counts_synt['Mode'],
-            y=mode_counts_synt['Percentage'],
-            name='Synthetic',
-            text=mode_counts_synt['Percentage'].round(1),
-            textposition='outside',
-            marker_color='red'
-        ))
-
-    # Add bars for simulation legs modes percentage
-    fig.add_trace(go.Bar(
-        x=mode_counts_sim['Mode'],
-        y=mode_counts_sim['Percentage'],
-        name='Simulation',
-        text=mode_counts_sim['Percentage'].round(1),
-        textposition='outside',
-        marker_color='green'
-    ))
-
-    # Update the layout for a grouped bar chart
-    fig.update_layout(
-        barmode='group',
-        title='Comparison of Mode Share Distribution - Percentage With Household Weight',
-        xaxis_title='Mode of Transportation',
-        yaxis_title='Percentage (%)',
-        legend_title='Dataset',
-        width=1200,
-        height=600
-    )
-
-    # Save the figure as an image with higher resolution
-    fig.write_image(f"{plots_directory}\\validation_mode_share_distribution_with_household_weight.png", scale=4)
-    logging.info("Mode share comparison with household weight has been plotted successfully.")
-    # ------------------------------------------------------------------------------------------------------------------------------------------------
-    # Group by mode and sum the household weights for each mode
-    weighted_mode_counts_by_number = df_trips_mic['mode'].value_counts().reset_index().sort_values('mode')
-    weighted_mode_counts_by_number.columns = ['Mode', 'Weighted_Count']
-
-    # Calculate the total weight
-    total_weight = weighted_mode_counts_by_number['Weighted_Count'].sum()
-
-    # Calculate percentage distribution based on weighted counts
-    weighted_mode_counts_by_number['Percentage'] = (weighted_mode_counts_by_number[
-                                                        'Weighted_Count'] / total_weight) * 100
-
-    # Create a figure with subplots
-    fig = go.Figure()
-
-    # Add bars for microcensus modes percentage
-    fig.add_trace(go.Bar(
-        x=weighted_mode_counts_by_number['Mode'],
-        y=weighted_mode_counts_by_number['Percentage'],
-        name='Microcensus',
-        text=weighted_mode_counts_by_number['Percentage'].round(1),
-        textposition='outside',
-        marker_color='blue'
-    ))
-
-    # Add bars for synthetic legs modes percentage
-    if read_SynPop:
-        fig.add_trace(go.Bar(
-            x=mode_counts_synt['Mode'],
-            y=mode_counts_synt['Percentage'],
-            name='Synthetic',
-            text=mode_counts_synt['Percentage'].round(1),
-            textposition='outside',
-            marker_color='red'
-        ))
-
-    # Add bars for simulation legs modes percentage
-    fig.add_trace(go.Bar(
-        x=mode_counts_sim['Mode'],
-        y=mode_counts_sim['Percentage'],
-        name='Simulation',
-        text=mode_counts_sim['Percentage'].round(1),
-        textposition='outside',
-        marker_color='green'
-    ))
-
-    # Update the layout for a grouped bar chart
-    fig.update_layout(
-        barmode='group',
-        title='Comparison of Mode Share Distribution - Percentage By Number',
-        xaxis_title='Mode of Transportation',
-        yaxis_title='Percentage (%)',
-        legend_title='Dataset',
-        width=1200,
-        height=600
-    )
-
-    # Save the figure as an image with higher resolution
-    fig.write_image(f"{plots_directory}\\validation_mode_share_distribution_by_number.png", scale=4)
-    logging.info("Mode share comparison by number has been plotted successfully.")
-    # ------------------------------------------------------------------------------------------------------------------------------------------------
-
-    # Create a figure with subplots
-    fig = go.Figure()
-
-    # Add bars for microcensus modes percentage
-    fig.add_trace(go.Bar(
-        x=weighted_mode_counts_by_number['Mode'],
-        y=weighted_mode_counts_by_number['Percentage'],
-        name='Microcensus by Number',
-        text=weighted_mode_counts_by_number['Percentage'].round(1),
-        textposition='outside',
-        marker_color='blue'
-    ))
-
-    fig.add_trace(go.Bar(
-        x=weighted_mode_counts_with_household_weight['Mode'],
-        y=weighted_mode_counts_with_household_weight['Percentage'],
-        name='Microcensus - Household',
-        text=weighted_mode_counts_with_household_weight['Percentage'].round(1),
-        textposition='outside',
-        marker_color='yellow'
-    ))
-
-    # Add bars for synthetic legs modes percentage
-    if read_SynPop:
-        fig.add_trace(go.Bar(
-            x=mode_counts_synt['Mode'],
-            y=mode_counts_synt['Percentage'],
-            name='Synthetic',
-            text=mode_counts_synt['Percentage'].round(1),
-            textposition='outside',
-            marker_color='red'
-        ))
-
-    # Add bars for simulation legs modes percentage
-    fig.add_trace(go.Bar(
-        x=mode_counts_sim['Mode'],
-        y=mode_counts_sim['Percentage'],
-        name='Simulation',
-        text=mode_counts_sim['Percentage'].round(1),
-        textposition='outside',
-        marker_color='green'
-    ))
-
-    # Update the layout for a grouped bar chart
-    fig.update_layout(
-        barmode='group',
-        title='Comparison of Mode Share Distribution all Together',
-        xaxis_title='Mode of Transportation',
-        yaxis_title='Percentage (%)',
-        legend_title='Dataset',
-        width=1200,
-        height=600
-    )
-
-    # Save the figure as an image with higher resolution
-    fig.write_image(f"{plots_directory}\\comparison_mode_share_distribution_all_together.png", scale=4)
-    logging.info("Mode share comparison all together has been plotted successfully.")
-
-    # # Save the Mode share distribution for all the datasets in a csv data file
-    df_household = weighted_mode_counts_with_household_weight.rename(columns={"Weighted_Count": "Household_Count", "Percentage": "Household_Percentage"})
-    df_number = weighted_mode_counts_by_number.rename(columns={"Weighted_Count": "Number_Count", "Percentage": "Number_Percentage"})
-    df_sim = mode_counts_sim.rename(columns={"Count": "Simulation_Count", "Percentage": "Simulation_Percentage"})
-    if read_SynPop:
-        df_synt = mode_counts_synt.rename(columns={"Count": "Synthetic_Count", "Percentage": "Synthetic_Percentage"})
-
-    mode_share_directory = os.path.join(plots_directory, 'mode_share')
-
-    if read_SynPop:
-        mode_share_directory = os.path.join(plots_directory, 'mode_share').merge(df_synt, on='Mode', how='outer')
-
-    mode_share_comparison = df_household.merge(df_number, on='Mode', how='outer').merge(df_sim, on='Mode', how='outer')
-
-    mode_share_rounded_df = mode_share_comparison.round(2)
-    now = datetime.now().strftime("%Y_%m_%d_%H_%M_%S")
-
-    mode_share_rounded_df.to_csv(f"{mode_share_directory}\\mode_share_trip_comparison.csv", index=False)
-    logging.info("Mode share comparison data has been saved successfully.")

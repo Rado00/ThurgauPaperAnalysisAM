@@ -161,7 +161,6 @@ OUT -->:
 		Mode_shares_by_trip.csv
 		Mode_shares_time.csv
 		Mode_share_by_Distance.png
-		Mode_share_by_Travel_Time.png
 		Mode_share_by_Trips.png
 		
 		
@@ -279,15 +278,6 @@ Activity types (synthetic population)
 Trip purposes (microcensus)
 
 Excludes irrelevant activities like outside, freight_loading, etc.
-
-4.5 Mode Share
-Bar plots comparing transportation mode usage across datasets:
-
-Microcensus
-
-Synthetic
-
-Simulation results
 
 4.6 Age Distribution
 Bar plots comparing age distributions:
