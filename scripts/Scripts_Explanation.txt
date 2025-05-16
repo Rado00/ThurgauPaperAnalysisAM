@@ -153,14 +153,18 @@ OUT-->:
 08_plot_mode_share_time_distance_synt.py
 -----------------------------------------
 IN -->:
-	Microcensus trips: trips_mic.csv
-	Synthetic trips: travel_time_distance_mode_synt.csv
-	Simulation trips: travel_time_distance_mode_sim.csv
-
+	trips_all_activities_inside_mic.csv
+	trips_all_activities_inside_sim.csv	
+	
 OUT -->:
+		Mode_shares_distance.csv
+		Mode_shares_by_trip.csv
+		Mode_shares_time.csv
+		Mode_share_by_Distance.png
 		Mode_share_by_Travel_Time.png
-		Mode_share_time_comparison.csv
-		Mode_share_distance_comparison.csv
+		Mode_share_by_Trips.png
+		
+		
 
 
 
