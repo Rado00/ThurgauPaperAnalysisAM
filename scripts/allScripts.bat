@@ -38,6 +38,10 @@ echo Running 07_plot_mode_share.py...
 python 07_plot_mode_share.py
 if %ERRORLEVEL% neq 0 goto :error
 
+echo Running 08_plot_mode_share_target_area.py...
+python 08_plot_mode_share_target_area.py
+if %ERRORLEVEL% neq 0 goto :error
+
 REM echo Running 09_plot_smaller_zones_modal_split.py...
 REM python 09_plot_smaller_zones_modal_split.py
 REM if %ERRORLEVEL% neq 0 goto :error
