@@ -2,10 +2,10 @@
 echo Starting the Python analysis pipeline...
 
 REM Activate the Python environment
-call "C:\Users\corra\Documents\3_MIEI\PythonEnvironments\ThurgauAnalysisEnv\Scripts\activate.bat"
+call "C:\Users\corra\Documents\1_GitHub\PythonEnvironments\ThurgauAnalysisEnv\Scripts\activate.bat"
 
 REM Navigate to the directory containing your scripts
-cd "C:\Users\corra\Documents\3_MIEI\ThurgauPaperAnalysisAM\scripts"
+cd "C:\Users\corra\Documents\1_GitHub\ThurgauPaperAnalysisAM\scripts"
 
 REM Run each script in sequence
 
@@ -46,13 +46,13 @@ REM echo Running 09_plot_smaller_zones_modal_split.py...
 REM python 09_plot_smaller_zones_modal_split.py
 REM if %ERRORLEVEL% neq 0 goto :error
 
-echo Running 10_plot_the_clean_csv_files.py...
-python 10_plot_the_clean_csv_files.py
-if %ERRORLEVEL% neq 0 goto :error
+REM echo Running 10_plot_the_clean_csv_files.py...
+REM python 10_plot_the_clean_csv_files.py
+REM if %ERRORLEVEL% neq 0 goto :error
 
-echo Running 11_CSVs_in_a_column.py...
-python 11_CSVs_in_a_column.py
-if %ERRORLEVEL% neq 0 goto :error
+REM echo Running 11_CSVs_in_a_column.py...
+REM python 11_CSVs_in_a_column.py
+REM if %ERRORLEVEL% neq 0 goto :error
 
 REM echo Running 12_DRT_Data_Analysis.py...
 REM python 12_DRT_Data_Analysis.py

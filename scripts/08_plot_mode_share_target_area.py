@@ -82,7 +82,7 @@ def load_and_prepare_data(file_path, target_area_gdf, x_col, y_col, mode_col='mo
 
 def main():
     setup_logging(get_log_filename())
-    data_path, simulation_zone_name, scenario, sim_output_folder, percentile, analysis_zone_name, csv_folder, clean_csv_folder, shapeFileName, read_SynPop, sample_for_debugging = read_config()
+    data_path, simulation_zone_name, scenario, sim_output_folder, percentile, analysis_zone_name, csv_folder, clean_csv_folder, shapeFileName, read_SynPop, read_microcensus, sample_for_debugging = read_config()
 
     data_path_clean = os.path.join(data_path, analysis_zone_name, clean_csv_folder, percentile)
     plots_directory = os.path.join(os.path.dirname(os.getcwd()), f'plots/plots_{sim_output_folder.split("\\")[-1]}')
@@ -94,6 +94,9 @@ def main():
 
     df_mic = load_and_prepare_data(os.path.join(data_path_clean, "trips_all_activities_inside_mic.csv"), target_area, 'start_coor_x', 'start_coor_y')
     df_sim = load_and_prepare_data(os.path.join(data_path_clean, "trips_all_activities_inside_sim.csv"), target_area, 'start_x', 'start_y')
+    print("Number of microcensus trips after filtering:", len(df_mic))
+    print("Number of unique persons in microcensus data:",
+          df_mic['person_id'].nunique() if 'person_id' in df_mic.columns else 'person_id column not found')
 
     if read_SynPop:
         df_synt = load_and_prepare_data(os.path.join(data_path_clean, "travel_time_distance_mode_synt.csv"), target_area, 'start_coor_x', 'start_coor_y')

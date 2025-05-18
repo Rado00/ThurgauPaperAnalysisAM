@@ -5,7 +5,7 @@ from functions.commonFunctions import *
 if __name__ == '__main__':
     setup_logging(get_log_filename())
 
-    data_path, simulation_zone_name, scenario, sim_output_folder, percentile, analysis_zone_name, csv_folder, clean_csv_folder, shapeFileName, read_SynPop, sample_for_debugging = read_config()
+    data_path, simulation_zone_name, scenario, sim_output_folder, percentile, analysis_zone_name, csv_folder, clean_csv_folder, shapeFileName, read_SynPop, read_microcensus, sample_for_debugging = read_config()
     logging.info(f"Reading config file from {data_path} path was successful.")
     directory = os.getcwd()
     parent_directory = os.path.dirname(directory)
@@ -16,9 +16,12 @@ if __name__ == '__main__':
 
     # List of specific CSV files to read
     specific_files = [
-        'mode_share_trip_comparison.csv',
-        'Mode_share_distance_comparison.csv',
+        'Mode_shares_by_trip.csv',
+        'Mode_shares_distance.csv',
         'Mode_share_time_comparison.csv'
+        'Mode_shares_by_trip_target_area.csv'
+        'Mode_shares_distance_target_area.csv'
+        'Mode_shares_time_target_area.csv'
     ]
 
     # Mode mappings for index
@@ -32,49 +35,49 @@ if __name__ == '__main__':
 
     desired_order = [
         "% Distance Bike Mic weighted",
-        "% Distance Bike Mic by raw",
+        "% Distance Bike Mic by row",
         "% Distance Bike Sim",
         "% Distance Car Mic weighted",
-        "% Distance Car Mic by raw",
+        "% Distance Car Mic by row",
         "% Distance Car Sim",
         "% Distance Car Passenger Mic weighted",
-        "% Distance Car Passenger Mic by raw",
+        "% Distance Car Passenger Mic by row",
         "% Distance Car Passenger Sim",
         "% Distance PT Mic weighted",
-        "% Distance PT Mic by raw",
+        "% Distance PT Mic by row",
         "% Distance PT Sim",
         "% Distance Walk Mic weighted",
-        "% Distance Walk Mic by raw",
+        "% Distance Walk Mic by row",
         "% Distance Walk Sim",
         "% TravelTime Bike Mic weighted",
-        "% TravelTime Bike Mic by raw",
+        "% TravelTime Bike Mic by row",
         "% TravelTime Bike Sim",
         "% TravelTime Car Mic weighted",
-        "% TravelTime Car Mic by raw",
+        "% TravelTime Car Mic by row",
         "% TravelTime Car Sim",
         "% TravelTime Car Passenger Mic weighted",
-        "% TravelTime Car Passenger Mic by raw",
+        "% TravelTime Car Passenger Mic by row",
         "% TravelTime Car Passenger Sim",
         "% TravelTime PT Mic weighted",
-        "% TravelTime PT Mic by raw",
+        "% TravelTime PT Mic by row",
         "% TravelTime PT Sim",
         "% TravelTime Walk Mic weighted",
-        "% TravelTime Walk Mic by raw",
+        "% TravelTime Walk Mic by row",
         "% TravelTime Walk Sim",
         "% Trips Bike Mic weighted",
-        "% Trips Bike Mic by raw",
+        "% Trips Bike Mic by row",
         "% Trips Bike Sim",
         "% Trips Car Mic weighted",
-        "% Trips Car Mic by raw",
+        "% Trips Car Mic by row",
         "% Trips Car Sim",
         "% Trips Car Passenger Mic weighted",
-        "% Trips Car Passenger Mic by raw",
+        "% Trips Car Passenger Mic by row",
         "% Trips Car Passenger Sim",
         "% Trips PT Mic weighted",
-        "% Trips PT Mic by raw",
+        "% Trips PT Mic by row",
         "% Trips PT Sim",
         "% Trips Walk Mic weighted",
-        "% Trips Walk Mic by raw",
+        "% Trips Walk Mic by row",
         "% Trips Walk Sim",
         "Count Distance Bike Thurgau Sim",
         "Count Distance Car Thurgau Sim",
@@ -122,7 +125,7 @@ if __name__ == '__main__':
                             mode = mode_mappings.get(index, '')
                             if file_name == 'Mode_share_distance_comparison.csv':
                                 if 'Percentage Microcensus' in col:
-                                    title = f"% Distance {mode} Mic by raw"
+                                    title = f"% Distance {mode} Mic by row"
                                 elif 'Percentage Weighted Microcensus' in col:
                                     title = f"% Distance {mode} Mic weighted"
                                 elif 'Total Distance Simulation' in col:
@@ -135,7 +138,7 @@ if __name__ == '__main__':
                                     continue
                             elif file_name == 'mode_share_trip_comparison.csv':
                                 if 'Number_Percentage' in col:
-                                    title = f"% Trips {mode} Mic by raw"
+                                    title = f"% Trips {mode} Mic by row"
                                 elif 'Household_Percentage' in col:
                                     title = f"% Trips {mode} Mic weighted"
                                 elif 'Simulation_Count' in col:
@@ -148,7 +151,7 @@ if __name__ == '__main__':
                                     continue
                             elif file_name == 'Mode_share_time_comparison.csv':
                                 if 'Percentage Microcensus' in col:
-                                    title = f"% TravelTime {mode} Mic by raw"
+                                    title = f"% TravelTime {mode} Mic by row"
                                 elif 'Percentage Weighted Microcensus' in col:
                                     title = f"% TravelTime {mode} Mic weighted"
                                 elif 'Percentage Simulation' in col:

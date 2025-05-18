@@ -213,173 +213,175 @@ def create_activity_chain(group):
 if __name__ == '__main__':
     setup_logging(get_log_filename())
 
-    data_path, simulation_zone_name, scenario, sim_output_folder, percentile, analysis_zone_name, csv_folder, clean_csv_folder, shapeFileName, read_SynPop, sample_for_debugging = read_config()
-    analysis_zone_path = os.path.join(data_path, analysis_zone_name)
-    trips = execute(analysis_zone_path)
-    # TODO remove this line
-    # trips = trips.head(100)
-    trips.to_csv(analysis_zone_path + '\\microzensus\\row_trips.csv')
-    logging.info("Microcensus trips filtered successfully")
+    data_path, simulation_zone_name, scenario, sim_output_folder, percentile, analysis_zone_name, csv_folder, clean_csv_folder, shapeFileName, read_SynPop, read_microcensus, sample_for_debugging = read_config()
 
-    # Load geographic data from a shapefile
-    shapefile_path = os.path.join(analysis_zone_path,
-                                  f"ShapeFiles\\{shapeFileName}")
-    gdf = gpd.read_file(shapefile_path, engine="pyogrio")
+    if read_microcensus:
+        analysis_zone_path = os.path.join(data_path, analysis_zone_name)
+        trips = execute(analysis_zone_path)
+        # TODO remove this line
+        # trips = trips.head(100)
+        trips.to_csv(analysis_zone_path + '\\microzensus\\row_trips.csv')
+        logging.info("Microcensus trips filtered successfully")
 
-    area_polygon = gdf.iloc[0]['geometry']
-    logging.info("Shapefile loaded successfully and area_polygon created successfully")
+        # Load geographic data from a shapefile
+        shapefile_path = os.path.join(analysis_zone_path,
+                                      f"ShapeFiles\\{shapeFileName}")
+        gdf = gpd.read_file(shapefile_path, engine="pyogrio")
 
-    # Create Point geometries for origin and destination
-    trips['origin_point'] = trips.apply(lambda row: Point(row['origin_x'], row['origin_y']), axis=1)
-    trips['destination_point'] = trips.apply(lambda row: Point(row['destination_x'], row['destination_y']), axis=1)
+        area_polygon = gdf.iloc[0]['geometry']
+        logging.info("Shapefile loaded successfully and area_polygon created successfully")
 
-    # Filter trips where both origin and destination are within the given city polygon shapefile
-    filtered_trips_inside = trips[
-        trips['origin_point'].apply(lambda point: point.within(area_polygon)) &
-        trips['destination_point'].apply(lambda point: point.within(area_polygon))
-        ]
+        # Create Point geometries for origin and destination
+        trips['origin_point'] = trips.apply(lambda row: Point(row['origin_x'], row['origin_y']), axis=1)
+        trips['destination_point'] = trips.apply(lambda row: Point(row['destination_x'], row['destination_y']), axis=1)
 
-    logging.info("Trips filtered successfully based on the shapefile polygon successfully")
+        # Filter trips where both origin and destination are within the given city polygon shapefile
+        filtered_trips_inside = trips[
+            trips['origin_point'].apply(lambda point: point.within(area_polygon)) &
+            trips['destination_point'].apply(lambda point: point.within(area_polygon))
+            ]
 
-    rest_of_trips = trips.drop(filtered_trips_inside.index)
+        logging.info("Trips filtered successfully based on the shapefile polygon successfully")
 
-    # The ids of the people who have trips inside the area
-    ids_inside = set(filtered_trips_inside['person_id'])
+        rest_of_trips = trips.drop(filtered_trips_inside.index)
 
-    # The ids of the people who have trips outside the area
-    ids_rest = set(rest_of_trips['person_id'])
+        # The ids of the people who have trips inside the area
+        ids_inside = set(filtered_trips_inside['person_id'])
 
-    # The ids of the people who have trips inside the area but not outside
-    unique_ids = ids_inside.difference(ids_rest)
+        # The ids of the people who have trips outside the area
+        ids_rest = set(rest_of_trips['person_id'])
 
-    filtered_trips_inside.to_csv(analysis_zone_path + '\\microzensus\\trips_inside_O_and_D_Mic.csv')
+        # The ids of the people who have trips inside the area but not outside
+        unique_ids = ids_inside.difference(ids_rest)
 
-    filtered_trips_inside_outside = trips[
-        trips['origin_point'].apply(lambda point: point.within(area_polygon)) |
-        trips['destination_point'].apply(lambda point: point.within(area_polygon))
-        ]
+        filtered_trips_inside.to_csv(analysis_zone_path + '\\microzensus\\trips_inside_O_and_D_Mic.csv')
 
-    filtered_trips_inside_outside.to_csv(analysis_zone_path + '\\microzensus\\trips_inside_O_or_D_Mic.csv', index=False)
+        filtered_trips_inside_outside = trips[
+            trips['origin_point'].apply(lambda point: point.within(area_polygon)) |
+            trips['destination_point'].apply(lambda point: point.within(area_polygon))
+            ]
 
-    # Create activity chains
-    df_activity_chains = filtered_trips_inside.groupby(['person_id']).apply(create_activity_chain).reset_index()
+        filtered_trips_inside_outside.to_csv(analysis_zone_path + '\\microzensus\\trips_inside_O_or_D_Mic.csv', index=False)
 
-    all_population = pd.read_csv(f"{analysis_zone_path}\\microzensus\\all_population.csv")
-    # Recreate population_home_inside.csv if want to analyse w home inside
-    # population_home_inside = pd.read_csv(f"{analysis_zone_path}\\microzensus\\population_home_inside.csv")
-    # trips_population_home_inside = trips[trips['person_id'].isin(population_home_inside['person_id'])]
-    # trips_population_home_inside.to_csv(analysis_zone_path + '\\microzensus\\trips_population_home_inside_Mic.csv', index=False)
+        # Create activity chains
+        df_activity_chains = filtered_trips_inside.groupby(['person_id']).apply(create_activity_chain).reset_index()
 
-    # Filter the population to include only those with trips inside the area
-    population_with_trips_O_and_D = all_population[all_population['person_id'].isin(unique_ids)]
+        all_population = pd.read_csv(f"{analysis_zone_path}\\microzensus\\all_population.csv")
+        # Recreate population_home_inside.csv if want to analyse w home inside
+        # population_home_inside = pd.read_csv(f"{analysis_zone_path}\\microzensus\\population_home_inside.csv")
+        # trips_population_home_inside = trips[trips['person_id'].isin(population_home_inside['person_id'])]
+        # trips_population_home_inside.to_csv(analysis_zone_path + '\\microzensus\\trips_population_home_inside_Mic.csv', index=False)
 
-    population_with_trips_O_and_D.to_csv(analysis_zone_path + '\\microzensus\\population_all_activities_inside_Mic.csv', index=False)
+        # Filter the population to include only those with trips inside the area
+        population_with_trips_O_and_D = all_population[all_population['person_id'].isin(unique_ids)]
 
-    # Filter the population to include only those with trips origin inside or destination inside the area
-    population_with_trips_O_or_D = all_population[all_population['person_id'].isin(filtered_trips_inside_outside['person_id'])]
+        population_with_trips_O_and_D.to_csv(analysis_zone_path + '\\microzensus\\population_all_activities_inside_Mic.csv', index=False)
 
-    population_with_trips_O_or_D.to_csv(analysis_zone_path + '\\microzensus\\population_at_least_one_activity_inside_Mic.csv', index=False)
+        # Filter the population to include only those with trips origin inside or destination inside the area
+        population_with_trips_O_or_D = all_population[all_population['person_id'].isin(filtered_trips_inside_outside['person_id'])]
 
-    trips = trips.merge(all_population[['person_id', 'household_weight']], on='person_id', how='left')
+        population_with_trips_O_or_D.to_csv(analysis_zone_path + '\\microzensus\\population_at_least_one_activity_inside_Mic.csv', index=False)
 
-    # Filter the trips to include only those with origin inside or destination inside the area
-    trips_inside = trips[trips['person_id'].isin(population_with_trips_O_and_D['person_id'])]
+        trips = trips.merge(all_population[['person_id', 'household_weight']], on='person_id', how='left')
 
-    trips_inside.to_csv(analysis_zone_path + '\\microzensus\\trips_all_activities_inside_Mic.csv', index=False)
+        # Filter the trips to include only those with origin inside or destination inside the area
+        trips_inside = trips[trips['person_id'].isin(population_with_trips_O_and_D['person_id'])]
 
-    # Filter the trips to include only those with origin inside or destination inside the area
-    trips_inside_outside = trips[trips['person_id'].isin(population_with_trips_O_or_D['person_id'])]
+        trips_inside.to_csv(analysis_zone_path + '\\microzensus\\trips_all_activities_inside_Mic.csv', index=False)
 
-    trips_inside_outside.to_csv(analysis_zone_path + '\\microzensus\\trips_at_least_one_activity_inside_Mic.csv', index=False)
+        # Filter the trips to include only those with origin inside or destination inside the area
+        trips_inside_outside = trips[trips['person_id'].isin(population_with_trips_O_or_D['person_id'])]
+
+        trips_inside_outside.to_csv(analysis_zone_path + '\\microzensus\\trips_at_least_one_activity_inside_Mic.csv', index=False)
 
 
 
-    # Capitalize and remove underscores from mode names
-    filtered_trips_inside['mode'] = filtered_trips_inside['mode'].str.replace('_', ' ').str.upper()
+        # Capitalize and remove underscores from mode names
+        filtered_trips_inside['mode'] = filtered_trips_inside['mode'].str.replace('_', ' ').str.upper()
 
-    # Calculate total counts for each mode
-    mode_counts = filtered_trips_inside['mode'].value_counts().reset_index()
-    mode_counts.columns = ['Mode', 'Count']
+        # Calculate total counts for each mode
+        mode_counts = filtered_trips_inside['mode'].value_counts().reset_index()
+        mode_counts.columns = ['Mode', 'Count']
 
-    # Calculate percentage distribution for each mode
-    mode_counts['Percentage'] = (mode_counts['Count'] / mode_counts['Count'].sum()) * 100
+        # Calculate percentage distribution for each mode
+        mode_counts['Percentage'] = (mode_counts['Count'] / mode_counts['Count'].sum()) * 100
 
-    # Convert seconds to datetime and resample times to 15-minute bins
-    filtered_trips_inside['departure_time'] = pd.to_datetime(filtered_trips_inside['departure_time'], unit='s').dt.floor('30T').dt.time
-    filtered_trips_inside['arrival_time'] = pd.to_datetime(filtered_trips_inside['arrival_time'], unit='s').dt.floor('30T').dt.time
-    logging.info("The departure and arrival times are converted to datetime and resampled into bins successfully")
+        # Convert seconds to datetime and resample times to 15-minute bins
+        filtered_trips_inside['departure_time'] = pd.to_datetime(filtered_trips_inside['departure_time'], unit='s').dt.floor('30T').dt.time
+        filtered_trips_inside['arrival_time'] = pd.to_datetime(filtered_trips_inside['arrival_time'], unit='s').dt.floor('30T').dt.time
+        logging.info("The departure and arrival times are converted to datetime and resampled into bins successfully")
 
-    # Count occurrences in each 15-minute bin
-    departure_counts = filtered_trips_inside.groupby('departure_time').size().reset_index(name='Count')
-    departure_counts['Type'] = 'Departures'
-    departure_counts = departure_counts.rename(columns={'departure_time': 'Time'})
+        # Count occurrences in each 15-minute bin
+        departure_counts = filtered_trips_inside.groupby('departure_time').size().reset_index(name='Count')
+        departure_counts['Type'] = 'Departures'
+        departure_counts = departure_counts.rename(columns={'departure_time': 'Time'})
 
-    arrival_counts = filtered_trips_inside.groupby('arrival_time').size().reset_index(name='Count')
-    arrival_counts['Type'] = 'Arrivals'
-    arrival_counts = arrival_counts.rename(columns={'arrival_time': 'Time'})
-    logging.info("The arrival_counts and departure_counts are calculated successfully")
+        arrival_counts = filtered_trips_inside.groupby('arrival_time').size().reset_index(name='Count')
+        arrival_counts['Type'] = 'Arrivals'
+        arrival_counts = arrival_counts.rename(columns={'arrival_time': 'Time'})
+        logging.info("The arrival_counts and departure_counts are calculated successfully")
 
-    # Combine data
-    time_counts = pd.concat([departure_counts, arrival_counts], axis=0)
+        # Combine data
+        time_counts = pd.concat([departure_counts, arrival_counts], axis=0)
 
-    # Capitalize and remove underscores from purpose names
-    filtered_trips_inside['purpose'] = filtered_trips_inside['purpose'].str.replace('_', ' ').str.upper()
+        # Capitalize and remove underscores from purpose names
+        filtered_trips_inside['purpose'] = filtered_trips_inside['purpose'].str.replace('_', ' ').str.upper()
 
-    # Calculate total counts for each purpose
-    purpose_counts = filtered_trips_inside['purpose'].value_counts().reset_index()
-    purpose_counts.columns = ['Purpose', 'Count']
+        # Calculate total counts for each purpose
+        purpose_counts = filtered_trips_inside['purpose'].value_counts().reset_index()
+        purpose_counts.columns = ['Purpose', 'Count']
 
-    # Plot total counts
-    directory = os.getcwd()
-    parent_directory = os.path.dirname(directory)
-    plots_folder_name = sim_output_folder.split("\\")[-1]
-    plots_directory = os.path.join(parent_directory, f'plots\\plots_{plots_folder_name}')
-    if not os.path.exists(plots_directory):
-        os.makedirs(plots_directory)
-    plt.figure(figsize=(10, 6))
-    plt.bar(purpose_counts['Purpose'], purpose_counts['Count'], color='skyblue')
-    plt.title('Purpose Distribution - Total Counts')
-    plt.xlabel('Purpose')
-    plt.ylabel('Count')
-    plt.xticks(rotation=45, ha='right')
-    plt.tight_layout()
-    plt.savefig(f"{plots_directory}\\purpose_distribution_Total_microcensus.png")
-    plt.close()
+        # Plot total counts
+        directory = os.getcwd()
+        parent_directory = os.path.dirname(directory)
+        plots_folder_name = sim_output_folder.split("\\")[-1]
+        plots_directory = os.path.join(parent_directory, f'plots\\plots_{plots_folder_name}')
+        if not os.path.exists(plots_directory):
+            os.makedirs(plots_directory)
+        plt.figure(figsize=(10, 6))
+        plt.bar(purpose_counts['Purpose'], purpose_counts['Count'], color='skyblue')
+        plt.title('Purpose Distribution - Total Counts')
+        plt.xlabel('Purpose')
+        plt.ylabel('Count')
+        plt.xticks(rotation=45, ha='right')
+        plt.tight_layout()
+        plt.savefig(f"{plots_directory}\\purpose_distribution_Total_microcensus.png")
+        plt.close()
 
-    logging.info(f"Purpose distribution total microcensus plotted successfully and saved in the {plots_directory} directory")
+        logging.info(f"Purpose distribution total microcensus plotted successfully and saved in the {plots_directory} directory")
 
-    # Calculate percentage distribution for each purpose
-    purpose_counts['Percentage'] = (purpose_counts['Count'] / purpose_counts['Count'].sum()) * 100
+        # Calculate percentage distribution for each purpose
+        purpose_counts['Percentage'] = (purpose_counts['Count'] / purpose_counts['Count'].sum()) * 100
 
-    # Plot percentage distribution
-    plt.figure(figsize=(10, 6))
-    plt.bar(purpose_counts['Purpose'], purpose_counts['Percentage'], color='lightgreen')
-    plt.title('Purpose Distribution - Percentage')
-    plt.xlabel('Purpose')
-    plt.ylabel('Percentage (%)')
-    plt.xticks(rotation=45, ha='right')
-    plt.tight_layout()
-    plt.savefig(f"{plots_directory}\\purpose_distribution_pct_microcensus.png")
-    plt.close()
-    logging.info(f"There exist {df_activity_chains.activity_chain.nunique()} number of unique activity chains.")
+        # Plot percentage distribution
+        plt.figure(figsize=(10, 6))
+        plt.bar(purpose_counts['Purpose'], purpose_counts['Percentage'], color='lightgreen')
+        plt.title('Purpose Distribution - Percentage')
+        plt.xlabel('Purpose')
+        plt.ylabel('Percentage (%)')
+        plt.xticks(rotation=45, ha='right')
+        plt.tight_layout()
+        plt.savefig(f"{plots_directory}\\purpose_distribution_pct_microcensus.png")
+        plt.close()
+        logging.info(f"There exist {df_activity_chains.activity_chain.nunique()} number of unique activity chains.")
 
-    # filtered_trips[['HHNR', 'WEGNR', 'purpose']]
-    #
-    # filtered_trips[trips.person_id == 101196]
+        # filtered_trips[['HHNR', 'WEGNR', 'purpose']]
+        #
+        # filtered_trips[trips.person_id == 101196]
 
-    # Calculate total counts for each activity chain
-    chain_counts = df_activity_chains['activity_chain'].value_counts().reset_index()
-    chain_counts.columns = ['Activity Chain', 'Count']
+        # Calculate total counts for each activity chain
+        chain_counts = df_activity_chains['activity_chain'].value_counts().reset_index()
+        chain_counts.columns = ['Activity Chain', 'Count']
 
-    # Plot total counts
-    plt.figure(figsize=(16, 8))
-    plt.bar(chain_counts['Activity Chain'], chain_counts['Count'], color='cornflowerblue')
-    plt.title('Activity Chain Distribution - Total Counts')
-    plt.xlabel('Activity Chain')
-    plt.ylabel('Total Count')
-    plt.xticks(rotation=45, ha='right')
-    plt.tight_layout()
-    plt.savefig(f"{plots_directory}\\activity_chain_distribution_Total_microcensus.png")
-    plt.close()
-    logging.info(
-        f"Activity chain distribution total microcensus plotted successfully and saved in the {plots_directory} directory")
+        # Plot total counts
+        plt.figure(figsize=(16, 8))
+        plt.bar(chain_counts['Activity Chain'], chain_counts['Count'], color='cornflowerblue')
+        plt.title('Activity Chain Distribution - Total Counts')
+        plt.xlabel('Activity Chain')
+        plt.ylabel('Total Count')
+        plt.xticks(rotation=45, ha='right')
+        plt.tight_layout()
+        plt.savefig(f"{plots_directory}\\activity_chain_distribution_Total_microcensus.png")
+        plt.close()
+        logging.info(
+            f"Activity chain distribution total microcensus plotted successfully and saved in the {plots_directory} directory")

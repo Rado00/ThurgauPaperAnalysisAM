@@ -44,10 +44,11 @@ def read_config(path='config.ini'):
         clean_csv_folder = config['config']['clean_csv_folder']
         shapeFileName = config['config']['shapeFileName']
         read_SynPop = config.getboolean('config', 'read_SynPop')
+        read_microcensus = config.getboolean('config', 'read_microcensus')
         sample_for_debugging = config.getboolean('config', 'sample_for_debugging', fallback=False)
 
         logging.info("Config file read successfully")
-        return data_path, simulation_zone_name, scenario, sim_output_folder, percentile, analysis_zone_name, csv_folder, clean_csv_folder, shapeFileName, read_SynPop, sample_for_debugging
+        return data_path, simulation_zone_name, scenario, sim_output_folder, percentile, analysis_zone_name, csv_folder, clean_csv_folder, shapeFileName, read_SynPop, read_microcensus, sample_for_debugging
     except Exception as e:
         logging.error("Error reading config file: " + str(e))
         sys.exit()

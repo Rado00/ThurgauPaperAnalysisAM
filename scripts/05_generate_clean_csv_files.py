@@ -186,7 +186,7 @@ if __name__ == '__main__':
 
     setup_logging(get_log_filename())
 
-    data_path, simulation_zone_name, scenario, sim_output_folder, percentile, analysis_zone_name, csv_folder, clean_csv_folder, shapeFileName, read_SynPop, sample_for_debugging = read_config()
+    data_path, simulation_zone_name, scenario, sim_output_folder, percentile, analysis_zone_name, csv_folder, clean_csv_folder, shapeFileName, read_SynPop, read_microcensus, sample_for_debugging = read_config()
 
      # Create directory for the zone
     scenario_path: str = os.path.join(data_path, simulation_zone_name, scenario, percentile)
@@ -214,16 +214,16 @@ if __name__ == '__main__':
             df_persons_synt = pd.read_csv(f'{pre_processed_data_path}\\df_persons_synt.csv', low_memory=False)
             df_routes_synt = pd.read_csv(f'{pre_processed_data_path}\\df_routes_synt.csv', low_memory=False)
 
-        logging.info("CSV files read successfully")
-    except Exception as e:
-        logging.error("Error reading csv files: " + str(e))
-        sys.exit()
+        if read_microcensus:
+            df_population_all_activities_inside_mic = pd.read_csv(
+                f"{microcensus_path}\\population_all_activities_inside_Mic.csv")
+            df_population_at_least_one_activity_inside_mic = pd.read_csv(
+                f"{microcensus_path}\\population_at_least_one_activity_inside_Mic.csv")
+            df_trips_all_activities_inside_mic = pd.read_csv(f"{microcensus_path}\\trips_all_activities_inside_Mic.csv")
+            df_trips_at_least_one_activity_inside_mic = pd.read_csv(
+                f"{microcensus_path}\\trips_at_least_one_activity_inside_Mic.csv")
 
-    try:
-        df_population_all_activities_inside_mic = pd.read_csv(f"{microcensus_path}\\population_all_activities_inside_Mic.csv")
-        df_population_at_least_one_activity_inside_mic = pd.read_csv(f"{microcensus_path}\\population_at_least_one_activity_inside_Mic.csv")
-        df_trips_all_activities_inside_mic = pd.read_csv(f"{microcensus_path}\\trips_all_activities_inside_Mic.csv")
-        df_trips_at_least_one_activity_inside_mic = pd.read_csv(f"{microcensus_path}\\trips_at_least_one_activity_inside_Mic.csv")
+        logging.info("CSV files read successfully")
     except Exception as e:
         logging.error("Error reading csv files: " + str(e))
         sys.exit()
@@ -286,50 +286,47 @@ if __name__ == '__main__':
         df_trips_synt['arrival_time'] = df_trips_synt['arrival_time'].apply(safe_convert_time)
 
 
+    if read_microcensus:
+        # Convert seconds to datetime and resample times to 15-minute bins
+        df_trips_at_least_one_activity_inside_mic = df_trips_at_least_one_activity_inside_mic.dropna()
+        df_trips_at_least_one_activity_inside_mic['departure_time'] = df_trips_at_least_one_activity_inside_mic['departure_time'].apply(safe_convert_time)
+        df_trips_at_least_one_activity_inside_mic['arrival_time'] = df_trips_at_least_one_activity_inside_mic['arrival_time'].apply(safe_convert_time)
+        df_trips_at_least_one_activity_inside_mic['departure_time'] = pd.to_datetime(df_trips_at_least_one_activity_inside_mic['departure_time'], unit='s').dt.floor('30T').dt.time
+        df_trips_at_least_one_activity_inside_mic['arrival_time'] = pd.to_datetime(df_trips_at_least_one_activity_inside_mic['arrival_time'], unit='s').dt.floor('30T').dt.time
+        df_trips_at_least_one_activity_inside_mic['mode'] = df_trips_at_least_one_activity_inside_mic['mode'].str.replace('_', ' ').str.title()
 
-    # Convert seconds to datetime and resample times to 15-minute bins
-    df_trips_at_least_one_activity_inside_mic = df_trips_at_least_one_activity_inside_mic.dropna()
-    df_trips_at_least_one_activity_inside_mic['departure_time'] = df_trips_at_least_one_activity_inside_mic['departure_time'].apply(safe_convert_time)
-    df_trips_at_least_one_activity_inside_mic['arrival_time'] = df_trips_at_least_one_activity_inside_mic['arrival_time'].apply(safe_convert_time)
-    df_trips_at_least_one_activity_inside_mic['departure_time'] = pd.to_datetime(df_trips_at_least_one_activity_inside_mic['departure_time'], unit='s').dt.floor('30T').dt.time
-    df_trips_at_least_one_activity_inside_mic['arrival_time'] = pd.to_datetime(df_trips_at_least_one_activity_inside_mic['arrival_time'], unit='s').dt.floor('30T').dt.time
-    df_trips_at_least_one_activity_inside_mic['mode'] = df_trips_at_least_one_activity_inside_mic['mode'].str.replace('_', ' ').str.title()
+        df_trips_all_activities_inside_mic = df_trips_all_activities_inside_mic.dropna()
+        df_trips_all_activities_inside_mic['departure_time'] = df_trips_all_activities_inside_mic['departure_time'].apply(safe_convert_time)
+        df_trips_all_activities_inside_mic['arrival_time'] = df_trips_all_activities_inside_mic['arrival_time'].apply(safe_convert_time)
+        df_trips_all_activities_inside_mic['departure_time'] = pd.to_datetime(df_trips_all_activities_inside_mic['departure_time'], unit='s').dt.floor('30T').dt.time
+        df_trips_all_activities_inside_mic['arrival_time'] = pd.to_datetime(df_trips_all_activities_inside_mic['arrival_time'], unit='s').dt.floor('30T').dt.time
+        df_trips_all_activities_inside_mic['mode'] = df_trips_all_activities_inside_mic['mode'].str.replace('_', ' ').str.title()
 
-    df_trips_all_activities_inside_mic = df_trips_all_activities_inside_mic.dropna()
-    df_trips_all_activities_inside_mic['departure_time'] = df_trips_all_activities_inside_mic['departure_time'].apply(safe_convert_time)
-    df_trips_all_activities_inside_mic['arrival_time'] = df_trips_all_activities_inside_mic['arrival_time'].apply(safe_convert_time)
-    df_trips_all_activities_inside_mic['departure_time'] = pd.to_datetime(df_trips_all_activities_inside_mic['departure_time'], unit='s').dt.floor('30T').dt.time
-    df_trips_all_activities_inside_mic['arrival_time'] = pd.to_datetime(df_trips_all_activities_inside_mic['arrival_time'], unit='s').dt.floor('30T').dt.time
-    df_trips_all_activities_inside_mic['mode'] = df_trips_all_activities_inside_mic['mode'].str.replace('_', ' ').str.title()
+        # Apply the grouping function to the 'number_of_cars' column
+        # Mapping '0' to 'male' and '1' to 'female'
+        df_population_at_least_one_activity_inside_mic['number_of_cars'] = df_population_at_least_one_activity_inside_mic['number_of_cars'].apply(group_cars)
+        df_population_at_least_one_activity_inside_mic['sex'] = df_population_at_least_one_activity_inside_mic['sex'].replace({0: 'male', 1: 'female'})
 
+        df_population_all_activities_inside_mic['number_of_cars'] = df_population_all_activities_inside_mic['number_of_cars'].apply(group_cars)
+        df_population_all_activities_inside_mic['sex'] = df_population_all_activities_inside_mic['sex'].replace({0: 'male', 1: 'female'})
 
+        df_activity_chains_at_least_one_activity_mic = df_trips_at_least_one_activity_inside_mic.groupby(['person_id']).apply(create_activity_chain_mic).reset_index()
+        df_activity_chains_all_activities_inside_mic = df_trips_all_activities_inside_mic.groupby(['person_id']).apply(create_activity_chain_mic).reset_index()
 
+        df_activity_chains_sim = df_activity_sim.groupby(['plan_id']).apply(create_activity_chain_syn).reset_index()
 
-    # Apply the grouping function to the 'number_of_cars' column
-    # Mapping '0' to 'male' and '1' to 'female'
-    df_population_at_least_one_activity_inside_mic['number_of_cars'] = df_population_at_least_one_activity_inside_mic['number_of_cars'].apply(group_cars)
-    df_population_at_least_one_activity_inside_mic['sex'] = df_population_at_least_one_activity_inside_mic['sex'].replace({0: 'male', 1: 'female'})
+        # Ensure the directory exists
+        if not os.path.exists(data_path_clean):
+            os.makedirs(data_path_clean)
+        # Write the CSV files
+        df_trips_at_least_one_activity_inside_mic.to_csv(f'{data_path_clean}\\trips_at_least_one_activity_inside_mic.csv', index=False)
+        df_trips_all_activities_inside_mic.to_csv(f'{data_path_clean}\\trips_all_activities_inside_mic.csv', index=False)
 
-    df_population_all_activities_inside_mic['number_of_cars'] = df_population_all_activities_inside_mic['number_of_cars'].apply(group_cars)
-    df_population_all_activities_inside_mic['sex'] = df_population_all_activities_inside_mic['sex'].replace({0: 'male', 1: 'female'})
+        df_activity_chains_at_least_one_activity_mic.to_csv(f'{data_path_clean}\\activity_chains_at_least_one_activity_inside_mic.csv', index=False)
+        df_activity_chains_all_activities_inside_mic.to_csv(f'{data_path_clean}\\activity_chains_all_activities_inside_mic.csv', index=False)
 
-    df_activity_chains_at_least_one_activity_mic = df_trips_at_least_one_activity_inside_mic.groupby(['person_id']).apply(create_activity_chain_mic).reset_index()
-    df_activity_chains_all_activities_inside_mic = df_trips_all_activities_inside_mic.groupby(['person_id']).apply(create_activity_chain_mic).reset_index()
-
-    df_activity_chains_sim = df_activity_sim.groupby(['plan_id']).apply(create_activity_chain_syn).reset_index()
-
-    # Ensure the directory exists
-    if not os.path.exists(data_path_clean):
-        os.makedirs(data_path_clean)
-    # Write the CSV files
-    df_trips_at_least_one_activity_inside_mic.to_csv(f'{data_path_clean}\\trips_at_least_one_activity_inside_mic.csv', index=False)
-    df_trips_all_activities_inside_mic.to_csv(f'{data_path_clean}\\trips_all_activities_inside_mic.csv', index=False)
-
-    df_activity_chains_at_least_one_activity_mic.to_csv(f'{data_path_clean}\\activity_chains_at_least_one_activity_inside_mic.csv', index=False)
-    df_activity_chains_all_activities_inside_mic.to_csv(f'{data_path_clean}\\activity_chains_all_activities_inside_mic.csv', index=False)
-
-    df_population_all_activities_inside_mic.to_csv(f'{data_path_clean}\\population_all_activities_inside_mic.csv', index=False)
-    df_population_at_least_one_activity_inside_mic.to_csv(f'{data_path_clean}\\population_at_least_one_activity_inside_mic.csv', index=False)
+        df_population_all_activities_inside_mic.to_csv(f'{data_path_clean}\\population_all_activities_inside_mic.csv', index=False)
+        df_population_at_least_one_activity_inside_mic.to_csv(f'{data_path_clean}\\population_at_least_one_activity_inside_mic.csv', index=False)
 
     if read_SynPop:
         df_trips_synt.to_csv(f'{data_path_clean}\\trips_synt.csv', index=False)
