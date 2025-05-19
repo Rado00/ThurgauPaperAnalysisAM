@@ -136,8 +136,8 @@ def execute_person(path):
 
 
 def execute_household(path):
-    df_mz_households = pd.read_csv(
-        "%s\\microzensus\\haushalte.csv" % path, sep=",", encoding="latin1")
+    file_path_Haushalte = os.path.join(path, "microzensus", "haushalte.csv")
+    df_mz_households = pd.read_csv(file_path_Haushalte, sep=",", encoding="latin1")
 
     # Simple attributes
     df_mz_households["home_structure"] = df_mz_households["W_STRUKTUR_AGG_2000"]
@@ -208,4 +208,5 @@ if __name__ == '__main__':
 
         df = pd.merge(df_mz_persons, df_mz_households, on='person_id', how='left')
 
-        df.to_csv(analysis_zone_path + '\\microzensus\\all_population.csv', index=False)
+        output_file = os.path.join(analysis_zone_path, "microzensus", "all_population.csv")
+        df.to_csv(output_file, index=False)
