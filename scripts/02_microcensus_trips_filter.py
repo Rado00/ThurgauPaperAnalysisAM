@@ -46,8 +46,10 @@ def execute(path):
     # Specify encoding
     encoding = "latin1"
 
-    df_mz_trips = pd.read_csv(f"{path}\\microzensus\\wege.csv", encoding=encoding)
-    df_mz_stages = pd.read_csv(f"{path}\\microzensus\\etappen.csv", encoding=encoding)
+    file_path = os.path.join(path, "microzensus", "wege.csv")
+    df_mz_trips = pd.read_csv(file_path, encoding=encoding) 
+    file_path = os.path.join(path, "microzensus", "etappen.csv")
+    df_mz_stages = pd.read_csv(file_path, encoding=encoding)
     print(df_mz_trips.shape)
 
     df_mz_trips = df_mz_trips[[
@@ -188,7 +190,7 @@ def execute(path):
     print("  Removed %d persons with trips not starting at home location" % (before_length - after_length,))
 
     # Parking cost
-    df_mz_stages = pd.read_csv(f"{path}\\microzensus\\etappen.csv", encoding="latin1")
+    df_mz_stages = pd.read_csv(os.path.join(path, "microzensus", "etappen.csv"), encoding="latin1")
 
     df_cost = pd.DataFrame(df_mz_stages[["HHNR", "WEGNR", "f51330"]], copy=True)
     df_cost.columns = ["person_id", "trip_id", "parking_cost"]
@@ -220,12 +222,12 @@ if __name__ == '__main__':
         trips = execute(analysis_zone_path)
         # TODO remove this line
         # trips = trips.head(100)
-        trips.to_csv(analysis_zone_path + '\\microzensus\\row_trips.csv')
+        trips.to_csv(os.path.join(analysis_zone_path, "microzensus", "row_trips.csv"))
         logging.info("Microcensus trips filtered successfully")
 
         # Load geographic data from a shapefile
-        shapefile_path = os.path.join(analysis_zone_path,
-                                      f"ShapeFiles\\{shapeFileName}")
+        shapefile_path = os.path.join(analysis_zone_path, "ShapeFiles", shapeFileName)
+
         gdf = gpd.read_file(shapefile_path, engine="pyogrio")
 
         area_polygon = gdf.iloc[0]['geometry']
@@ -254,19 +256,19 @@ if __name__ == '__main__':
         # The ids of the people who have trips inside the area but not outside
         unique_ids = ids_inside.difference(ids_rest)
 
-        filtered_trips_inside.to_csv(analysis_zone_path + '\\microzensus\\trips_inside_O_and_D_Mic.csv')
+        filtered_trips_inside.to_csv(os.path.join(analysis_zone_path, "microzensus", "trips_inside_O_and_D_Mic.csv"))
 
         filtered_trips_inside_outside = trips[
             trips['origin_point'].apply(lambda point: point.within(area_polygon)) |
             trips['destination_point'].apply(lambda point: point.within(area_polygon))
             ]
 
-        filtered_trips_inside_outside.to_csv(analysis_zone_path + '\\microzensus\\trips_inside_O_or_D_Mic.csv', index=False)
+        filtered_trips_inside_outside.to_csv(os.path.join(analysis_zone_path, "microzensus", "trips_inside_O_or_D_Mic.csv"), index=False)
 
         # Create activity chains
         df_activity_chains = filtered_trips_inside.groupby(['person_id']).apply(create_activity_chain).reset_index()
 
-        all_population = pd.read_csv(f"{analysis_zone_path}\\microzensus\\all_population.csv")
+        all_population = pd.read_csv(os.path.join(analysis_zone_path, "microzensus", "all_population.csv"))
         # Recreate population_home_inside.csv if want to analyse w home inside
         # population_home_inside = pd.read_csv(f"{analysis_zone_path}\\microzensus\\population_home_inside.csv")
         # trips_population_home_inside = trips[trips['person_id'].isin(population_home_inside['person_id'])]
@@ -275,26 +277,24 @@ if __name__ == '__main__':
         # Filter the population to include only those with trips inside the area
         population_with_trips_O_and_D = all_population[all_population['person_id'].isin(unique_ids)]
 
-        population_with_trips_O_and_D.to_csv(analysis_zone_path + '\\microzensus\\population_all_activities_inside_Mic.csv', index=False)
+        population_with_trips_O_and_D.to_csv(os.path.join(analysis_zone_path, "microzensus", "population_all_activities_inside_Mic.csv"), index=False)
 
         # Filter the population to include only those with trips origin inside or destination inside the area
         population_with_trips_O_or_D = all_population[all_population['person_id'].isin(filtered_trips_inside_outside['person_id'])]
 
-        population_with_trips_O_or_D.to_csv(analysis_zone_path + '\\microzensus\\population_at_least_one_activity_inside_Mic.csv', index=False)
+        population_with_trips_O_or_D.to_csv(os.path.join(analysis_zone_path, "microzensus", "population_at_least_one_activity_inside_Mic.csv"), index=False)
 
         trips = trips.merge(all_population[['person_id', 'household_weight']], on='person_id', how='left')
 
         # Filter the trips to include only those with origin inside or destination inside the area
         trips_inside = trips[trips['person_id'].isin(population_with_trips_O_and_D['person_id'])]
 
-        trips_inside.to_csv(analysis_zone_path + '\\microzensus\\trips_all_activities_inside_Mic.csv', index=False)
+        trips_inside.to_csv(os.path.join(analysis_zone_path, "microzensus", "trips_all_activities_inside_Mic.csv"), index=False)
 
         # Filter the trips to include only those with origin inside or destination inside the area
         trips_inside_outside = trips[trips['person_id'].isin(population_with_trips_O_or_D['person_id'])]
 
-        trips_inside_outside.to_csv(analysis_zone_path + '\\microzensus\\trips_at_least_one_activity_inside_Mic.csv', index=False)
-
-
+        trips_inside_outside.to_csv(os.path.join(analysis_zone_path, "microzensus", "trips_at_least_one_activity_inside_Mic.csv"), index=False)
 
         # Capitalize and remove underscores from mode names
         filtered_trips_inside['mode'] = filtered_trips_inside['mode'].str.replace('_', ' ').str.upper()
@@ -334,8 +334,8 @@ if __name__ == '__main__':
         # Plot total counts
         directory = os.getcwd()
         parent_directory = os.path.dirname(directory)
-        plots_folder_name = sim_output_folder.split("\\")[-1]
-        plots_directory = os.path.join(parent_directory, f'plots\\plots_{plots_folder_name}')
+        plots_folder_name = os.path.basename(sim_output_folder)
+        plots_directory = os.path.join(parent_directory, "plots", f"plots_{plots_folder_name}")
         if not os.path.exists(plots_directory):
             os.makedirs(plots_directory)
         plt.figure(figsize=(10, 6))
@@ -345,7 +345,7 @@ if __name__ == '__main__':
         plt.ylabel('Count')
         plt.xticks(rotation=45, ha='right')
         plt.tight_layout()
-        plt.savefig(f"{plots_directory}\\purpose_distribution_Total_microcensus.png")
+        plt.savefig(os.path.join(plots_directory, "purpose_distribution_Total_microcensus.png"))
         plt.close()
 
         logging.info(f"Purpose distribution total microcensus plotted successfully and saved in the {plots_directory} directory")
@@ -361,7 +361,7 @@ if __name__ == '__main__':
         plt.ylabel('Percentage (%)')
         plt.xticks(rotation=45, ha='right')
         plt.tight_layout()
-        plt.savefig(f"{plots_directory}\\purpose_distribution_pct_microcensus.png")
+        plt.savefig(os.path.join(plots_directory, "purpose_distribution_pct_microcensus.png"))
         plt.close()
         logging.info(f"There exist {df_activity_chains.activity_chain.nunique()} number of unique activity chains.")
 
@@ -381,7 +381,7 @@ if __name__ == '__main__':
         plt.ylabel('Total Count')
         plt.xticks(rotation=45, ha='right')
         plt.tight_layout()
-        plt.savefig(f"{plots_directory}\\activity_chain_distribution_Total_microcensus.png")
+        plt.savefig(os.path.join(plots_directory, "activity_chain_distribution_Total_microcensus.png"))
         plt.close()
         logging.info(
             f"Activity chain distribution total microcensus plotted successfully and saved in the {plots_directory} directory")

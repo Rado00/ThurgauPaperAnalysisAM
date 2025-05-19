@@ -32,8 +32,7 @@ if __name__ == '__main__':
         sys.exit()
 
     # Load geographic data from a shapefile
-    shapefile_path = os.path.join(analysis_zone_path,
-                                  f"ShapeFiles\\{shapeFileName}")
+    shapefile_path = os.path.join(analysis_zone_path, "ShapeFiles", shapeFileName)
     gdf = gpd.read_file(shapefile_path, engine="pyogrio")
 
     area_polygon = gdf.iloc[0]['geometry']
@@ -93,8 +92,7 @@ if __name__ == '__main__':
 
     if not os.path.exists(pre_processed_data_path):
         os.makedirs(pre_processed_data_path)
-    filtered_trips_inside.to_csv(f'{pre_processed_data_path}\\trips_inside_O_and_D_sim.csv', index=False)
-
+    filtered_trips_inside.to_csv(os.path.join(pre_processed_data_path, "trips_inside_O_and_D_sim.csv"), index=False)
     filtered_trips_inside_outside.to_csv(f'{pre_processed_data_path}\\trips_inside_O_or_D_sim.csv', index=False)
     logging.info("Both Filtered trips saved successfully")
 
