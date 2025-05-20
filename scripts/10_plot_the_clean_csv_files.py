@@ -1,851 +1,151 @@
-# Import necessary libraries
+# Refactored: Mode Share Analysis Extended Comparison
+import os
 import logging
-from functions.commonFunctions import *
 import pandas as pd
 import warnings
-import plotly.express as px
+import matplotlib.pyplot as plt
 from datetime import datetime
-import plotly.graph_objects as go
-from plotly.subplots import make_subplots
+from functions.commonFunctions import *
+from functools import reduce
 
 pd.set_option('display.max_columns', None)
 pd.set_option('display.max_rows', None)
-
 warnings.filterwarnings('ignore')
 
-if __name__ == '__main__':
-    setup_logging(get_log_filename())
+def load_population_data(file_path):
+    df = pd.read_csv(file_path)
+    df['sex'] = df['sex'].replace({0: 'Male', 1: 'Female', 'male': 'Male', 'female': 'Female'})
+    if 'number_of_cars' in df.columns:
+        df['number_of_cars'] = df['number_of_cars'].astype(str)
+        df['number_of_cars'] = df['number_of_cars'].replace({'3': '3+', '4': '3+', '5': '3+'})
+    return df
 
-    data_path, simulation_zone_name, scenario, sim_output_folder, percentile, analysis_zone_name, csv_folder, clean_csv_folder, shapeFileName, read_SynPop, sample_for_debugging = read_config()
-    analysis_zone_path = os.path.join(data_path, analysis_zone_name)
-    logging.info(f"Reading config file from {data_path} path was successful.")
+def plot_gender_distribution(df_mic, df_sim, plots_directory):
+    mic_gender = df_mic[df_mic['sex'].isin(['Male', 'Female'])].groupby('sex')['household_weight'].sum().reset_index()
+    mic_gender.columns = ['Gender', 'Count']
 
-    pre_processed_data_path = os.path.join(data_path, analysis_zone_name, csv_folder, percentile)
+    if 'sex' in df_sim.columns:
+        df_sim['sex'] = df_sim['sex'].replace({0: 'Male', 1: 'Female', 'male': 'Male', 'female': 'Female'})
+        sim_gender = df_sim[df_sim['sex'].isin(['Male', 'Female'])]['sex'].value_counts().reset_index()
+        sim_gender.columns = ['Gender', 'Count']
+    else:
+        sim_gender = pd.DataFrame({'Gender': ['Male', 'Female'], 'Count': [0, 0]})
 
-    directory = os.getcwd()
-    parent_directory = os.path.dirname(directory)
-    output_plots_folder_name = sim_output_folder.split('\\')[-1]
-    plots_directory = os.path.join(parent_directory, f'plots\\plots_{output_plots_folder_name}')
-    if not os.path.exists(plots_directory):
-        os.makedirs(plots_directory)
+    fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(10, 6))
+    ax1.pie(sim_gender['Count'], labels=sim_gender['Gender'], autopct='%1.1f%%', startangle=90)
+    ax1.set_title('Gender Distribution Synthetic Population')
+    ax2.pie(mic_gender['Count'], labels=mic_gender['Gender'], autopct='%1.1f%%', startangle=90)
+    ax2.set_title('Gender Distribution - Microcensus')
+    fig.suptitle("Comparative Gender Distribution With Household Weight")
+    plt.tight_layout()
+    fig.subplots_adjust(top=0.85)
+    plt.savefig(f"{plots_directory}/gender_distribution.png", dpi=300)
+    plt.close()
 
-    # Read the clean csv files
-    data_path_clean = os.path.join(data_path, analysis_zone_name, clean_csv_folder, percentile)
+def plot_car_ownership(df_mic, df_households_sim, plots_directory):
+    df_mic['car_availability'] = df_mic['car_availability'].astype(str)
+    mic = df_mic.groupby('car_availability')['household_weight'].sum().reset_index()
+    mic.columns = ['Number of Cars', 'Microcensus']
+    mic_total = mic['Microcensus'].sum()
+    mic['Microcensus'] = (mic['Microcensus'] / mic_total) * 100
 
-    df_trips_mic = pd.read_csv(f'{data_path_clean}\\trips_all_activities_inside_mic.csv')
+    if 'numberOfCars' in df_households_sim.columns:
+        sim = df_households_sim['numberOfCars'].astype(str).replace({'3': '3+', '4': '3+', '5': '3+'})
+        sim = sim.value_counts(normalize=True).reset_index()
+        sim.columns = ['Number of Cars', 'Simulation']
+        sim['Simulation'] *= 100
+    else:
+        sim = pd.DataFrame(columns=['Number of Cars', 'Simulation'])
 
-    if read_SynPop:
-        df_trips_synt = pd.read_csv(f'{data_path_clean}\\trips_synt.csv')
-    df_trips_sim = pd.read_csv(f'{data_path_clean}\\trips_all_activities_inside_sim.csv')
+    merged = pd.merge(mic, sim, on='Number of Cars', how='outer').fillna(0)
+    merged = merged.sort_values('Number of Cars')
 
-    if read_SynPop:
-        df_activity_chains_syn = pd.read_csv(f'{data_path_clean}\\activity_chains_syn.csv')
-    df_activity_chains_sim = pd.read_csv(f'{data_path_clean}\\activity_chains_all_activities_inside_mic.csv')
-    df_activity_chains_mic = pd.read_csv(f'{data_path_clean}\\activity_chains_all_activities_inside_mic.csv')
+    fig, ax = plt.subplots(figsize=(8, 6))
+    x = range(len(merged['Number of Cars']))
+    ax.bar([i - 0.2 for i in x], merged['Microcensus'], width=0.4, label='Microcensus - Car Ownership', color='blue')
+    ax.bar([i + 0.2 for i in x], merged['Simulation'], width=0.4, label='Synthetic - Car Ownership', color='red')
+    ax.set_xticks(x)
+    ax.set_xticklabels(merged['Number of Cars'])
+    ax.set_title('Comparison of Car Ownership Distribution - Percentage With Household Weight')
+    ax.set_ylabel('Percentage (%)')
 
-    df_population_mic = pd.read_csv(f'{data_path_clean}\\population_all_activities_inside_mic.csv')
-    if read_SynPop:
-        df_population_synt = pd.read_csv(f'{data_path_clean}\\population_clean_synth.csv')
-    df_population_sim = pd.read_csv(f'{data_path_clean}\\population_all_activities_inside_sim.csv')
+    for i, (m, s) in enumerate(zip(merged['Microcensus'], merged['Simulation'])):
+        ax.text(i - 0.2, m + 0.5, f'{m:.1f}', ha='center', color='white', fontsize=8)
+        ax.text(i + 0.2, s + 0.5, f'{s:.1f}', ha='center', color='white', fontsize=8)
 
-    if read_SynPop:
-        df_households_synt = pd.read_csv(f'{pre_processed_data_path}\\df_households_synt.csv')
-        df_activity_synt = pd.read_csv(f'{pre_processed_data_path}\\df_activity_synt.csv')
-    df_activity_sim = pd.read_csv(f'{pre_processed_data_path}\\df_activity_sim.csv')
-    logging.info("All the csv files have been read successfully.")
+    ax.legend()
+    plt.tight_layout()
+    plt.savefig(f"{plots_directory}/car_ownership_distribution.png", dpi=300)
+    plt.close()
 
-    # TODO: Add Back the lines below, before after modal split
-    if read_SynPop:
-        df_population_synt.loc[df_population_synt['sex'] == 'male', 'sex'] = 'Male'
-        df_population_synt.loc[df_population_synt['sex'] == 'female', 'sex'] = 'Female'
-    df_population_mic.loc[df_population_mic['sex'] == 'male', 'sex'] = 'Male'
-    df_population_mic.loc[df_population_mic['sex'] == 'female', 'sex'] = 'Female'
+def plot_license_availability(df_mic, df_sim, plots_directory):
+    mic = df_mic[(df_mic['car_availability'] == False) & (df_mic['driving_license'] >= 1)]
+    sim = df_sim[(df_sim['carAvail'].str.lower() != 'never') & (df_sim['hasLicense'].str.lower() == 'yes')]
 
-    if 'household_weight_x' in df_trips_mic.columns:
-        df_trips_mic.rename(columns={'household_weight_x': 'household_weight'}, inplace=True)
+    mic_count = len(mic)
+    sim_count = len(sim)
 
-    # Count the frequency of each gender for df_population_synt
-    if read_SynPop:
-        gender_counts_synt = df_population_synt['sex'].value_counts().reset_index()
-        gender_counts_synt.columns = ['gender', 'count']
+    fig, ax = plt.subplots()
+    ax.bar(['Microcensus', 'Simulation'], [mic_count, sim_count], color=['blue', 'orange'])
+    ax.set_title('License Holders With Car Access')
+    ax.set_ylabel('Count')
+    plt.tight_layout()
+    plt.savefig(f"{plots_directory}/car_license_availability.png", dpi=300)
+    plt.close()
 
-    # TODO: Add Back the lines below, before after modal split
-    # # Count the frequency of each gender for df_population_mic
-    # # Group by gender and sum the weights
-    gender_counts_mic_with_household_weight = df_population_mic.groupby('sex')['household_weight'].sum().reset_index()
-    gender_counts_mic_with_household_weight.columns = ['gender', 'count']
-
-    # Creating subplots
-    fig = make_subplots(rows=1, cols=2, specs=[[{'type': 'pie'}, {'type': 'pie'}]])
-
-    # Adding the pie chart for Synthetic Population
-    if read_SynPop:
-        fig.add_trace(
-            go.Pie(labels=gender_counts_synt['gender'], values=gender_counts_synt['count'],
-                   title='Gender Distribution Synthetic Population'),
-            row=1, col=1
-        )
-
-    # Adding the pie chart for Microcensus
-    fig.add_trace(
-        go.Pie(labels=gender_counts_mic_with_household_weight['gender'],
-               values=gender_counts_mic_with_household_weight['count'],
-               title='Gender Distribution - Microcensus'),
-        row=1, col=2
-    )
-
-    # Updating layout and showing the figure
-    fig.update_layout(title_text="Comparative Gender Distribution With Household Weight", width=1200, height=600)
-
-    # Save the figure as an image with higher resolution
-    fig.write_image(f"{plots_directory}\\comparative_gender_distribution_with_household_weight.png", scale=4)
-    logging.info("Gender comparison with household weight has been plotted successfully.")
-
-    # ------------------------------------------------------------------------------------------------------------------------------------------------
-    gender_counts_mic_by_number = df_population_mic['sex'].value_counts().reset_index()
-
-    gender_counts_mic_by_number.columns = ['gender', 'count']
-
-    # Creating subplots
-    fig = make_subplots(rows=1, cols=2, specs=[[{'type': 'pie'}, {'type': 'pie'}]])
-
-    # Adding the pie chart for Synthetic Population
-    if read_SynPop:
-        fig.add_trace(
-            go.Pie(labels=gender_counts_synt['gender'], values=gender_counts_synt['count'],
-                   title='Gender Distribution Synthetic Population'),
-            row=1, col=1
-        )
-
-    # Adding the pie chart for Microcensus
-    fig.add_trace(
-        go.Pie(labels=gender_counts_mic_by_number['gender'],
-               values=gender_counts_mic_by_number['count'],
-               title='Gender Distribution - Microcensus'),
-        row=1, col=2
-    )
-
-    # Updating layout and showing the figure
-    fig.update_layout(title_text="Comparative Gender Distribution By Number", width=1200, height=600)
-    #
-    # # Save the figure as an image with higher resolution
-    fig.write_image(f"{plots_directory}\\comparative_gender_distribution_by_number.png", scale=4)
-    logging.info("Gender comparison by number has been plotted successfully.")
-    # ------------------------------------------------------------------------------------------------------------------------------------------------
-    # Calculate value counts and percentages for df_households_synt
-    if read_SynPop:
-        income_counts_synt = df_households_synt['incomeClass'].value_counts().reset_index()
-        income_counts_synt.columns = ['Income Class', 'Count']
-        income_counts_synt['Percentage'] = (income_counts_synt['Count'] / income_counts_synt['Count'].sum()) * 100
-
-    # TODO: Add Back the lines below, before after modal split
-    # # Remove rows where any value in any column is greater than 0
-    df_population_mic_filtered = df_population_mic[df_population_mic.ne(-1).all(axis=1)]
-
+def plot_income_distribution(df_mic, df_sim, plots_directory):
     income_class_labels = {
-        0: 'Under CHF 2000',
-        1: 'CHF 2000 to 4000',
-        2: 'CHF 4001 to 6000',
-        3: 'CHF 6001 to 8000',
-        4: 'CHF 8001 to 10000',
-        5: 'CHF 10001 to 12000',
-        6: 'CHF 12001 to 14000',
-        7: 'CHF 14001 to 16000',
-        8: 'More than CHF 16000'
+        0: 'Under CHF 2000', 1: 'CHF 2000–4000', 2: 'CHF 4001–6000', 3: 'CHF 6001–8000',
+        4: 'CHF 8001–10000', 5: 'CHF 10001–12000', 6: 'CHF 12001–14000',
+        7: 'CHF 14001–16000', 8: 'More than CHF 16000'
     }
-    # TODO: Add Back the lines below, before after modal split fino 391
-
-    # Calculate value counts and percentages for df_population_mic
-    income_counts_mic_with_household_weight = df_population_mic_filtered.groupby('income_class')[
-        'household_weight'].sum().reset_index()
-    income_counts_mic_with_household_weight.columns = ['Income Class', 'Count']
-
-    income_counts_mic_with_household_weight['Percentage'] = (income_counts_mic_with_household_weight['Count'] /
-                                                             income_counts_mic_with_household_weight[
-                                                                 'Count'].sum()) * 100
-
-    # income_counts_synt['Income Class'] = income_counts_synt['Income Class'].map(income_class_labels)
-    income_counts_mic_with_household_weight['Income Class'] = income_counts_mic_with_household_weight[
-        'Income Class'].map(income_class_labels)
-
-    # Create a figure with subplots
-    fig = go.Figure()
-
-    # Add bars for microcensus income class percentage
-    fig.add_trace(go.Bar(
-        x=income_counts_mic_with_household_weight['Income Class'],
-        y=income_counts_mic_with_household_weight['Percentage'],
-        name='Microcensus',
-        text=income_counts_mic_with_household_weight['Percentage'].round(1),
-        textposition='outside',
-        marker_color="blue"
-    ))
-
-    # Add bars for synthetic households income class percentage
-    if read_SynPop:
-        fig.add_trace(go.Bar(
-            x=income_counts_synt['Income Class'],
-            y=income_counts_synt['Percentage'],
-            name='Synthetic',
-            text=income_counts_synt['Percentage'].round(1),
-            textposition='outside',
-            marker_color='red'
-        ))
-
-    # Update the layout for a grouped bar chart
-    fig.update_layout(
-        barmode='group',
-        title='Comparison of Income Class Distribution - Percentage With Household Weight',
-        xaxis_title='Income Class',
-        yaxis_title='Percentage (%)',
-        legend_title='Dataset',
-        width=1200,
-        height=600
-    )
-
-    # Save the figure as an image with higher resolution
-    fig.write_image(f"{plots_directory}\\comparative_income_distribution_with_household_weight.png", scale=4)
-    logging.info("Income comparison with household weight has been plotted successfully.")
-    # ------------------------------------------------------------------------------------------------------------------------------------------------
-    # Calculate value counts and percentages for df_population_mic
-    income_counts_mic_by_number = df_population_mic_filtered['income_class'].value_counts().reset_index().sort_values(
-        'income_class')
-    income_counts_mic_by_number.columns = ['Income Class', 'Count']
-
-    income_counts_mic_by_number['Percentage'] = (income_counts_mic_by_number['Count'] /
-                                                 income_counts_mic_by_number[
-                                                     'Count'].sum()) * 100
-
-    income_counts_mic_by_number['Income Class'] = income_counts_mic_by_number[
-        'Income Class'].map(income_class_labels)
-    # income_counts_synt['Percentage'] = [22.17, 21.51, 16.13, 8.8, 11.28, 5.12, 5.41, 8.3, 1.30]
-
-    # Create a figure with subplots
-    fig = go.Figure()
-
-    # Add bars for microcensus income class percentage
-    fig.add_trace(go.Bar(
-        x=income_counts_mic_by_number['Income Class'],
-        y=income_counts_mic_by_number['Percentage'],
-        name='Microcensus',
-        text=income_counts_mic_by_number['Percentage'].round(1),
-        textposition='outside',
-        marker_color="blue"
-    ))
-
-    # Add bars for synthetic households income class percentage
-    if read_SynPop:
-        fig.add_trace(go.Bar(
-            x=income_counts_synt['Income Class'],
-            y=income_counts_synt['Percentage'],
-            name='Synthetic',
-            text=income_counts_synt['Percentage'].round(1),
-            textposition='outside',
-            marker_color='red'
-        ))
-
-    # Update the layout for a grouped bar chart
-    fig.update_layout(
-        barmode='group',
-        title='Comparison of Income Class Distribution',
-        xaxis_title='Income Class',
-        yaxis_title='Percentage (%)',
-        legend_title='Dataset',
-        width=1200,
-        height=600
-    )
-
-    # Save the figure as an image with higher resolution
-    fig.write_image(f"{plots_directory}\\comparative_income_distribution_by_number1.png", scale=4)
-    logging.info("Income comparison by number has been plotted successfully.")
-    # ------------------------------------------------------------------------------------------------------------------------------------------------
-
-    # Create a custom order for the x-axis categories
-    custom_order = ['0', '1', '2', '3+']
-
-    # Calculate value counts and percentages for df_population_mic
-    car_counts_mic_with_household_weight = df_population_mic.groupby('number_of_cars')[
-        'household_weight'].sum().reset_index()
-    car_counts_mic_with_household_weight.columns = ['Number of Cars', 'Count']
-    car_counts_mic_with_household_weight['Percentage'] = (car_counts_mic_with_household_weight['Count'] /
-                                                          car_counts_mic_with_household_weight['Count'].sum()) * 100
-
-    # Calculate value counts and percentages for df_households_synt
-    if read_SynPop:
-        car_counts_synt = df_households_synt['numberOfCars'].value_counts().reset_index()
-        car_counts_synt.columns = ['Number of Cars', 'Count']
-        car_counts_synt['Percentage'] = (car_counts_synt['Count'] / car_counts_synt['Count'].sum()) * 100
-
-    # Ensure the order of categories is as specified
-    car_counts_mic_with_household_weight['Number of Cars'] = pd.Categorical(
-        car_counts_mic_with_household_weight['Number of Cars'], categories=custom_order,
-        ordered=True)
-    car_counts_mic = car_counts_mic_with_household_weight.sort_values('Number of Cars')
-
-    if read_SynPop:
-        car_counts_synt['Number of Cars'] = pd.Categorical(car_counts_synt['Number of Cars'], categories=custom_order,
-                                                           ordered=True)
-        car_counts_synt = car_counts_synt.sort_values('Number of Cars')
-
-    # Create a figure with subplots
-    fig = go.Figure()
-
-    # Add bars for microcensus car ownership percentage
-    fig.add_trace(go.Bar(
-        x=car_counts_mic['Number of Cars'],
-        y=car_counts_mic['Percentage'],
-        name='Microcensus - Car Ownership',
-        text=car_counts_mic['Percentage'].round(1),
-        textposition='outside',
-        marker_color='blue'
-    ))
-
-    # Add bars for synthetic households car ownership percentage
-    if read_SynPop:
-        fig.add_trace(go.Bar(
-            x=car_counts_synt['Number of Cars'],
-            y=car_counts_synt['Percentage'],
-            name='Synthetic - Car Ownership',
-            text=car_counts_synt['Percentage'].round(1),
-            textposition='outside',
-            marker_color='red'
-        ))
-
-    # Update the layout for a grouped bar chart
-    fig.update_layout(
-        barmode='group',
-        title='Comparison of Car Ownership Distribution - Percentage With Household Weight',
-        xaxis_title='Number of Cars',
-        yaxis_title='Percentage (%)',
-        legend_title='Dataset',
-        width=1200,
-        height=600
-    )
-
-    # Save the figure as an image with higher resolution
-    fig.write_image(f"{plots_directory}\\comparative_car_ownership_distribution_with_household_weight.png", scale=4)
-    logging.info("Car ownership comparison with household weight has been plotted successfully.")
-    # ------------------------------------------------------------------------------------------------------------------------------------------------
-    car_counts_mic_by_number = df_population_mic['number_of_cars'].value_counts().reset_index().sort_values(
-        'number_of_cars')
-    car_counts_mic_by_number.columns = ['Number of Cars', 'Count']
-
-    car_counts_mic_by_number['Percentage'] = (car_counts_mic_by_number['Count'] / car_counts_mic_by_number[
-        'Count'].sum()) * 100
-
-    car_counts_mic_by_number['Number of Cars'] = pd.Categorical(car_counts_mic_by_number['Number of Cars'],
-                                                                categories=custom_order,
-                                                                ordered=True)
-
-    car_counts_mic_by_number = car_counts_mic_by_number.sort_values('Number of Cars')
-    #
-    # # Create a figure with subplots
-    fig = go.Figure()
-    #
-    # # Add bars for microcensus car ownership percentage
-    fig.add_trace(go.Bar(
-        x=car_counts_mic_by_number['Number of Cars'],
-        y=car_counts_mic_by_number['Percentage'],
-        name='Microcensus - Car Ownership',
-        text=car_counts_mic_by_number['Percentage'].round(1),
-        textposition='outside',
-        marker_color='blue'
-    ))
-    #
-    # # Add bars for synthetic households car ownership percentage
-    if read_SynPop:
-        fig.add_trace(go.Bar(
-            x=car_counts_synt['Number of Cars'],
-            y=car_counts_synt['Percentage'],
-            name='Synthetic - Car Ownership',
-            text=car_counts_synt['Percentage'].round(1),
-            textposition='outside',
-            marker_color='red'
-        ))
-    #
-    # # Update the layout for a grouped bar chart
-    fig.update_layout(
-        barmode='group',
-        title='Comparison of Car Ownership Distribution - Percentage By Number',
-        xaxis_title='Number of Cars',
-        yaxis_title='Percentage (%)',
-        legend_title='Dataset',
-        width=1200,
-        height=600
-    )
-
-    # Save the figure as an image with higher resolution
-    fig.write_image(f"{plots_directory}\\comparative_car_ownership_distribution_by_number.png", scale=4)
-    logging.info("Car ownership comparison by number has been plotted successfully.")
-    # ------------------------------------------------------------------------------------------------------------------------------------------------
-    # Calculate total counts for each type
-    if read_SynPop:
-        type_counts_synt = df_activity_synt['type'].value_counts().reset_index()
-        type_counts_synt.columns = ['Type', 'Count']
-        type_counts_synt['Percentage'] = (type_counts_synt['Count'] / type_counts_synt['Count'].sum()) * 100
-
-    # Group by purpose and sum the household weights for each purpose
-    purpose_counts_with_household_weight = df_trips_mic.groupby('purpose')['household_weight'].sum().reset_index()
-    purpose_counts_with_household_weight.columns = ['Purpose', 'Weighted_Count']
-
-    # Calculate the total weight
-    total_weight = purpose_counts_with_household_weight['Weighted_Count'].sum()
-
-    # Calculate percentage distribution based on weighted counts
-    purpose_counts_with_household_weight['Percentage'] = (purpose_counts_with_household_weight[
-                                                              'Weighted_Count'] / total_weight) * 100
-
-    # Standardize purpose labels for microcensus data
-    purpose_counts_with_household_weight['Purpose'] = purpose_counts_with_household_weight['Purpose'].str.lower()
-
-    # Standardize type labels for synthetic data
-    if read_SynPop:
-        type_counts_synt['Type'] = type_counts_synt['Type'].str.lower()
-
-    # Filter out the specified activities
-    excluded_activities = ['outside', 'freight_loading', 'freight_unloading', 'pt interaction']
-
-    # Filter and recompute percentages for synthetic data
-    if read_SynPop:
-        filtered_type_counts_synt = type_counts_synt[~type_counts_synt['Type'].isin(excluded_activities)].copy()
-
-    # Recompute percentages
-    if read_SynPop:
-        filtered_type_counts_synt['Percentage'] = (filtered_type_counts_synt['Count'] / filtered_type_counts_synt[
-            'Count'].sum()) * 100
-
-    # Filter and recompute percentages for microcensus data
-    filtered_purpose_counts_with_household_weight = purpose_counts_with_household_weight[
-        ~purpose_counts_with_household_weight['Purpose'].isin(excluded_activities)].copy()
-
-    # Recompute percentages
-    filtered_purpose_counts_with_household_weight['Percentage'] = (filtered_purpose_counts_with_household_weight[
-                                                                       'Weighted_Count'] /
-                                                                   filtered_purpose_counts_with_household_weight[
-                                                                       'Weighted_Count'].sum()) * 100
-
-    # Create a figure with subplots
-    fig = go.Figure()
-
-    # Add bars for synthetic activity types percentage
-    if read_SynPop:
-        fig.add_trace(go.Bar(
-            x=filtered_type_counts_synt['Type'],
-            y=filtered_type_counts_synt['Percentage'],
-            name='Synthetic',
-            text=filtered_type_counts_synt['Percentage'].round(1),
-            textposition='outside',
-            marker_color='blue'
-        ))
-
-    # Add bars for microcensus trip purposes percentage
-    fig.add_trace(go.Bar(
-        x=filtered_purpose_counts_with_household_weight['Purpose'],
-        y=filtered_purpose_counts_with_household_weight['Percentage'],
-        name='Microcensus',
-        text=filtered_purpose_counts_with_household_weight['Percentage'].round(1),
-        textposition='outside',
-        marker_color='red'
-    ))
-
-    # Update the layout for a grouped bar chart
-    fig.update_layout(
-        barmode='group',
-        title='Comparison of Activity Types and Trip Purposes (Percentage) With Household Weight',
-        xaxis_title='Activity Types and Trip Purposes',
-        yaxis_title='Percentage (%)',
-        legend_title='Dataset',
-        width=1200,
-        height=600
-    )
-
-    # Save the figure as an image with higher resolution
-    fig.write_image(f"{plots_directory}\\comparative_trip_purpose_distribution_with_household_weight.png", scale=4)
-    logging.info("Trip purpose comparison with household weight has been plotted successfully.")
-    # ------------------------------------------------------------------------------------------------------------------------------------------------
-    # Group by purpose and sum the household weights for each purpose
-    purpose_counts_by_number = df_trips_mic['purpose'].value_counts().reset_index().sort_values('purpose')
-    purpose_counts_by_number.columns = ['Purpose', 'Weighted_Count']
-
-    # Calculate the total weight
-    total_weight = purpose_counts_by_number['Weighted_Count'].sum()
-
-    # Calculate percentage distribution based on weighted counts
-    purpose_counts_by_number['Percentage'] = (purpose_counts_by_number[
-                                                  'Weighted_Count'] / total_weight) * 100
-
-    # Standardize purpose labels for microcensus data
-    purpose_counts_by_number['Purpose'] = purpose_counts_by_number['Purpose'].str.lower()
-
-    # Filter and recompute percentages for microcensus data
-    purpose_counts_by_number = purpose_counts_by_number[
-        ~purpose_counts_by_number['Purpose'].isin(excluded_activities)].copy()
-
-    # Recompute percentages
-    purpose_counts_by_number['Percentage'] = (purpose_counts_by_number[
-                                                  'Weighted_Count'] /
-                                              purpose_counts_by_number[
-                                                  'Weighted_Count'].sum()) * 100
-
-    # Create a figure with subplots
-    fig = go.Figure()
-
-    # Add bars for synthetic activity types percentage
-    if read_SynPop:
-        fig.add_trace(go.Bar(
-            x=filtered_type_counts_synt['Type'],
-            y=filtered_type_counts_synt['Percentage'],
-            name='Synthetic',
-            text=filtered_type_counts_synt['Percentage'].round(1),
-            textposition='outside',
-            marker_color='blue'
-        ))
-
-    # Add bars for microcensus trip purposes percentage
-    fig.add_trace(go.Bar(
-        x=purpose_counts_by_number['Purpose'],
-        y=purpose_counts_by_number['Percentage'],
-        name='Microcensu',
-        text=purpose_counts_by_number['Percentage'].round(1),
-        textposition='outside',
-        marker_color='red'
-    ))
-
-    # Update the layout for a grouped bar chart
-    fig.update_layout(
-        barmode='group',
-        title='Comparison of Activity Types and Trip Purposes (Percentage) By Number',
-        xaxis_title='Activity Types and Trip Purposes',
-        yaxis_title='Percentage (%)',
-        legend_title='Dataset',
-        width=1200,
-        height=600
-    )
-
-    # Save the figure as an image with higher resolution
-    fig.write_image(f"{plots_directory}\\comparative_trip_purpose_distribution_by_number.png", scale=4)
-    logging.info("Trip purpose comparison by number has been plotted successfully.")
-    # ------------------------------------------------------------------------------------------------------------------------------------------------
-
-    # Create a figure with subplots
-    fig = go.Figure()
-
-    # Update the layout for a grouped bar chart
-    fig.update_layout(
-        barmode='group',
-        title='Comparison of Mode Share Distribution - Percentage With Household Weight',
-        xaxis_title='Mode of Transportation',
-        yaxis_title='Percentage (%)',
-        legend_title='Dataset',
-        width=1200,
-        height=600
-    )
-
-    # Save the figure as an image with higher resolution
-    fig.write_image(f"{plots_directory}\\comparative_trip_mode_share_distribution_with_household_weight.png", scale=4)
-    logging.info("Trip mode share comparison with household weight has been plotted successfully.")
-    # ------------------------------------------------------------------------------------------------------------------------------------------------
-    # Group by age and sum the weights for each age
-    mode_counts_mic_by_number = df_trips_mic['mode'].value_counts().reset_index().sort_values('mode')
-    mode_counts_mic_by_number.columns = ['Mode', 'Weighted_Count']
-
-    # Calculate the total weight
-    total_weight = mode_counts_mic_by_number['Weighted_Count'].sum()
-
-    # Calculate percentage distribution based on weighted counts
-    mode_counts_mic_by_number['Percentage'] = (mode_counts_mic_by_number[
-                                                   'Weighted_Count'] / total_weight) * 100
-
-    # Create a figure with subplots
-    fig = go.Figure()
-
-# ------------------------------------------------------------------------------------------------------------------------------------------------
-    # Group by age and sum the weights for each age
-    weighted_age_counts_with_household_weight = df_population_mic.groupby('age')['household_weight'].sum().reset_index()
-    weighted_age_counts_with_household_weight.columns = ['Age', 'Weighted_Count']
-
-    # Calculate the total weight
-    total_weight = weighted_age_counts_with_household_weight['Weighted_Count'].sum()
-
-    # Calculate percentage distribution based on weighted counts
-    weighted_age_counts_with_household_weight['Percentage_weighted'] = (weighted_age_counts_with_household_weight[
-                                                                            'Weighted_Count'] / total_weight) * 100
-
-    # Calculate age distribution for df_population_synt
-    if read_SynPop:
-        age_counts_population = df_population_synt['age'].value_counts().sort_index().reset_index()
-        age_counts_population.columns = ['Age', 'Count_population']
-        age_counts_population['Percentage_population'] = (age_counts_population['Count_population'] / age_counts_population[
-            'Count_population'].sum()) * 100
-
-    # Create a figure with subplots
-    fig = go.Figure()
-
-    # Add the first bar for df_population_mic percentage
-    fig.add_trace(go.Bar(
-        x=weighted_age_counts_with_household_weight['Age'],
-        y=weighted_age_counts_with_household_weight['Percentage_weighted'],
-        name='Population Microcensus',
-        marker_color='blue'
-    ))
-
-    # # Add the second bar for df_population_synt percentage
-    if read_SynPop:
-        fig.add_trace(go.Bar(
-            x=age_counts_population['Age'],
-            y=age_counts_population['Percentage_population'],
-            name='Population Synthetic',
-            marker_color='red'
-        ))
-
-    # Update the layout for a grouped bar chart
-    fig.update_layout(
-        barmode='group',
-        title='Comparison of Age Distribution With Household Weight',
-        xaxis_title='Age',
-        yaxis_title='Percentage (%)',
-        legend_title='Dataset',
-        width=1200,
-        height=600
-    )
-
-    # Save the figure as an image with higher resolution
-    fig.write_image(f"{plots_directory}\\comparative_age_distribution_with_household_weight.png", scale=4)
-    logging.info("Age comparison with household weight has been plotted successfully.")
-    # ------------------------------------------------------------------------------------------------------------------------------------------------
-    weighted_age_counts_by_number = df_population_mic['age'].value_counts().reset_index().sort_values('age')
-    weighted_age_counts_by_number.columns = ['Age', 'Weighted_Count']
-
-    # Calculate the total weight
-    total_weight = weighted_age_counts_by_number['Weighted_Count'].sum()
-
-    # Calculate percentage distribution based on weighted counts
-    weighted_age_counts_by_number['Percentage_weighted'] = (weighted_age_counts_by_number[
-                                                                'Weighted_Count'] / total_weight) * 100
-
-    # Create a figure with subplots
-    fig = go.Figure()
-
-    # Add the first bar for df_population_mic percentage
-    fig.add_trace(go.Bar(
-        x=weighted_age_counts_by_number['Age'],
-        y=weighted_age_counts_by_number['Percentage_weighted'],
-        name='Population Microcensus',
-        marker_color='blue'
-    ))
-
-    # Add the second bar for df_population_synt percentage
-    if read_SynPop:
-        fig.add_trace(go.Bar(
-            x=age_counts_population['Age'],
-            y=age_counts_population['Percentage_population'],
-            name='Population Synthetic',
-            marker_color='red'
-        ))
-
-    # Update the layout for a grouped bar chart
-    fig.update_layout(
-        barmode='group',
-        title='Comparison of Age Distribution By Number',
-        xaxis_title='Age',
-        yaxis_title='Percentage (%)',
-        legend_title='Dataset',
-        width=1200,
-        height=600
-    )
-
-    # Save the figure as an image with higher resolution
-    fig.write_image(f"{plots_directory}\\comparative_age_distribution_by_number.png", scale=4)
-    logging.info("Age comparison by number has been plotted successfully.")
-    # ------------------------------------------------------------------------------------------------------------------------------------------------
-    departure_counts_mic = df_trips_mic.groupby('departure_time').size().reset_index(name='Count')
-    departure_counts_mic['Type'] = 'Microcensus'
-
-    departure_counts_mic['Count'] = departure_counts_mic['Count'] / df_trips_mic.shape[0]
-
-    departure_counts_mic = departure_counts_mic.rename(columns={'departure_time': 'Time'})
-
-    if read_SynPop:
-        departure_counts_synt = df_trips_synt.groupby('departure_time').size().reset_index(name='Count')
-        departure_counts_synt['Type'] = 'Synthetic'
-
-        departure_counts_synt['Count'] = departure_counts_synt['Count'] / df_trips_synt.shape[0]
-
-        departure_counts_synt = departure_counts_synt.rename(columns={'departure_time': 'Time'})
-
-    # Combine data
-    if read_SynPop:
-        time_counts = pd.concat([departure_counts_mic, departure_counts_synt], axis=0)
-
-    # Plot using Plotly Express
-    fig = px.bar(time_counts, x='Time', y='Count', color='Type',
-                     title='Departure Times over a Day',
-                     labels={'Count': 'Count', 'Time': 'Time of Day'},
-                     barmode='group')
-
-    # Customize x-axis ticks and scale y-axis
-    fig.update_xaxes(type='category', tickangle=45, dtick=1)
-    fig.update_yaxes(range=[0, time_counts['Count'].max()])
-
-    # Show plot
-    fig.update_layout(width=1200, height=600)
-
-    # Save the figure as an image with higher resolution
-    fig.write_image(f"{plots_directory}\\comparative_departure_time_distribution.png", scale=4)
-    logging.info("Departure time comparison has been plotted successfully.")
-    # ------------------------------------------------------------------------------------------------------------------------------------------------
-
-    arrival_counts_mic = df_trips_mic.groupby('arrival_time').size().reset_index(name='Count')
-    arrival_counts_mic['Type'] = 'Microcensus'
-
-    arrival_counts_mic['Count'] = arrival_counts_mic['Count'] / df_trips_mic.shape[0]
-
-    arrival_counts_mic = arrival_counts_mic.rename(columns={'arrival_time': 'Time'})
-
-    if read_SynPop:
-        arrival_counts_synt = df_trips_synt.groupby('arrival_time').size().reset_index(name='Count')
-        arrival_counts_synt['Type'] = 'Synthetic'
-
-        arrival_counts_synt['Count'] = arrival_counts_synt['Count'] / df_trips_synt.shape[0]
-
-        arrival_counts_synt = arrival_counts_synt.rename(columns={'arrival_time': 'Time'})
-
-    # Combine data
-    if read_SynPop:
-        time_counts = pd.concat([arrival_counts_mic, arrival_counts_synt], axis=0)
-
-    # Plot using Plotly Express
-    fig = px.bar(time_counts, x='Time', y='Count', color='Type',
-                 title='Arrival Times over a Day',
-                 labels={'Count': 'Count', 'Time': 'Time of Day'},
-                 barmode='group')
-
-    # Customize x-axis ticks and scale y-axis
-    fig.update_xaxes(type='category', tickangle=45, dtick=1)
-    fig.update_yaxes(range=[0, time_counts['Count'].max()])
-
-    # Show plot
-    fig.update_layout(width=1200, height=600)
-
-    # Save the figure as an image with higher resolution
-    fig.write_image(f"{plots_directory}\\comparative_arrival_time_distribution.png", scale=4)
-    logging.info("Arrival time comparison has been plotted successfully.")
-    # ------------------------------------------------------------------------------------------------------------------------------------------------
-    # Calculate total counts for each activity chain for Synthetic Population
-    if read_SynPop:
-        chain_counts_syn = df_activity_chains_syn['activity_chain'].value_counts().reset_index()
-        chain_counts_syn.columns = ['Activity Chain', 'Count']
-    # Normalize the counts for Synthetic Population
-    if read_SynPop:
-        total_count_syn = chain_counts_syn['Count'].sum()
-        chain_counts_syn['Normalized Count'] = (chain_counts_syn['Count'] / total_count_syn) * 100
-
-    # Select the most common activity chains for Synthetic Population
-    if read_SynPop:
-        top_chain_counts_syn = chain_counts_syn.nlargest(10, 'Normalized Count')
-
-    # Calculate total counts for each activity chain for Microcensus Population
-    chain_counts_mic = df_activity_chains_mic['activity_chain'].value_counts().reset_index().sort_values(
-        'activity_chain')
-    chain_counts_mic.columns = ['Activity Chain', 'Count']
-    # Normalize the counts for Microcensus Population
-    total_count_mic = chain_counts_mic['Count'].sum()
-    chain_counts_mic['Normalized Count'] = (chain_counts_mic['Count'] / total_count_mic) * 100
-
-    # Select the top 10 most common activity chains for Microcensus Population
-    top_chain_counts_mic = chain_counts_mic.nlargest(10, 'Normalized Count')
-
-    # Merge the two DataFrames
-    if read_SynPop:
-        merged_df = pd.merge(top_chain_counts_syn, top_chain_counts_mic, on='Activity Chain', suffixes=('_syn', '_mic'))
-
-        # Creating a figure with grouped bar chart
-        fig = go.Figure()
-
-        # Add bars for Synthetic Population
-        fig.add_trace(go.Bar(
-            x=merged_df['Activity Chain'],
-            y=merged_df['Normalized Count_syn'],
-            text=merged_df['Normalized Count_syn'].round(1),
-            textposition='outside',
-            name='Synthetic Population',
-            marker_color='blue'
-        ))
-
-        # Add bars for Microcensus Population
-        fig.add_trace(go.Bar(
-            x=merged_df['Activity Chain'],
-            y=merged_df['Normalized Count_mic'],
-            name='Microcensus Population',
-            text=merged_df['Normalized Count_mic'].round(1),
-            textposition='outside',
-            marker_color='red'
-        ))
-
-        # Update the layout
-        fig.update_layout(
-            barmode='group',
-            title_text="Comparison of Top Activity Chains Between Synthetic and Microcensus Population",
-            xaxis_title="Activity Chain",
-            yaxis_title="Normalized Count (%)",
-            width=1600,
-            height=800
-        )
-
-        # Save the figure as an image with higher resolution
-        fig.write_image(f"{plots_directory}\\comparative_top_activity_chain_distribution.png", scale=4)
-        logging.info("Top 10 ctivity chain comparison has been plotted successfully.")
-    # ------------------------------------------------------------------------------------------------------------------------------------------------
-    # Calculate total counts for each activity chain for Synthetic Population
-    if read_SynPop:
-        chain_counts_syn = df_activity_chains_syn['activity_chain'].value_counts().reset_index()
-        chain_counts_syn.columns = ['Activity Chain', 'Count']
-    # Normalize the counts for Synthetic Population
-    if read_SynPop:
-        total_count_syn = chain_counts_syn['Count'].sum()
-        chain_counts_syn['Normalized Count'] = (chain_counts_syn['Count'] / total_count_syn) * 100
-
-    # Calculate total counts for each activity chain for Microcensus Population
-    chain_counts_mic = df_activity_chains_mic['activity_chain'].value_counts().reset_index()
-    chain_counts_mic.columns = ['Activity Chain', 'Count']
-    # Normalize the counts for Microcensus Population
-    total_count_mic = chain_counts_mic['Count'].sum()
-    chain_counts_mic['Normalized Count'] = (chain_counts_mic['Count'] / total_count_mic) * 100
-
-    # Merge the two DataFrames
-    if read_SynPop:
-        merged_df = pd.merge(chain_counts_syn, chain_counts_mic, on='Activity Chain', suffixes=('_syn', '_mic'))
-
-        # Creating a figure with grouped bar chart
-        fig = go.Figure()
-
-        # Add bars for Synthetic Population
-        if read_SynPop:
-            fig.add_trace(go.Bar(
-                x=merged_df['Activity Chain'],
-                y=merged_df['Normalized Count_syn'],
-                name='Synthetic Population',
-                marker_color='blue'
-            ))
-
-        # # Add bars for Microcensus Population
-        fig.add_trace(go.Bar(
-            x=merged_df['Activity Chain'],
-            y=merged_df['Normalized Count_mic'],
-            name='Microcensus Population',
-            marker_color='red'
-        ))
-        #
-        # # Update the layout
-        fig.update_layout(
-            barmode='group',
-            title_text="Comparison of Activity Chains Between Synthetic and Microcensus Population",
-            xaxis_title="Activity Chain",
-            yaxis_title="Normalized Count (%)",
-            width=1600,
-            height=800
-        )
-        #
-        fig.write_image(f"{plots_directory}\\comparative_activity_chain_distribution.png", scale=4)
-        logging.info("Activity chain comparison has been plotted successfully.")
-    # ------------------------------------------------------------------------------------------------------------------------------------------------
+    df_mic = df_mic[df_mic['income_class'].isin(income_class_labels.keys())]
+    mic = df_mic.groupby('income_class')['household_weight'].sum().reset_index()
+    mic['Income Class'] = mic['income_class'].map(income_class_labels)
+    mic = mic[['Income Class', 'household_weight']].rename(columns={'household_weight': 'Microcensus'})
+
+    if 'income_class' in df_sim.columns:
+        sim = df_sim['income_class'].value_counts().reset_index()
+        sim.columns = ['income_class', 'Simulation']
+        sim['Income Class'] = sim['income_class'].map(income_class_labels)
+        sim = sim[['Income Class', 'Simulation']]
+    else:
+        sim = pd.DataFrame(columns=['Income Class', 'Simulation'])
+
+    merged = pd.merge(mic, sim, on='Income Class', how='outer').fillna(0)
+    fig, ax = plt.subplots(figsize=(12, 6))
+    x = range(len(merged['Income Class']))
+    ax.bar([i - 0.2 for i in x], merged['Microcensus'], width=0.4, label='Microcensus', alpha=0.7)
+    ax.bar([i + 0.2 for i in x], merged['Simulation'], width=0.4, label='Simulation', alpha=0.7)
+    ax.set_title('Income Class Distribution')
+    ax.set_ylabel('Count')
+    ax.set_xticks(x)
+    ax.set_xticklabels(merged['Income Class'], rotation=45, ha='right')
+    ax.legend()
+    plt.tight_layout()
+    plt.savefig(f"{plots_directory}/income_distribution.png", dpi=300)
+    plt.close()
+
+def main():
+    setup_logging(get_log_filename())
+    logging.info("Starting main execution...")
+    config = read_config()
+    (data_path, simulation_zone_name, scenario, sim_output_folder, percentile, analysis_zone_name,
+     csv_folder, clean_csv_folder, shapeFileName, read_SynPop, read_microcensus, sample_for_debugging) = config
+
+    data_path_clean = os.path.join(data_path, analysis_zone_name, clean_csv_folder, percentile)
+    plots_directory = os.path.join(os.path.dirname(os.getcwd()), 'plots',
+                                   f'plots_{sim_output_folder.split("\\")[-1]}')
+    os.makedirs(plots_directory, exist_ok=True)
+
+    df_population_mic = load_population_data(os.path.join(data_path, analysis_zone_name,clean_csv_folder,percentile, "population_at_least_one_activity_inside_mic.csv"))
+    df_population_sim = load_population_data(os.path.join(data_path_clean, "population_all_activities_inside_sim.csv"))
+    df_households_sim = pd.read_csv(os.path.join(data_path_clean, "households_sim.csv"))
+
+    plot_gender_distribution(df_population_mic, df_population_sim, plots_directory)
+    plot_car_ownership(df_population_mic, df_households_sim, plots_directory)
+    plot_license_availability(df_population_mic, df_population_sim, plots_directory)
+    plot_income_distribution(df_population_mic, df_population_sim, plots_directory)
+
+if __name__ == '__main__':
+    main()
