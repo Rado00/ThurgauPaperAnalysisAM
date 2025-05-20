@@ -7,175 +7,108 @@ if __name__ == '__main__':
 
     data_path, simulation_zone_name, scenario, sim_output_folder, percentile, analysis_zone_name, csv_folder, clean_csv_folder, shapeFileName, read_SynPop, read_microcensus, sample_for_debugging = read_config()
     logging.info(f"Reading config file from {data_path} path was successful.")
+
     directory = os.getcwd()
     parent_directory = os.path.dirname(directory)
     output_plots_folder_name = os.path.basename(sim_output_folder)
-
     plots_directory = os.path.join(parent_directory, "plots", f"plots_{output_plots_folder_name}")
     mode_share_directory = os.path.join(plots_directory, 'mode_share')
 
-    # List of specific CSV files to read
-    specific_files = [
-        'Mode_shares_by_trip.csv',
-        'Mode_shares_distance.csv',
-        'Mode_shares_time.csv'
-        'Mode_shares_by_trip_target_area.csv'
-        'Mode_shares_distance_target_area.csv'
-        'Mode_shares_time_target_area.csv'
-    ]
+    specific_files = {
+        "trip": "Mode_shares_by_trip.csv",
+        "trip_target": "Mode_shares_by_trip_target_area.csv",
+        "distance": "Mode_shares_distance.csv",
+        "distance_target": "Mode_shares_distance_target_area.csv",
+        "time_target": "Mode_shares_time_target_area.csv"
+    }
 
-    # Mode mappings for index
     mode_mappings = {
-        0: 'Bike',
-        1: 'Car',
-        2: 'Car Passenger',
-        3: 'PT',
-        4: 'Walk'
+        "Bike": "Bike",
+        "Car": "Car",
+        "Car Passenger": "Car Passenger",
+        "Pt": "PT",
+        "Walk": "Walk"
     }
 
     desired_order = [
-        "% Distance Bike Mic weighted",
-        "% Distance Bike Mic by row",
-        "% Distance Bike Sim",
-        "% Distance Car Mic weighted",
-        "% Distance Car Mic by row",
-        "% Distance Car Sim",
-        "% Distance Car Passenger Mic weighted",
-        "% Distance Car Passenger Mic by row",
-        "% Distance Car Passenger Sim",
-        "% Distance PT Mic weighted",
-        "% Distance PT Mic by row",
-        "% Distance PT Sim",
-        "% Distance Walk Mic weighted",
-        "% Distance Walk Mic by row",
-        "% Distance Walk Sim",
-        "% TravelTime Bike Mic weighted",
-        "% TravelTime Bike Mic by row",
-        "% TravelTime Bike Sim",
-        "% TravelTime Car Mic weighted",
-        "% TravelTime Car Mic by row",
-        "% TravelTime Car Sim",
-        "% TravelTime Car Passenger Mic weighted",
-        "% TravelTime Car Passenger Mic by row",
-        "% TravelTime Car Passenger Sim",
-        "% TravelTime PT Mic weighted",
-        "% TravelTime PT Mic by row",
-        "% TravelTime PT Sim",
-        "% TravelTime Walk Mic weighted",
-        "% TravelTime Walk Mic by row",
-        "% TravelTime Walk Sim",
-        "% Trips Bike Mic weighted",
-        "% Trips Bike Mic by row",
-        "% Trips Bike Sim",
-        "% Trips Car Mic weighted",
-        "% Trips Car Mic by row",
-        "% Trips Car Sim",
-        "% Trips Car Passenger Mic weighted",
-        "% Trips Car Passenger Mic by row",
-        "% Trips Car Passenger Sim",
-        "% Trips PT Mic weighted",
-        "% Trips PT Mic by row",
-        "% Trips PT Sim",
-        "% Trips Walk Mic weighted",
-        "% Trips Walk Mic by row",
-        "% Trips Walk Sim",
-        "Count Distance Bike Thurgau Sim",
-        "Count Distance Car Thurgau Sim",
-        "Count Distance Car Passenger Thurgau Sim",
-        "Count Distance PT Thurgau Sim",
-        "Count Distance Walk Thurgau Sim",
-        "Count TravelTime Bike Thurgau Sim",
-        "Count TravelTime Car Thurgau Sim",
-        "Count TravelTime Car Passenger Thurgau Sim",
-        "Count TravelTime PT Thurgau Sim",
-        "Count TravelTime Walk Thurgau Sim",
-        "Count Trips Bike Thurgau Sim",
-        "Count Trips Car Thurgau Sim",
-        "Count Trips Car Passenger Thurgau Sim",
-        "Count Trips PT Thurgau Sim",
-        "Count Trips Walk Thurgau Sim",
-        "% Distance Bike Synthetic",
-        "% Distance Car Synthetic",
-        "% Distance Car Passenger Synthetic",
-        "% Distance PT Synthetic",
-        "% Distance Walk Synthetic",
-        "% TravelTime Bike Synthetic",
-        "% TravelTime Car Synthetic",
-        "% TravelTime Car Passenger Synthetic",
-        "% TravelTime PT Synthetic",
-        "% TravelTime Walk Synthetic",
-        "% Trips Bike Synthetic",
-        "% Trips Car Synthetic",
-        "% Trips Car Passenger Synthetic",
-        "% Trips PT Synthetic",
-        "% Trips Walk Synthetic"
+        "% Trips Bike - Simulated Area", "% Trips Car - Simulated Area", "% Trips Car Passenger - Simulated Area", "% Trips PT - Simulated Area", "% Trips Walk - Simulated Area",
+        "% Trips Bike - Weinfelden", "% Trips Car - Weinfelden", "% Trips Car Passenger - Weinfelden", "% Trips PT - Weinfelden", "% Trips Walk - Weinfelden",
+        "% Distance Bike  - Simulated Area", "% Distance Car  - Simulated Area", "% Distance Car Passenger  - Simulated Area", "% Distance PT  - Simulated Area", "% Distance Walk  - Simulated Area",
+        "% Distance Bike  - Weinfelden", "% Distance Car  - Weinfelden", "% Distance Car Passenger  - Weinfelden", "% Distance PT  - Weinfelden", "% Distance Walk  - Weinfelden",
+        "Count Trips Bike - Simulated Area", "Count Trips Car - Simulated Area", "Count Trips Car Passenger - Simulated Area", "Count Trips PT - Simulated Area", "Count Trips Walk - Simulated Area",
+        "Count Trips Bike - Weinfelden", "Count Trips Car - Weinfelden", "Count Trips Car Passenger - Weinfelden", "Count Trips PT - Weinfelden", "Count Trips Walk - Weinfelden",
+        "Count Distance Bike  - Simulated Area", "Count Distance Car  - Simulated Area", "Count Distance Car Passenger  - Simulated Area", "Count Distance PT  - Simulated Area", "Count Distance Walk  - Simulated Area",
+        "Count Distance Bike  - Weinfelden", "Count Distance Car  - Weinfelden", "Count Distance Car Passenger  - Weinfelden", "Count Distance PT  - Weinfelden", "Count Distance Walk  - Weinfelden",
+        "Count TravelTime Bike Weinfelden", "Count TravelTime Car Weinfelden", "Count TravelTime Car Passenger Weinfelden", "Count TravelTime PT Weinfelden", "Count TravelTime Walk Weinfelden"
     ]
 
-    # Verify the directory exists
     if os.path.exists(mode_share_directory):
         consolidated_data = []
-        for file_name in specific_files:
-            file_path = os.path.join(mode_share_directory, file_name)
-            if os.path.exists(file_path):
-                df = pd.read_csv(file_path)
 
-                if not df.empty:
-                    for col in df.columns:
-                        for index, value in df[col].items():
-                            mode = mode_mappings.get(index, '')
-                            if file_name == 'Mode_share_distance_comparison.csv':
-                                if 'Percentage Microcensus' in col:
-                                    title = f"% Distance {mode} Mic by row"
-                                elif 'Percentage Weighted Microcensus' in col:
-                                    title = f"% Distance {mode} Mic weighted"
-                                elif 'Total Distance Simulation' in col:
-                                    title = f"Count Distance {mode} Thurgau Sim"
-                                elif 'Percentage Simulation' in col:
-                                    title = f"% Distance {mode} Sim"
-                                elif 'Percentage Synthetic' in col:
-                                    title = f"% Distance {mode} Synthetic"
-                                else:
-                                    continue
-                            elif file_name == 'mode_share_trip_comparison.csv':
-                                if 'Number_Percentage' in col:
-                                    title = f"% Trips {mode} Mic by row"
-                                elif 'Household_Percentage' in col:
-                                    title = f"% Trips {mode} Mic weighted"
-                                elif 'Simulation_Count' in col:
-                                    title = f"Count Trips {mode} Thurgau Sim"
-                                elif 'Simulation_Percentage' in col:
-                                    title = f"% Trips {mode} Sim"
-                                elif 'Synthetic_Percentage' in col:
-                                    title = f"% Trips {mode} Synthetic"
-                                else:
-                                    continue
-                            elif file_name == 'Mode_share_time_comparison.csv':
-                                if 'Percentage Microcensus' in col:
-                                    title = f"% TravelTime {mode} Mic by row"
-                                elif 'Percentage Weighted Microcensus' in col:
-                                    title = f"% TravelTime {mode} Mic weighted"
-                                elif 'Percentage Simulation' in col:
-                                    title = f"% TravelTime {mode} Sim"
-                                elif 'Total Travel Time Simulation' in col:
-                                    title = f"Count TravelTime {mode} Thurgau Sim"
-                                elif 'Percentage Synthetic' in col:
-                                    title = f"% TravelTime {mode} Synthetic"
-                                else:
-                                    continue
-                            else:
-                                continue  # Skip unrecognized files or columns
-                            consolidated_data.append([title, value])
-            else:
-                print(f"File not found: {file_name}")
+        def read_and_extract(filepath, extract_funcs):
+            if not os.path.exists(filepath):
+                print(f"File not found: {filepath}")
+                return []
+            df = pd.read_csv(filepath)
+            results = []
+            for _, row in df.iterrows():
+                mode = row['Mode']
+                if mode in mode_mappings:
+                    mapped_mode = mode_mappings[mode]
+                    for func in extract_funcs:
+                        results.append(func(mapped_mode, row))
+            return results
 
+        # Extract percentage and count for trips (Simulated Area)
+        consolidated_data += read_and_extract(
+            os.path.join(mode_share_directory, specific_files["trip"]),
+            [
+                lambda mode, row: (f"% Trips {mode} - Simulated Area", row["Percentage Sim"]),
+                lambda mode, row: (f"Count Trips {mode} - Simulated Area", row["Total Trips Sim"])
+            ]
+        )
+
+        # Trips for Weinfelden
+        consolidated_data += read_and_extract(
+            os.path.join(mode_share_directory, specific_files["trip_target"]),
+            [
+                lambda mode, row: (f"% Trips {mode} - Weinfelden", row["Percentage Sim"]),
+                lambda mode, row: (f"Count Trips {mode} - Weinfelden", row["Total Trips Sim"])
+            ]
+        )
+
+        # Distance for Simulated Area
+        consolidated_data += read_and_extract(
+            os.path.join(mode_share_directory, specific_files["distance"]),
+            [
+                lambda mode, row: (f"% Distance {mode}  - Simulated Area", row["Percentage Sim"]),
+                lambda mode, row: (f"Count Distance {mode}  - Simulated Area", row["Total Distance Sim"])
+            ]
+        )
+
+        # Distance for Weinfelden
+        consolidated_data += read_and_extract(
+            os.path.join(mode_share_directory, specific_files["distance_target"]),
+            [
+                lambda mode, row: (f"% Distance {mode}  - Weinfelden", row["Percentage Sim"]),
+                lambda mode, row: (f"Count Distance {mode}  - Weinfelden", row["Total Distance Sim"])
+            ]
+        )
+
+        # Travel Time for Weinfelden
+        consolidated_data += read_and_extract(
+            os.path.join(mode_share_directory, specific_files["time_target"]),
+            [
+                lambda mode, row: (f"Count TravelTime {mode} Weinfelden", row["Total Time Sim"])
+            ]
+        )
+
+        # Create and sort DataFrame
         if consolidated_data:
-            # Create DataFrame
             output_df = pd.DataFrame(consolidated_data, columns=['Title', 'Value'])
-            # Sort DataFrame by desired order
             output_df['Order'] = output_df['Title'].apply(lambda x: desired_order.index(x) if x in desired_order else len(desired_order))
             output_df = output_df.sort_values('Order').drop('Order', axis=1)
             output_df['Value with Comma'] = output_df['Value'].astype(str).str.replace('.', ',', regex=False)
-            # Save DataFrame to CSV
             output_df.to_csv(os.path.join(mode_share_directory, 'modalSplitCalibration.csv'), sep=';', index=False)
             print("Data successfully saved.")
         else:
