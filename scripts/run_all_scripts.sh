@@ -1,0 +1,54 @@
+#!/bin/bash
+
+# Exit on any error
+set -e
+
+echo "Starting the Python analysis pipeline..."
+
+# Load Anaconda and activate your environment
+module load anaconda3/2024.02-1
+source /apps/opt/spack/linux-ubuntu20.04-x86_64/gcc-9.3.0/anaconda3-2024.02-1-whphrx3ledrvyrcnibu7lezfvvqltgt5/etc/profile.d/conda.sh
+conda activate ThurgauAnalysisEnv
+
+# Navigate to your scripts directory
+cd ~/ThurgauPaperAnalysisAM/scripts
+
+# Run each script
+echo "Running 01_microcensus_pre-process.py..."
+python 01_microcensus_pre-process.py
+
+echo "Running 02_microcensus_trips_filter.py..."
+python 02_microcensus_trips_filter.py
+
+echo "Running 03_synPop_and_sim_create_csv_files.py..."
+python 03_synPop_and_sim_create_csv_files.py
+
+echo "Running 04_synPop_sim_trips.py..."
+python 04_synPop_sim_trips.py
+
+echo "Running 05_generate_clean_csv_files.py..."
+python 05_generate_clean_csv_files.py
+
+echo "Running 06_synt_mode_share_by_time_distance.py..."
+python 06_synt_mode_share_by_time_distance.py
+
+echo "Running 07_plot_mode_share.py..."
+python 07_plot_mode_share.py
+
+echo "Running 08_plot_mode_share_target_area.py..."
+python 08_plot_mode_share_target_area.py
+
+# Optional scripts (uncomment to enable)
+# echo "Running 09_plot_smaller_zones_modal_split.py..."
+# python 09_plot_smaller_zones_modal_split.py
+
+# echo "Running 10_plot_the_clean_csv_files.py..."
+# python 10_plot_the_clean_csv_files.py
+
+# echo "Running 11_CSVs_in_a_column.py..."
+# python 11_CSVs_in_a_column.py
+
+# echo "Running 12_DRT_Data_Analysis.py..."
+# python 12_DRT_Data_Analysis.py
+
+echo "All scripts executed successfully!"
