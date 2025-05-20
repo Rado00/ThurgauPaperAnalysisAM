@@ -21,14 +21,13 @@ if __name__ == '__main__':
     analysis_zone_path = os.path.join(data_path, analysis_zone_name)
     output_folder_path: str = os.path.join(data_path, simulation_zone_name, sim_output_folder)
     directory = os.getcwd()
-    output_plots_folder_name = sim_output_folder.split('\\')[-1]
+    output_plots_folder_name = os.path.basename(sim_output_folder)
     parent_directory = os.path.dirname(directory)
-    plots_directory = os.path.join(parent_directory, f'plots\\plots_{output_plots_folder_name}')
+    plots_directory = os.path.join(parent_directory, "plots", f"plots_{output_plots_folder_name}")
     logging.info(f"Reading data from {output_folder_path}")
 
     # Load geographic data from a shapefile
-    shapefile_path = os.path.join(analysis_zone_path,
-                                  f"ShapeFiles\\Zones")
+    shapefile_path = os.path.join(analysis_zone_path, "ShapeFiles", "Zones")
 
     zones = [
         "01", "02", "03", "04", "05", "06", "07", "08", "09",
@@ -37,12 +36,13 @@ if __name__ == '__main__':
     ]
 
     pre_processed_data_path = os.path.join(data_path, analysis_zone_name, csv_folder, percentile)
-    df_synt_mode_share = pd.read_csv(f'{pre_processed_data_path}\\travel_time_distance_mode_synt.csv')
+    df_synt_mode_share = pd.read_csv(os.path.join(pre_processed_data_path, "travel_time_distance_mode_synt.csv"))
     logging.info(
-        f"Read {len(df_synt_mode_share)} rows from {pre_processed_data_path}\\travel_time_distance_mode_synt.csv")
-    df_sim_mode_share = pd.read_csv(f'{pre_processed_data_path}\\travel_time_distance_mode_sim.csv')
+        f"Read {len(df_synt_mode_share)} rows from {os.path.join(pre_processed_data_path, 'travel_time_distance_mode_synt.csv')}")
+
+    df_sim_mode_share = pd.read_csv(os.path.join(pre_processed_data_path, "travel_time_distance_mode_sim.csv"))
     logging.info(
-        f"Read {len(df_sim_mode_share)} rows from {pre_processed_data_path}\\travel_time_distance_mode_sim.csv")
+        f"Read {len(df_sim_mode_share)} rows from {os.path.join(pre_processed_data_path, 'travel_time_distance_mode_sim.csv')}")
 
     modes_to_remove = ['truck', 'outside']
 
@@ -131,7 +131,7 @@ if __name__ == '__main__':
                 if not os.path.exists(mode_share_directory):
                     os.makedirs(mode_share_directory)
 
-                fig.write_image(f"{mode_share_directory}\\{file}_Mode_share_by_Distance.png", scale=4)
+                fig.write_image(os.path.join(mode_share_directory, f"{file}_Mode_share_by_Distance.png"), scale=4)
                 logging.info(f"Mode share by distance figure for zone {file} has been saved successfully.")
 
                 filtered_mode_share_time_synt = filtered_df_synt_mode_share.groupby('mode')[
@@ -182,7 +182,7 @@ if __name__ == '__main__':
                     height=600
                 )
 
-                fig.write_image(f"{mode_share_directory}\\{file}_Mode_share_by_Travel_Time.png", scale=4)
+                fig.write_image(os.path.join(mode_share_directory, f"{file}_Mode_share_by_Travel_Time.png"), scale=4)
                 logging.info(f"Mode share by travel time figure for zone {file} has been saved successfully.")
 
                 filtered_mode_share_number_synt = filtered_df_synt_mode_share[
@@ -233,8 +233,7 @@ if __name__ == '__main__':
                     height=600
                 )
 
-                fig.write_image(f"{mode_share_directory}\\{file}_Mode_share_by_Number.png", scale=4)
-
+                fig.write_image(os.path.join(mode_share_directory, f"{file}_Mode_share_by_Number.png"), scale=4)
                 mode_share_comparison_time_csv = (
                     filtered_mode_share_distance_synt.merge(filtered_mode_share_distance_sim, on='Mode', how='outer',
                                                             suffixes=('_dist_synt', '_dist_sim'))
@@ -255,8 +254,7 @@ if __name__ == '__main__':
                                                           'Percentage Travel Time Simulation',
                                                           'Count Synthetic', 'Percentage Count Synthetic',
                                                           'Count Simulation', 'Percentage Count Simulation']
-                mode_share_comparison_time_csv.to_csv(f"{mode_share_directory}\\{file}_Mode_share_comparison.csv",
-                                                      index=False)
+                mode_share_comparison_time_csv.to_csv(os.path.join(mode_share_directory, f"{file}_Mode_share_comparison.csv"), index=False)
 
                 dataframe_arcgis_pro = mode_share_comparison_time_csv[
                     ['Mode', 'Percentage Distance Synthetic', 'Percentage Distance Simulation',
@@ -266,5 +264,5 @@ if __name__ == '__main__':
 
     data_serializable = {key: df.round(2).to_dict(orient='records') for key, df in arcgis_pro_dict.items()}
 
-    with open(f"{plots_directory}\\arcgis_pro_dict.json", "w") as outfile:
+    with open(os.path.join(plots_directory, "arcgis_pro_dict.json"), "w") as outfile:
         json.dump(data_serializable, outfile, indent=4)

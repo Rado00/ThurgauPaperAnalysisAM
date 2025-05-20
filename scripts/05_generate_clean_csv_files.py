@@ -174,8 +174,7 @@ def create_activity_chain_syn(group):
     return pd.Series({'activity_chain': chain})
 
 def extract_just_personID_and_household_weight_from_hausalteCSV(path):
-    df_mz_households = pd.read_csv(
-        "%s\\microzensus\\haushalte.csv" % path, sep=",", encoding="latin1")
+    df_mz_households = pd.read_csv(os.path.join(path, "microzensus", "haushalte.csv"), sep=",", encoding="latin1")
     df_mz_households["person_id"] = df_mz_households["HHNR"]
     df_mz_households["household_weight"] = df_mz_households["WM"]
 
@@ -200,28 +199,24 @@ if __name__ == '__main__':
 
     # Read the csv files
     try:
-        df_activity_sim = pd.read_csv(f'{pre_processed_data_path}\\df_activity_sim.csv', low_memory=False)
-        df_population_all_activities_inside_sim = pd.read_csv(f'{pre_processed_data_path}\\population_all_activities_inside_sim.csv', low_memory=False)
-        df_population_at_least_one_activity_inside_sim = pd.read_csv(f'{pre_processed_data_path}\\population_at_least_one_activity_inside_sim.csv', low_memory=False)
-        df_trips_all_activities_inside_sim = pd.read_csv(f'{pre_processed_data_path}\\trips_all_activities_inside_sim.csv', low_memory=False)
-        df_trips_at_least_one_activity_inside_sim = pd.read_csv(f'{pre_processed_data_path}\\trips_at_least_one_activity_inside_sim.csv', low_memory=False)
-
+        df_activity_sim = pd.read_csv(os.path.join(pre_processed_data_path, "df_activity_sim.csv"), low_memory=False)
+        df_population_all_activities_inside_sim = pd.read_csv(os.path.join(pre_processed_data_path, "population_all_activities_inside_sim.csv"), low_memory=False)
+        df_population_at_least_one_activity_inside_sim = pd.read_csv(os.path.join(pre_processed_data_path, "population_at_least_one_activity_inside_sim.csv"), low_memory=False)
+        df_trips_all_activities_inside_sim = pd.read_csv(os.path.join(pre_processed_data_path, "trips_all_activities_inside_sim.csv"), low_memory=False)
+        df_trips_at_least_one_activity_inside_sim = pd.read_csv(os.path.join(pre_processed_data_path, "trips_at_least_one_activity_inside_sim.csv"), low_memory=False)
 
         if read_SynPop:
-            df_households_synt = pd.read_csv(f'{pre_processed_data_path}\\df_households_synt.csv', low_memory=False)
-            df_activity_synt = pd.read_csv(f'{pre_processed_data_path}\\df_activity_synt.csv', low_memory=False)
-            df_legs_synt = pd.read_csv(f'{pre_processed_data_path}\\df_legs_synt.csv', low_memory=False)
-            df_persons_synt = pd.read_csv(f'{pre_processed_data_path}\\df_persons_synt.csv', low_memory=False)
-            df_routes_synt = pd.read_csv(f'{pre_processed_data_path}\\df_routes_synt.csv', low_memory=False)
+            df_households_synt = pd.read_csv(os.path.join(pre_processed_data_path, "df_households_synt.csv"), low_memory=False)
+            df_activity_synt = pd.read_csv(os.path.join(pre_processed_data_path, "df_activity_synt.csv"), low_memory=False)
+            df_legs_synt = pd.read_csv(os.path.join(pre_processed_data_path, "df_legs_synt.csv"), low_memory=False)
+            df_persons_synt = pd.read_csv(os.path.join(pre_processed_data_path, "df_persons_synt.csv"), low_memory=False)
+            df_routes_synt = pd.read_csv(os.path.join(pre_processed_data_path, "df_routes_synt.csv"), low_memory=False)
 
         if read_microcensus:
-            df_population_all_activities_inside_mic = pd.read_csv(
-                f"{microcensus_path}\\population_all_activities_inside_Mic.csv")
-            df_population_at_least_one_activity_inside_mic = pd.read_csv(
-                f"{microcensus_path}\\population_at_least_one_activity_inside_Mic.csv")
-            df_trips_all_activities_inside_mic = pd.read_csv(f"{microcensus_path}\\trips_all_activities_inside_Mic.csv")
-            df_trips_at_least_one_activity_inside_mic = pd.read_csv(
-                f"{microcensus_path}\\trips_at_least_one_activity_inside_Mic.csv")
+            df_population_all_activities_inside_mic = pd.read_csv(os.path.join(microcensus_path, "population_all_activities_inside_Mic.csv"))
+            df_population_at_least_one_activity_inside_mic = pd.read_csv(os.path.join(microcensus_path, "population_at_least_one_activity_inside_Mic.csv"))
+            df_trips_all_activities_inside_mic = pd.read_csv(os.path.join(microcensus_path, "trips_all_activities_inside_Mic.csv"))
+            df_trips_at_least_one_activity_inside_mic = pd.read_csv(os.path.join(microcensus_path, "trips_at_least_one_activity_inside_Mic.csv"))
 
         logging.info("CSV files read successfully")
     except Exception as e:
@@ -306,37 +301,45 @@ if __name__ == '__main__':
         # Mapping '0' to 'male' and '1' to 'female'
         df_population_at_least_one_activity_inside_mic['number_of_cars'] = df_population_at_least_one_activity_inside_mic['number_of_cars'].apply(group_cars)
         df_population_at_least_one_activity_inside_mic['sex'] = df_population_at_least_one_activity_inside_mic['sex'].replace({0: 'male', 1: 'female'})
-
         df_population_all_activities_inside_mic['number_of_cars'] = df_population_all_activities_inside_mic['number_of_cars'].apply(group_cars)
         df_population_all_activities_inside_mic['sex'] = df_population_all_activities_inside_mic['sex'].replace({0: 'male', 1: 'female'})
 
         df_activity_chains_at_least_one_activity_mic = df_trips_at_least_one_activity_inside_mic.groupby(['person_id']).apply(create_activity_chain_mic).reset_index()
         df_activity_chains_all_activities_inside_mic = df_trips_all_activities_inside_mic.groupby(['person_id']).apply(create_activity_chain_mic).reset_index()
 
-        df_activity_chains_sim = df_activity_sim.groupby(['plan_id']).apply(create_activity_chain_syn).reset_index()
+    df_activity_chains_sim = df_activity_sim.groupby(['plan_id']).apply(create_activity_chain_syn).reset_index()
 
+    if read_microcensus:
         # Ensure the directory exists
         if not os.path.exists(data_path_clean):
             os.makedirs(data_path_clean)
         # Write the CSV files
-        df_trips_at_least_one_activity_inside_mic.to_csv(f'{data_path_clean}\\trips_at_least_one_activity_inside_mic.csv', index=False)
-        df_trips_all_activities_inside_mic.to_csv(f'{data_path_clean}\\trips_all_activities_inside_mic.csv', index=False)
+        df_trips_at_least_one_activity_inside_mic.to_csv(
+            os.path.join(data_path_clean, "trips_at_least_one_activity_inside_mic.csv"), index=False)
+        df_trips_all_activities_inside_mic.to_csv(os.path.join(data_path_clean, "trips_all_activities_inside_mic.csv"),
+                                                  index=False)
 
-        df_activity_chains_at_least_one_activity_mic.to_csv(f'{data_path_clean}\\activity_chains_at_least_one_activity_inside_mic.csv', index=False)
-        df_activity_chains_all_activities_inside_mic.to_csv(f'{data_path_clean}\\activity_chains_all_activities_inside_mic.csv', index=False)
+        df_activity_chains_at_least_one_activity_mic.to_csv(
+            os.path.join(data_path_clean, "activity_chains_at_least_one_activity_inside_mic.csv"), index=False)
+        df_activity_chains_all_activities_inside_mic.to_csv(
+            os.path.join(data_path_clean, "activity_chains_all_activities_inside_mic.csv"), index=False)
 
-        df_population_all_activities_inside_mic.to_csv(f'{data_path_clean}\\population_all_activities_inside_mic.csv', index=False)
-        df_population_at_least_one_activity_inside_mic.to_csv(f'{data_path_clean}\\population_at_least_one_activity_inside_mic.csv', index=False)
+        df_population_all_activities_inside_mic.to_csv(
+            os.path.join(data_path_clean, "population_all_activities_inside_mic.csv"), index=False)
+        df_population_at_least_one_activity_inside_mic.to_csv(
+            os.path.join(data_path_clean, "population_at_least_one_activity_inside_mic.csv"), index=False)
 
-    if read_SynPop:
-        df_trips_synt.to_csv(f'{data_path_clean}\\trips_synt.csv', index=False)
-        df_activity_chains_syn.to_csv(f'{data_path_clean}\\activity_chains_syn.csv', index=False)
-        df_persons_synt.to_csv(f'{data_path_clean}\\population_clean_synth.csv', index=False)
-        df_legs_synt.to_csv(f'{data_path_clean}\\legs_clean_synt.csv', index=False)
+        if read_SynPop:
+            df_trips_synt.to_csv(os.path.join(data_path_clean, "trips_synt.csv"), index=False)
+            df_activity_chains_syn.to_csv(os.path.join(data_path_clean, "activity_chains_syn.csv"), index=False)
+            df_persons_synt.to_csv(os.path.join(data_path_clean, "population_clean_synth.csv"), index=False)
+            df_legs_synt.to_csv(os.path.join(data_path_clean, "legs_clean_synt.csv"), index=False)
 
-    df_activity_chains_sim.to_csv(f'{data_path_clean}\\activity_chains_sim.csv', index=False)
-    df_population_all_activities_inside_sim.to_csv(f'{data_path_clean}\\population_all_activities_inside_sim.csv', index=False)
-    df_population_at_least_one_activity_inside_sim.to_csv(f'{data_path_clean}\\population_at_least_one_activity_inside_sim.csv', index=False)
+        df_activity_chains_sim.to_csv(os.path.join(data_path_clean, "activity_chains_sim.csv"), index=False)
+        df_population_all_activities_inside_sim.to_csv(
+            os.path.join(data_path_clean, "population_all_activities_inside_sim.csv"), index=False)
+        df_population_at_least_one_activity_inside_sim.to_csv(
+            os.path.join(data_path_clean, "population_at_least_one_activity_inside_sim.csv"), index=False)
 
     filtered_trips_at_least_one_activitiy_inside_sim = df_trips_all_activities_inside_sim[[
         "person", "start_link", "end_link", "dep_time", "trav_time", "euclidean_distance", "longest_distance_mode",
@@ -362,5 +365,8 @@ if __name__ == '__main__':
     filtered_trips_at_least_one_activitiy_inside_sim = filtered_trips_at_least_one_activitiy_inside_sim[
         ~filtered_trips_at_least_one_activitiy_inside_sim['mode'].isin(['truck'])]
 
-    filtered_trips_at_least_one_activitiy_inside_sim.to_csv(f'{data_path_clean}\\trips_at_least_one_activity_inside_sim.csv', index=False)  # no changes here, but moved to data_path_clean
-    filtered_trips_all_activities_inside_sim.to_csv(f'{data_path_clean}\\trips_all_activities_inside_sim.csv', index=False)  # no changes here, but moved to data_path_clean
+    filtered_trips_at_least_one_activitiy_inside_sim.to_csv(
+        os.path.join(data_path_clean, "trips_at_least_one_activity_inside_sim.csv"), index=False)
+
+    filtered_trips_all_activities_inside_sim.to_csv(
+        os.path.join(data_path_clean, "trips_all_activities_inside_sim.csv"), index=False)

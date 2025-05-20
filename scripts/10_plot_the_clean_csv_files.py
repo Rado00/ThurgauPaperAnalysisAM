@@ -134,8 +134,8 @@ def main():
      csv_folder, clean_csv_folder, shapeFileName, read_SynPop, read_microcensus, sample_for_debugging) = config
 
     data_path_clean = os.path.join(data_path, analysis_zone_name, clean_csv_folder, percentile)
-    plots_directory = os.path.join(os.path.dirname(os.getcwd()), 'plots',
-                                   f'plots_{sim_output_folder.split("\\")[-1]}')
+    plots_directory = os.path.join(os.path.dirname(os.getcwd()), "plots",
+                                   f"plots_{os.path.basename(sim_output_folder)}")
     os.makedirs(plots_directory, exist_ok=True)
 
     df_population_mic = load_population_data(os.path.join(data_path, analysis_zone_name,clean_csv_folder,percentile, "population_at_least_one_activity_inside_mic.csv"))

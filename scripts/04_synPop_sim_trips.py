@@ -93,7 +93,7 @@ if __name__ == '__main__':
     if not os.path.exists(pre_processed_data_path):
         os.makedirs(pre_processed_data_path)
     filtered_trips_inside.to_csv(os.path.join(pre_processed_data_path, "trips_inside_O_and_D_sim.csv"), index=False)
-    filtered_trips_inside_outside.to_csv(f'{pre_processed_data_path}\\trips_inside_O_or_D_sim.csv', index=False)
+    filtered_trips_inside_outside.to_csv(os.path.join(pre_processed_data_path, "trips_inside_O_or_D_sim.csv"), index=False)
     logging.info("Both Filtered trips saved successfully")
 
     df_persons_sim = pd.read_csv(os.path.join(output_folder_path, "output_persons.csv.gz"), sep=';', low_memory=False,
@@ -105,22 +105,22 @@ if __name__ == '__main__':
     population_with_trips_O_and_D = df_persons_sim[df_persons_sim['person'].isin(unique_ids)]
     logging.info("Population with trips inside the area filtered successfully")
 
-    population_with_trips_O_and_D.to_csv(f'{pre_processed_data_path}\\population_all_activities_inside_sim.csv', index=False)
+    population_with_trips_O_and_D.to_csv(os.path.join(pre_processed_data_path, "population_all_activities_inside_sim.csv"), index=False)
 
     # Filter the population to include only those with trips origin inside or destination inside the area
     population_with_trips_O_or_D = df_persons_sim[
         df_persons_sim['person'].isin(filtered_trips_inside_outside['person'])]
     logging.info("Population with trips inside the area filtered successfully")
 
-    population_with_trips_O_or_D.to_csv(f'{pre_processed_data_path}\\population_at_least_one_activity_inside_sim.csv', index=False)
+    population_with_trips_O_or_D.to_csv(os.path.join(pre_processed_data_path, "population_at_least_one_activity_inside_sim.csv"), index=False)
 
     trips_all_activities_inside = output_trips_sim[output_trips_sim['person'].isin(population_with_trips_O_and_D['person'])]
 
-    trips_all_activities_inside.to_csv(f'{pre_processed_data_path}\\trips_all_activities_inside_sim.csv', index=False)
+    trips_all_activities_inside.to_csv(os.path.join(pre_processed_data_path, "trips_all_activities_inside_sim.csv"), index=False)
 
-    trips_at_least_one_activity_inside = output_trips_sim[output_trips_sim['person'].isin(population_with_trips_O_or_D['person'])]
+    trips_at_least_one_activity_inside = output_trips_sim[ output_trips_sim['person'].isin(population_with_trips_O_or_D['person'])]
 
-    trips_at_least_one_activity_inside.to_csv(f'{pre_processed_data_path}\\trips_at_least_one_activity_inside_sim.csv', index=False)
+    trips_at_least_one_activity_inside.to_csv( os.path.join(pre_processed_data_path, "trips_at_least_one_activity_inside_sim.csv"), index=False)
 
     logging.info("Trips with at least one activity inside the area filtered successfully")
 
@@ -133,12 +133,12 @@ if __name__ == '__main__':
     #                               crs=gdf.crs)
     # mask_home_inside = home_points.within(area_polygon)
     # population_home_inside = df_persons_sim[mask_home_inside]
-    # population_home_inside.to_csv(f'{pre_processed_data_path}\\population_home_inside_sim.csv', index=False)
+    # population_home_inside.to_csv(os.path.join(pre_processed_data_path, "population_home_inside_sim.csv"), index=False)
     # logging.info("Population with home inside the area filtered successfully")
 
     # # TRIPS FOR MODAL SPLIT HOMES INIDE - AS ABOVE
     # trips_population_home_inside = output_trips_sim[output_trips_sim['person'].isin(population_home_inside['person'])]
-    # trips_population_home_inside.to_csv(f'{pre_processed_data_path}\\trips_population_home_inside_sim.csv', index=False)
+    # trips_population_home_inside.to_csv(os.path.join(pre_processed_data_path, "trips_population_home_inside_sim.csv"), index=False)
     # logging.info("Trips with home inside the area filtered successfully")
 
 

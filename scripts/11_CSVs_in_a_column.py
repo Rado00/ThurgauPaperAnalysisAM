@@ -9,16 +9,16 @@ if __name__ == '__main__':
     logging.info(f"Reading config file from {data_path} path was successful.")
     directory = os.getcwd()
     parent_directory = os.path.dirname(directory)
-    output_plots_folder_name = sim_output_folder.split('\\')[-1]
+    output_plots_folder_name = os.path.basename(sim_output_folder)
 
-    plots_directory = os.path.join(parent_directory, f'plots\\plots_{output_plots_folder_name}')
+    plots_directory = os.path.join(parent_directory, "plots", f"plots_{output_plots_folder_name}")
     mode_share_directory = os.path.join(plots_directory, 'mode_share')
 
     # List of specific CSV files to read
     specific_files = [
         'Mode_shares_by_trip.csv',
         'Mode_shares_distance.csv',
-        'Mode_share_time_comparison.csv'
+        'Mode_shares_time.csv'
         'Mode_shares_by_trip_target_area.csv'
         'Mode_shares_distance_target_area.csv'
         'Mode_shares_time_target_area.csv'

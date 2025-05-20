@@ -65,5 +65,5 @@ if __name__ == '__main__':
             lambda row: compute_avg_coordinates(row["start_link"], row["end_link"], link_dict_synt_str), axis=1,
             result_type="expand")
 
-        df_synt_mode_share_time_distance.to_csv(f'{pre_processed_data_path}\\travel_time_distance_mode_synt.csv', index=False)
+        df_synt_mode_share_time_distance.to_csv(os.path.join(pre_processed_data_path, "travel_time_distance_mode_synt.csv"), index=False)
         logging.info("Dataframe saved as csv file successfully")
