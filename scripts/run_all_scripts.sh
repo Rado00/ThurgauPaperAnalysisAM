@@ -1,17 +1,37 @@
 #!/bin/bash
-
-# Exit on any error
 set -e
 
 echo "Starting the Python analysis pipeline..."
 
-# Load Anaconda and activate your environment
-module load anaconda3/2024.02-1
-source /apps/opt/spack/linux-ubuntu20.04-x86_64/gcc-9.3.0/anaconda3-2024.02-1-whphrx3ledrvyrcnibu7lezfvvqltgt5/etc/profile.d/conda.sh
-conda activate ThurgauAnalysisEnv
+# Detect user and OS
+USER_NAME=$(whoami)
+OS_TYPE=$(uname)
 
-# Navigate to your scripts directory
-cd ~/ThurgauPaperAnalysisAM/scripts
+# Set up conda and paths
+if [[ "$OS_TYPE" == "Linux" && "$USER_NAME" == "muaa" ]]; then
+    echo "Running on ZHAW or local Linux as muaa"
+    source /home/muaa/miniconda3/etc/profile.d/conda.sh
+    conda activate ThurgauAnalysisEnv
+    SCRIPTS_PATH="/home/muaa/ThurgauPaperAnalysisAM/scripts"
+
+elif [[ "$OS_TYPE" == "Linux" && "$USER_NAME" == "comura" ]]; then
+    echo "Running on UZH Linux as comura"
+    module load anaconda3/2024.02-1
+    source /apps/opt/spack/linux-ubuntu20.04-x86_64/gcc-9.3.0/anaconda3-2024.02-1-whphrx3ledrvyrcnibu7lezfvvqltgt5/etc/profile.d/conda.sh
+    conda activate ThurgauAnalysisEnv
+    SCRIPTS_PATH="/home/comura/ThurgauPaperAnalysisAM/scripts"
+
+elif [[ "$OS_TYPE" == "MINGW"* || "$OS_TYPE" == "CYGWIN"* || "$OS_TYPE" == "MSYS"* ]] && [[ "$USER_NAME" == "muaa" ]]; then
+    echo "Running on Windows as muaa"
+    SCRIPTS_PATH="C:/Users/${USER_NAME}/Documents/3_MIEI/ThurgauPaperAnalysisAM/scripts"
+    # Windows: Activate manually if needed or ensure conda is in PATH
+    conda activate ThurgauAnalysisEnv
+else
+    echo "Unsupported system configuration"
+    exit 1
+fi
+
+cd "$SCRIPTS_PATH"
 
 # Run each script
 echo "Running 01_microcensus_pre-process.py..."
@@ -45,8 +65,8 @@ python 08_plot_mode_share_target_area.py
 # echo "Running 10_plot_the_clean_csv_files.py..."
 # python 10_plot_the_clean_csv_files.py
 
-# echo "Running 11_CSVs_in_a_column.py..."
-# python 11_CSVs_in_a_column.py
+echo "Running 11_CSVs_in_a_column.py..."
+python 11_CSVs_in_a_column.py
 
 # echo "Running 12_DRT_Data_Analysis.py..."
 # python 12_DRT_Data_Analysis.py
