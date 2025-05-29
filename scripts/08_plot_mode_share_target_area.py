@@ -82,14 +82,14 @@ def load_and_prepare_data(file_path, target_area_gdf, x_col, y_col, mode_col='mo
 
 def main():
     setup_logging(get_log_filename())
-    data_path, simulation_zone_name, scenario, sim_output_folder, percentile, analysis_zone_name, csv_folder, clean_csv_folder, shapeFileName, read_SynPop, read_microcensus, sample_for_debugging = read_config()
+    data_path, simulation_zone_name, scenario, sim_output_folder, percentile, analysis_zone_name, csv_folder, clean_csv_folder, shapeFileName, read_SynPop, read_microcensus, sample_for_debugging, target_area = read_config()
 
     data_path_clean = os.path.join(data_path, analysis_zone_name, clean_csv_folder, percentile)
     plots_directory = os.path.join(os.path.dirname(os.getcwd()), "plots", f"plots_{os.path.basename(sim_output_folder)}")
     mode_share_directory = os.path.join(plots_directory, 'mode_share')
     os.makedirs(mode_share_directory, exist_ok=True)
 
-    shape_path = os.path.join(data_path, "Paper2_ShapeFiles_CH1903+_LV95", "25_Weinfelden_Entire_Bezirke", "25_Weinfelden_Entire_Bezirke.shp")
+    shape_path = os.path.join(data_path, "Paper2_ShapeFiles_CH1903+_LV95_easyNames", target_area)
     target_area = gpd.read_file(shape_path)
 
     df_mic = load_and_prepare_data(os.path.join(data_path_clean, "trips_all_activities_inside_mic.csv"), target_area, 'start_coor_x', 'start_coor_y')

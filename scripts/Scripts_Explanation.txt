@@ -9,7 +9,7 @@ FLOW OF THURGAU ANALYSIS SCRIPTS
 IN --> 	microzensus/zielpersonen.csv , microzensus/haushalte.csv
 		process and merge
 OUT --> microzensus/all_population.csv
-
+Pinstrip&000
 
 02_microcensus_trips_filter.py (1 TIME FOR SHP)
 -----------------------------------------

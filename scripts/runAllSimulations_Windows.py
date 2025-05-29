@@ -12,8 +12,8 @@ bat_file = 'allScripts.bat'  # Replace with your .bat file's name or path
 config = configparser.ConfigParser()
 # Read the existing config file
 config.read(config_path)
-simulations_list = list(range(1, 25)) #Mettere 1 in + a fine range
-base_sims_path = r'Paper2_SimsOutputs\1_ModalSplitCalibration\BaselineCalibration_NV_'
+simulations_list = list(range(1, 6)) #Mettere 1 in + a fine range
+base_sims_path = r'Paper2_SimsOutputs\2_Fleet\DRT_'
 for i in simulations_list:
     try:
         # Check if the section exists

@@ -69,7 +69,7 @@ def load_and_prepare_data(file_path, mode_col='mode', modes_to_exclude=None):
 
 def main():
     setup_logging(get_log_filename())
-    data_path, simulation_zone_name, scenario, sim_output_folder, percentile, analysis_zone_name, csv_folder, clean_csv_folder, shapeFileName, read_SynPop, read_microcensus, sample_for_debugging = read_config()
+    data_path, simulation_zone_name, scenario, sim_output_folder, percentile, analysis_zone_name, csv_folder, clean_csv_folder, shapeFileName, read_SynPop, read_microcensus, sample_for_debugging, target_area = read_config()
 
     data_path_clean = os.path.join(data_path, analysis_zone_name, clean_csv_folder, percentile)
     plots_directory = os.path.join(os.path.dirname(os.getcwd()), f'plots/plots_{os.path.basename(sim_output_folder)}')

@@ -131,7 +131,7 @@ def main():
     logging.info("Starting main execution...")
     config = read_config()
     (data_path, simulation_zone_name, scenario, sim_output_folder, percentile, analysis_zone_name,
-     csv_folder, clean_csv_folder, shapeFileName, read_SynPop, read_microcensus, sample_for_debugging) = config
+     csv_folder, clean_csv_folder, shapeFileName, read_SynPop, read_microcensus, sample_for_debugging, target_area) = config
 
     data_path_clean = os.path.join(data_path, analysis_zone_name, clean_csv_folder, percentile)
     plots_directory = os.path.join(os.path.dirname(os.getcwd()), "plots",
