@@ -140,7 +140,7 @@ def main():
 
     df_population_mic = load_population_data(os.path.join(data_path, analysis_zone_name,clean_csv_folder,percentile, "population_at_least_one_activity_inside_mic.csv"))
     df_population_sim = load_population_data(os.path.join(data_path_clean, "population_all_activities_inside_sim.csv"))
-    df_households_sim = pd.read_csv(os.path.join(data_path_clean, "households_sim.csv"))
+    df_households_sim = pd.read_csv(os.path.join(data_path_clean, "households_all_activities_inside_sim.csv"))
 
     plot_gender_distribution(df_population_mic, df_population_sim, plots_directory)
     plot_car_ownership(df_population_mic, df_households_sim, plots_directory)

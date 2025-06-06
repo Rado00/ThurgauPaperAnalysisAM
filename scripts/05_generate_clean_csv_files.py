@@ -2,6 +2,7 @@
 from functions.commonFunctions import *
 import pandas as pd
 import warnings
+import matsim
 warnings.filterwarnings('ignore')
 pd.set_option('display.max_columns', None)
 pd.set_option('display.max_rows', None)
@@ -250,6 +251,26 @@ if __name__ == '__main__':
         df_persons_synt['sex'] = df_persons_synt['sex'].replace({'m': 'male', 'f': 'female'})
 
     df_population_all_activities_inside_sim.rename(columns={'person': 'person_id'}, inplace=True)
+
+    try:
+        households_sim = matsim.household_reader(os.path.join(output_folder_path, "output_households.xml.gz"))
+        df_households_sim = households_sim.households
+        logging.info("output_households.xml.gz loaded successfully")
+    except Exception as e:
+        logging.error("Error loading output_households.xml.gz: " + str(e))
+        sys.exit()
+    # Set of relevant person_ids
+    valid_person_ids = set(df_population_at_least_one_activity_inside_sim['person_id'].unique())
+    # Filter households where at least one person is in valid_person_ids
+    # Only apply eval if the element is a string
+    df_households_sim['members'] = df_households_sim['members'].apply(
+        lambda x: eval(x) if isinstance(x, str) else x
+    )  # Convert string repr to list
+    df_households_sim_filtered = df_households_sim[
+        df_households_sim['members'].apply(lambda members: any(pid in valid_person_ids for pid in members))]
+    df_households_sim_filtered.to_csv(
+        os.path.join(data_path_clean, "households_all_activities_inside_sim.csv"), index=False)
+
     df_activity_population_all_activities_inside_sim = map_person_id_to_activities(df_activity_sim, df_population_all_activities_inside_sim)
     if read_SynPop:
         df_activity_synt_filtered = map_person_id_to_activities(df_activity_synt, df_persons_synt)
