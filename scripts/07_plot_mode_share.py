@@ -94,7 +94,18 @@ def main():
     dist_mic = compute_percentage(df_mic, 'mode', 'crowfly_distance').rename(columns={'Percentage Crowfly_Distance': 'Percentage Mic'})
     dist_mic_wt = compute_percentage(df_mic, 'mode', 'weighted_distance').rename(columns={'Percentage Weighted_Distance': 'Percentage Mic Weighted'})
     dist_sim = compute_percentage(df_sim, 'mode', 'distance').rename(columns={'Percentage Distance': 'Percentage Sim', 'Total Distance': 'Total Distance Sim'})
-    dist_synt = compute_percentage(df_synt, 'mode', 'distance').rename(columns={'Percentage Distance': 'Percentage Synt'}) if read_SynPop else pd.DataFrame({'Mode': dist_sim['Mode'], 'Percentage Synt': [0.0]*len(dist_sim)})
+    if read_SynPop:
+        dist_synt = compute_percentage(df_synt, 'mode', 'distance').rename(columns={'Percentage Distance': 'Percentage Synt'}) if read_SynPop else pd.DataFrame({'Mode': dist_sim['Mode'], 'Percentage Synt': [0.0]*len(dist_sim)})
+
+    average_distance_by_mode_mic = df_mic.groupby('mode')['crowfly_distance'].agg(['mean', 'std']).reset_index()
+    average_distance_by_mode_mic.columns = ['Mode', 'Average Distance Mic', 'STD Distance Mic']
+    average_distance_by_mode_mic_wt = df_mic.groupby('mode')['weighted_distance'].agg(['mean', 'std']).reset_index()
+    average_distance_by_mode_mic_wt.columns = ['Mode', 'Average Distance Mic WT', 'STD Distance Mic WT']
+    average_distance_by_mode_sim = df_sim.groupby('mode')['distance'].agg(['mean', 'std']).reset_index()
+    average_distance_by_mode_sim.columns = ['Mode', 'Average Distance Sim', 'STD Distance Sim']
+    if read_SynPop:
+        average_distance_by_mode_synt = df_synt.groupby('mode')['distance'].agg(['mean', 'std']).reset_index()
+        average_distance_by_mode_synt.columns = ['Mode', 'Average Distance Synt', 'STD Distance Synt']
 
     plot_grouped_bar([dist_mic_wt, dist_mic, dist_sim, dist_synt] if read_SynPop else [dist_mic_wt, dist_mic, dist_sim],
                      ['Microcensus Weighted', 'Microcensus Single', 'Simulation', 'Synthetic'] if read_SynPop else ['Microcensus Weighted', 'Microcensus Single', 'Simulation'],
@@ -104,8 +115,21 @@ def main():
     save_custom_csv(f"{mode_share_directory}/Mode_shares_distance.csv",
                     dist_mic[['Mode', 'Percentage Mic']],
                     dist_mic_wt[['Mode', 'Percentage Mic Weighted']],
-                    dist_synt[['Mode', 'Percentage Synt']],
-                    dist_sim[['Mode', 'Total Distance Sim', 'Percentage Sim']])
+                    dist_sim[['Mode', 'Total Distance Sim', 'Percentage Sim']],
+                    average_distance_by_mode_mic_wt[['Mode', 'Average Distance Mic WT', 'STD Distance Mic WT']],
+                    average_distance_by_mode_sim[['Mode', 'Average Distance Sim', 'STD Distance Sim']]
+                    )
+
+    if read_SynPop:
+        save_custom_csv(f"{mode_share_directory}/Mode_shares_distance.csv",
+                        dist_mic[['Mode', 'Percentage Mic']],
+                        dist_mic_wt[['Mode', 'Percentage Mic Weighted']],
+                        dist_synt[['Mode', 'Percentage Synt']],
+                        dist_sim[['Mode', 'Total Distance Sim', 'Percentage Sim']],
+                        average_distance_by_mode_mic_wt[['Mode', 'Average Distance Mic WT', 'STD Distance Mic WT']],
+                        average_distance_by_mode_sim[['Mode', 'Average Distance Sim', 'STD Distance Sim']],
+                        average_distance_by_mode_synt[['Mode', 'Average Distance Synt', 'STD Distance Synt']]
+                        )
 
     # TIME (CSV only, microcensus columns removed)
     df_sim['travel_time'] = pd.to_numeric(df_sim['travel_time'], errors='coerce')
