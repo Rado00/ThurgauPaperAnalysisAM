@@ -1,133 +1,119 @@
+import json
+import os
+import gzip
+import shutil
+from typing import Tuple
 import pandas as pd
-import numpy as np
-from collections import Counter
+from pandas import DataFrame
 
-# Your data
-df1_data = {
-    'person': [1000102, 1000102, 1000102, 1000102, 1000269, 1000269, 1000297, 1000297, 1000691, 1000701],
-    'mode': ['car', 'car', 'car', 'car', 'walk', 'car_passenger', 'pt', 'walk', 'bike', 'pt']
-}
-df2_data = {
-    'person': [1000102, 1000102, 1000102, 1000102, 1000269, 1000269, 1000269, 1000297, 1000297, 1000919],
-    'mode': ['bike', 'pt', 'walk', 'walk', 'car', 'pt', 'car_passenger', 'pt', 'walk', 'car_passenger']
-}
+# TODO adjust this number based on your actual data size for testing
+num_rows = 500
 
-df1 = pd.DataFrame(df1_data)
-df2 = pd.DataFrame(df2_data)
+def process_transport_data(df1, df2, simulation_1_name: str, simulation_2_name: str) -> Tuple[dict, dict, dict]:
 
-print("=" * 60)
-print("TRANSPORT MODE CHANGE ANALYSIS REPORT")
-print("=" * 60)
+    # Define the target modes (normalized to lowercase for processing)
+    target_modes = ['car', 'car_passenger', 'bike', 'pt', 'walk']
 
-# 1. Basic Statistics
-print("\n1. BASIC STATISTICS")
-print("-" * 30)
-print(f"Month Ago - Total trips: {len(df1)}, Unique people: {df1['person'].nunique()}")
-print(f"Current   - Total trips: {len(df2)}, Unique people: {df2['person'].nunique()}")
+    # Find common person IDs between both dataframes
+    common_persons = set(df1['person'].unique()) & set(df2['person'].unique())
+    print(f"Number of common persons: {len(common_persons)}")
 
-# 2. Mode Distribution Comparison
-print("\n2. MODE DISTRIBUTION COMPARISON")
-print("-" * 40)
+    def count_modes_by_person(df, persons):
+        """Count transportation modes for each person"""
+        person_mode_counts = {}
 
-# Count trips by mode for each period
-mode_counts_old = df1['mode'].value_counts().sort_index()
-mode_counts_new = df2['mode'].value_counts().sort_index()
+        for person_id in persons:
+            # Initialize all modes to 0
+            mode_counts = {mode.title(): 0 for mode in target_modes}
 
-# Create comparison dataframe
-all_modes = sorted(set(df1['mode'].unique()) | set(df2['mode'].unique()))
-comparison_df = pd.DataFrame({
-    'Month_Ago': [mode_counts_old.get(mode, 0) for mode in all_modes],
-    'Current': [mode_counts_new.get(mode, 0) for mode in all_modes],
-}, index=all_modes)
+            # Get data for this person
+            person_data = df[df['person'] == person_id]
 
-comparison_df['Change'] = comparison_df['Current'] - comparison_df['Month_Ago']
-comparison_df['Change_Pct'] = ((comparison_df['Current'] - comparison_df['Month_Ago']) /
-                               comparison_df['Month_Ago'].replace(0, np.inf) * 100).round(1)
+            # TODO: Ensure 'longest_distance_mode' column is the correct one to analyze
+            # Count occurrences of each mode
+            mode_counter = person_data['longest_distance_mode'].value_counts()
 
-print(comparison_df)
+            # Map the modes to our target format
+            for mode, count in mode_counter.items():
+                mode_lower = mode.lower()
+                if mode_lower in target_modes:
+                    # Convert to title case for JSON output
+                    if mode_lower == 'pt':
+                        mode_key = 'PT'
+                    elif mode_lower == 'car_passenger':
+                        mode_key = 'Car_Passenger'
+                    else:
+                        mode_key = mode_lower.title()
 
-# 3. Individual Person Analysis
-print("\n3. INDIVIDUAL PERSON CHANGES")
-print("-" * 35)
+                    mode_counts[mode_key] = count
 
-# Get people present in both periods
-common_people = set(df1['person']) & set(df2['person'])
-print(f"People tracked in both periods: {len(common_people)}")
+            person_mode_counts[str(person_id)] = mode_counts
 
-for person in sorted(common_people):
-    old_modes = df1[df1['person'] == person]['mode'].tolist()
-    new_modes = df2[df2['person'] == person]['mode'].tolist()
+        return person_mode_counts
 
-    print(f"\nPerson {person}:")
-    print(f"  Month ago: {old_modes} (Total: {len(old_modes)} trips)")
-    print(f"  Current:   {new_modes} (Total: {len(new_modes)} trips)")
+    # Process both datasets
+    before_data = count_modes_by_person(df1, common_persons)
+    after_data = count_modes_by_person(df2, common_persons)
 
-    # Mode frequency comparison for this person
-    old_freq = Counter(old_modes)
-    new_freq = Counter(new_modes)
+    # Calculate differences (after - before)
+    difference_data = {}
+    for person_id in before_data.keys():
+        person_diff = {}
+        for mode in before_data[person_id].keys():
+            person_diff[mode] = after_data[person_id][mode] - before_data[person_id][mode]
+        difference_data[person_id] = person_diff
 
-    all_person_modes = set(old_modes) | set(new_modes)
-    changes = []
-    for mode in sorted(all_person_modes):
-        old_count = old_freq.get(mode, 0)
-        new_count = new_freq.get(mode, 0)
-        if old_count != new_count:
-            changes.append(f"{mode}: {old_count}→{new_count}")
+    # --- Save DataFrame into plots folder in parent of the script directory ---
+    script_dir = os.path.dirname(os.path.abspath(__file__))
+    parent_of_script = os.path.dirname(script_dir)
+    # TODO change "plots" to what ever folder you want to save to
+    plots_dir = os.path.join(parent_of_script, "plots")
+    os.makedirs(plots_dir, exist_ok=True)
 
-    if changes:
-        print(f"  Changes: {', '.join(changes)}")
+    # Save to JSON files
+    with open(f'{plots_dir}/before_{simulation_1_name}.json', 'w') as f:
+        json.dump(before_data, f, indent=2)
+
+    with open(f'{plots_dir}/after_{simulation_2_name}.json', 'w') as f:
+        json.dump(after_data, f, indent=2)
+
+    with open(f'{plots_dir}/differences_{simulation_1_name}_{simulation_2_name}.json', 'w') as f:
+        json.dump(difference_data, f, indent=2)
+
+    print("JSON files created successfully!")
+    return before_data, after_data, difference_data
+
+
+def read_output_trips(base_path: str) -> tuple[DataFrame, str]:
+
+    gz_path = os.path.join(base_path, "output_trips.csv.gz")
+    csv_path = os.path.join(base_path, "output_trips.csv")
+
+    # Case 1: compressed file exists
+    if os.path.isfile(gz_path):
+        extracted_csv = csv_path  # same directory
+        with gzip.open(gz_path, 'rb') as f_in, open(extracted_csv, 'wb') as f_out:
+            shutil.copyfileobj(f_in, f_out)
+        print(f"Extracted {gz_path} → {extracted_csv}")
+        # TODO number of rows to read for testing
+        return pd.read_csv(extracted_csv, sep=';', low_memory=False, nrows=num_rows), base_path.split("\\")[-1]
+
+    # Case 2: normal CSV exists (ensure it's a file, not folder)
+    elif os.path.isfile(csv_path):
+        print(f"Reading {csv_path}")
+        # TODO number of rows to read for testing
+        return pd.read_csv(csv_path, sep=';', low_memory=False, nrows=num_rows), base_path.split("\\")[-1]
+
     else:
-        print("  Changes: No change in mode frequencies")
+        raise FileNotFoundError("Neither output_trips.csv.gz nor output_trips.csv file found in given path.")
 
-# 4. People who left/joined
-print("\n4. PEOPLE WHO LEFT/JOINED")
-print("-" * 32)
+# main execution
+if __name__ == "__main__":
+    # TODO change these paths to your actual data folders
+    simulation_1_folder = r"E:\CM\2023_ABMT_Data\Thurgau\BaselineCalibration28"
+    simulation_2_folder = r"E:\CM\2023_ABMT_Data\Thurgau\BaselineCalibration_28_onlyUseEndtime"
 
-only_old = set(df1['person']) - set(df2['person'])
-only_new = set(df2['person']) - set(df1['person'])
+    df_1, sim_1_name = read_output_trips(simulation_1_folder)
+    df_2, sim_2_name = read_output_trips(simulation_2_folder)
 
-if only_old:
-    print("People who left (present month ago, not current):")
-    for person in sorted(only_old):
-        modes = df1[df1['person'] == person]['mode'].tolist()
-        print(f"  Person {person}: {modes}")
-
-if only_new:
-    print("People who joined (not present month ago, present now):")
-    for person in sorted(only_new):
-        modes = df2[df2['person'] == person]['mode'].tolist()
-        print(f"  Person {person}: {modes}")
-
-# 5. Mode Transition Matrix (for people in both periods)
-print("\n5. MODE TRANSITION PATTERNS")
-print("-" * 35)
-
-transitions = []
-for person in common_people:
-    old_modes = df1[df1['person'] == person]['mode'].tolist()
-    new_modes = df2[df2['person'] == person]['mode'].tolist()
-
-    # Simple approach: compare most frequent mode
-    old_primary = Counter(old_modes).most_common(1)[0][0]
-    new_primary = Counter(new_modes).most_common(1)[0][0]
-    transitions.append((old_primary, new_primary))
-
-transition_counts = Counter(transitions)
-print("Primary mode transitions (most frequent mode per person):")
-for (old_mode, new_mode), count in transition_counts.most_common():
-    if old_mode != new_mode:
-        print(f"  {old_mode} → {new_mode}: {count} person(s)")
-
-stable_count = sum(1 for (old, new) in transitions if old == new)
-print(f"  Stable (no primary mode change): {stable_count} person(s)")
-
-# 6. Summary Statistics
-print("\n6. SUMMARY")
-print("-" * 15)
-print(
-    f"• Most growing mode: {comparison_df.loc[comparison_df['Change'].idxmax()].name} (+{comparison_df['Change'].max()} trips)")
-print(
-    f"• Most declining mode: {comparison_df.loc[comparison_df['Change'].idxmin()].name} ({comparison_df['Change'].min()} trips)")
-print(f"• Total trip change: {comparison_df['Change'].sum()} trips")
-print(
-    f"• People retention rate: {len(common_people)}/{df1['person'].nunique()} = {len(common_people) / df1['person'].nunique() * 100:.1f}%")
+    process_transport_data(df_1, df_2, sim_1_name, sim_2_name)
