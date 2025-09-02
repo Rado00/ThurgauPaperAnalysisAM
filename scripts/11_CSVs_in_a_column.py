@@ -31,15 +31,83 @@ if __name__ == '__main__':
     }
 
     desired_order = [
-        "% Trips Bike - Simulated Area", "% Trips Car - Simulated Area", "% Trips Car Passenger - Simulated Area", "% Trips PT - Simulated Area", "% Trips Walk - Simulated Area",
-        "% Trips Bike - Weinfelden", "% Trips Car - Weinfelden", "% Trips Car Passenger - Weinfelden", "% Trips PT - Weinfelden", "% Trips Walk - Weinfelden",
-        "% Distance Bike  - Simulated Area", "% Distance Car  - Simulated Area", "% Distance Car Passenger  - Simulated Area", "% Distance PT  - Simulated Area", "% Distance Walk  - Simulated Area",
-        "% Distance Bike  - Weinfelden", "% Distance Car  - Weinfelden", "% Distance Car Passenger  - Weinfelden", "% Distance PT  - Weinfelden", "% Distance Walk  - Weinfelden",
-        "Count Trips Bike - Simulated Area", "Count Trips Car - Simulated Area", "Count Trips Car Passenger - Simulated Area", "Count Trips PT - Simulated Area", "Count Trips Walk - Simulated Area",
-        "Count Trips Bike - Weinfelden", "Count Trips Car - Weinfelden", "Count Trips Car Passenger - Weinfelden", "Count Trips PT - Weinfelden", "Count Trips Walk - Weinfelden",
-        "Count Distance Bike  - Simulated Area", "Count Distance Car  - Simulated Area", "Count Distance Car Passenger  - Simulated Area", "Count Distance PT  - Simulated Area", "Count Distance Walk  - Simulated Area",
-        "Count Distance Bike  - Weinfelden", "Count Distance Car  - Weinfelden", "Count Distance Car Passenger  - Weinfelden", "Count Distance PT  - Weinfelden", "Count Distance Walk  - Weinfelden",
-        "Count TravelTime Bike Weinfelden", "Count TravelTime Car Weinfelden", "Count TravelTime Car Passenger Weinfelden", "Count TravelTime PT Weinfelden", "Count TravelTime Walk Weinfelden"
+        "% Trips Bike - Simulated Area",
+        "% Trips Car - Simulated Area",
+        "% Trips Car Passenger - Simulated Area",
+        "% Trips PT - Simulated Area",
+        "% Trips Walk - Simulated Area",
+
+        "% Trips Bike - Target Area",
+        "% Trips Car - Target Area",
+        "% Trips Car Passenger - Target Area",
+        "% Trips PT - Target Area",
+        "% Trips Walk - Target Area",
+
+        "% Distance Bike  - Simulated Area",
+        "% Distance Car  - Simulated Area",
+        "% Distance Car Passenger  - Simulated Area",
+        "% Distance PT  - Simulated Area",
+        "% Distance Walk  - Simulated Area",
+
+        "% Distance Bike  - Target Area",
+        "% Distance Car  - Target Area",
+        "% Distance Car Passenger  - Target Area",
+        "% Distance PT  - Target Area",
+        "% Distance Walk  - Target Area",
+
+        "Count Trips Bike - Simulated Area",
+        "Count Trips Car - Simulated Area",
+        "Count Trips Car Passenger - Simulated Area",
+        "Count Trips PT - Simulated Area",
+        "Count Trips Walk - Simulated Area",
+
+        "Count Trips Bike - Target Area",
+        "Count Trips Car - Target Area",
+        "Count Trips Car Passenger - Target Area",
+        "Count Trips PT - Target Area",
+        "Count Trips Walk - Target Area",
+
+        "Count Distance Bike  - Simulated Area",
+        "Count Distance Car  - Simulated Area",
+        "Count Distance Car Passenger  - Simulated Area",
+        "Count Distance PT  - Simulated Area",
+        "Count Distance Walk  - Simulated Area",
+
+        "Count Distance Bike  - Target Area",
+        "Count Distance Car  - Target Area",
+        "Count Distance Car Passenger  - Target Area",
+        "Count Distance PT  - Target Area",
+        "Count Distance Walk  - Target Area",
+
+        "Count TravelTime Bike Target Area",
+        "Count TravelTime Car Target Area",
+        "Count TravelTime Car Passenger Target Area",
+        "Count TravelTime PT Target Area",
+        "Count TravelTime Walk Target Area",
+
+        "Average Distance Sim Bike  - Simulated Area",
+        "Average Distance Sim Car  - Simulated Area",
+        "Average Distance Sim Car Passenger  - Simulated Area",
+        "Average Distance Sim PT  - Simulated Area",
+        "Average Distance Sim Walk  - Simulated Area",
+
+        "Average Distance Sim Bike  - Target Area",
+        "Average Distance Sim Car  - Target Area",
+        "Average Distance Sim Car Passenger  - Target Area",
+        "Average Distance Sim PT  - Target Area",
+        "Average Distance Sim Walk  - Target Area",
+
+        "STD Distance Sim Bike  - Simulated Area",
+        "STD Distance Sim Car  - Simulated Area",
+        "STD Distance Sim Car Passenger  - Simulated Area",
+        "STD Distance Sim PT  - Simulated Area",
+        "STD Distance Sim Walk  - Simulated Area",
+
+        "STD Distance Sim Bike  - Target Area",
+        "STD Distance Sim Car  - Target Area",
+        "STD Distance Sim Car Passenger  - Target Area",
+        "STD Distance Sim PT  - Target Area",
+        "STD Distance Sim Walk  - Target Area"
     ]
 
     if os.path.exists(mode_share_directory):
@@ -68,12 +136,12 @@ if __name__ == '__main__':
             ]
         )
 
-        # Trips for Weinfelden
+        # Trips for Target Area
         consolidated_data += read_and_extract(
             os.path.join(mode_share_directory, specific_files["trip_target"]),
             [
-                lambda mode, row: (f"% Trips {mode} - Weinfelden", row["Percentage Sim"]),
-                lambda mode, row: (f"Count Trips {mode} - Weinfelden", row["Total Trips Sim"])
+                lambda mode, row: (f"% Trips {mode} - Target Area", row["Percentage Sim"]),
+                lambda mode, row: (f"Count Trips {mode} - Target Area", row["Total Trips Sim"])
             ]
         )
 
@@ -82,24 +150,28 @@ if __name__ == '__main__':
             os.path.join(mode_share_directory, specific_files["distance"]),
             [
                 lambda mode, row: (f"% Distance {mode}  - Simulated Area", row["Percentage Sim"]),
-                lambda mode, row: (f"Count Distance {mode}  - Simulated Area", row["Total Distance Sim"])
+                lambda mode, row: (f"Count Distance {mode}  - Simulated Area", row["Total Distance Sim"]),
+                lambda mode, row: (f"Average Distance Sim {mode}  - Simulated Area", row["Average Distance Sim"]),
+                lambda mode, row: (f"STD Distance Sim {mode}  - Simulated Area", row["STD Distance Sim"]),
             ]
         )
 
-        # Distance for Weinfelden
+        # Distance for Target Area
         consolidated_data += read_and_extract(
             os.path.join(mode_share_directory, specific_files["distance_target"]),
             [
-                lambda mode, row: (f"% Distance {mode}  - Weinfelden", row["Percentage Sim"]),
-                lambda mode, row: (f"Count Distance {mode}  - Weinfelden", row["Total Distance Sim"])
+                lambda mode, row: (f"% Distance {mode}  - Target Area", row["Percentage Sim"]),
+                lambda mode, row: (f"Count Distance {mode}  - Target Area", row["Total Distance Sim"]),
+                lambda mode, row: (f"Average Distance Sim {mode}  - Target Area", row["Average Distance Sim"]),
+                lambda mode, row: (f"STD Distance Sim {mode}  - Target Area", row["STD Distance Sim"]),
             ]
         )
 
-        # Travel Time for Weinfelden
+        # Travel Time for Target Area
         consolidated_data += read_and_extract(
             os.path.join(mode_share_directory, specific_files["time_target"]),
             [
-                lambda mode, row: (f"Count TravelTime {mode} Weinfelden", row["Total Time Sim"])
+                lambda mode, row: (f"Count TravelTime {mode} Target Area", row["Total Time Sim"])
             ]
         )
 
