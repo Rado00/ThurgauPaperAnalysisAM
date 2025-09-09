@@ -1,22 +1,250 @@
 import json
-import os
 import gzip
 import shutil
+import csv
 from typing import Tuple
-import pandas as pd
+from collections import Counter
 from pandas import DataFrame
+import time
+import os
+import sys
+import logging
+import pandas as pd
+from functions.commonFunctions import *
 
-# TODO adjust this number based on your actual data size for testing
-num_rows = 500
+start_time = time.time()
 
-def process_transport_data(df1, df2, simulation_1_name: str, simulation_2_name: str) -> Tuple[dict, dict, dict]:
 
+def generate_differences_json(before_data: dict, after_data: dict, sim_1_name, sim_2_name, plots_dir: str):
+    """
+    Generate differences.json showing mode transitions for each person
+    """
+    differences = {}
+
+    # Get common person IDs from both datasets
+    common_persons = set(before_data.keys()) & set(after_data.keys())
+
+    for person_id in common_persons:
+        before_modes = before_data[person_id]
+        after_modes = after_data[person_id]
+
+        # Create lists for before and after modes based on their counts
+        before_list = []
+        after_list = []
+
+        # Build before_list by repeating each mode according to its count
+        for mode, count in before_modes.items():
+            before_list.extend([mode] * count)
+
+        # Build after_list by repeating each mode according to its count
+        for mode, count in after_modes.items():
+            after_list.extend([mode] * count)
+
+        # Get the minimum length to avoid index out of range
+        mode_range = min(len(before_list), len(after_list))
+
+        # Generate transitions for this person
+        transitions = []
+        for i in range(mode_range):
+            before_mode = before_list[i]
+            after_mode = after_list[i]
+
+            # Handle PT formatting (convert back from title case)
+            if before_mode == 'Pt':
+                before_mode = 'PT'
+            if after_mode == 'Pt':
+                after_mode = 'PT'
+
+            # Create transition string
+            transition = f"{before_mode}_{after_mode}"
+            transitions.append(transition)
+
+        differences[person_id] = transitions
+
+    # Save differences to JSON file
+    differences_path = os.path.join(plots_dir, f"{sim_1_name}_{sim_2_name}_differences.json")
+    with open(differences_path, 'w') as f:
+        json.dump(differences, f, indent=2)
+
+    logging.info(f"Differences JSON created successfully at: {differences_path}")
+    return differences
+
+
+def generate_transition_matrix_csv(before_data: dict, after_data: dict, sim_1_name, sim_2_name, plots_dir: str):
+    """
+    Generate a CSV file with transition matrix showing counts of each mode transition for each person
+    """
+    # Define all possible transitions in the exact order requested
+    transition_columns = [
+        "Car_Car", "Car_Car_Passenger", "Car_PT", "Car_Bike", "Car_Walk",
+        "Car_Passenger_Car", "Car_Passenger_Car_Passenger", "Car_Passenger_PT", "Car_Passenger_Bike",
+        "Car_Passenger_Walk",
+        "PT_Car", "PT_Car_Passenger", "PT_PT", "PT_Bike", "PT_Walk",
+        "Bike_Car", "Bike_Car_Passenger", "Bike_PT", "Bike_Bike", "Bike_Walk",
+        "Walk_Car", "Walk_Car_Passenger", "Walk_PT", "Walk_Bike", "Walk_Walk"
+    ]
+
+    # Get common person IDs from both datasets
+    common_persons = set(before_data.keys()) & set(after_data.keys())
+
+    # Prepare CSV data
+    csv_data = []
+
+    for person_id in sorted(common_persons):  # Sort for consistent ordering
+        before_modes = before_data[person_id]
+        after_modes = after_data[person_id]
+
+        # Create lists for before and after modes based on their counts
+        before_list = []
+        after_list = []
+
+        # Build before_list by repeating each mode according to its count
+        for mode, count in before_modes.items():
+            # Normalize mode names for consistency
+            normalized_mode = mode
+            if mode == 'Pt':
+                normalized_mode = 'PT'
+            before_list.extend([normalized_mode] * count)
+
+        # Build after_list by repeating each mode according to its count
+        for mode, count in after_modes.items():
+            # Normalize mode names for consistency
+            normalized_mode = mode
+            if mode == 'Pt':
+                normalized_mode = 'PT'
+            after_list.extend([normalized_mode] * count)
+
+        # Get the minimum length to avoid index out of range
+        mode_range = min(len(before_list), len(after_list))
+
+        # Generate transitions for this person
+        transitions = []
+        for i in range(mode_range):
+            before_mode = before_list[i]
+            after_mode = after_list[i]
+            transition = f"{before_mode}_{after_mode}"
+            transitions.append(transition)
+
+        # Count occurrences of each transition
+        transition_counts = Counter(transitions)
+
+        # Create row for this person
+        row = [person_id]  # First column is Person Key
+
+        # Add counts for each transition column (0 if transition doesn't exist)
+        for transition in transition_columns:
+            count = transition_counts.get(transition, 0)
+            row.append(count)
+
+        csv_data.append(row)
+
+    # Create CSV file
+    csv_path = os.path.join(plots_dir, f"{sim_1_name}_{sim_2_name}_transition_matrix.csv")
+
+    # Write CSV with headers
+    headers = ["Person_Key"] + transition_columns
+
+    with open(csv_path, 'w', newline='', encoding='utf-8') as csvfile:
+        writer = csv.writer(csvfile)
+        writer.writerow(headers)
+        writer.writerows(csv_data)
+
+    logging.info(f"Transition matrix CSV created successfully at: {csv_path}")
+    logging.info(f"CSV contains {len(csv_data)} persons with {len(headers)} columns")
+
+    return csv_path
+
+
+def delete_json_files(plots_dir: str, sim_1_name: str, sim_2_name: str):
+    """
+    Delete all JSON files generated during the process
+    """
+    json_files_to_delete = [
+        f"before_{sim_1_name}.json",
+        f"after_{sim_2_name}.json",
+        f"{sim_1_name}_{sim_2_name}_differences.json"
+    ]
+
+    for json_file in json_files_to_delete:
+        file_path = os.path.join(plots_dir, json_file)
+        try:
+            if os.path.exists(file_path):
+                os.remove(file_path)
+                logging.info(f"Deleted JSON file: {file_path}")
+        except Exception as e:
+            logging.error(f"Error deleting {file_path}: {str(e)}")
+
+
+def analyze_transition_data_and_create_summary(csv_path: str, plots_dir: str, sim_1_name: str, sim_2_name: str):
+    """
+    Analyze the transition matrix CSV and create a summary CSV with percentages
+    """
+    try:
+        # Read the transition matrix CSV
+        df = pd.read_csv(csv_path)
+
+        # Remove the Person_Key column for analysis (keep only transition columns)
+        transition_columns = [col for col in df.columns if col != 'Person_Key']
+
+        # Calculate the sum for each transition column
+        column_sums = df[transition_columns].sum()
+
+        # Calculate total transitions
+        total_transitions = column_sums.sum()
+
+        # Create summary data with percentages
+        summary_data = []
+
+        for transition, count in column_sums.items():
+            if count > 0:  # Only include transitions that actually occurred
+                percentage = (count / total_transitions) * 100
+                summary_data.append({
+                    'mode_transition': transition,
+                    'count': count,
+                    'percentage': f"{percentage:.1f}%"
+                })
+
+        # Sort by count in descending order
+        summary_data.sort(key=lambda x: x['count'], reverse=True)
+
+        # Create summary CSV
+        summary_csv_path = os.path.join(plots_dir, f"{sim_1_name}_{sim_2_name}_transition_summary.csv")
+
+        with open(summary_csv_path, 'w', newline='', encoding='utf-8') as csvfile:
+            fieldnames = ['mode_transition', 'percentage']
+            writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
+
+            writer.writeheader()
+            for row in summary_data:
+                writer.writerow({
+                    'mode_transition': row['mode_transition'],
+                    'percentage': row['percentage']
+                })
+
+        logging.info(f"Transition summary CSV created successfully at: {summary_csv_path}")
+        logging.info(
+            f"Summary contains {len(summary_data)} transition types with total of {total_transitions} transitions")
+
+        # Log top 5 transitions for verification
+        logging.info("Top 5 transitions:")
+        for i, row in enumerate(summary_data[:5]):
+            logging.info(f"{i + 1}. {row['mode_transition']}: {row['percentage']}")
+
+        return summary_csv_path
+
+    except Exception as e:
+        logging.error(f"Error analyzing transition data: {str(e)}")
+        raise
+
+
+def process_transport_data(df1, df2, simulation_1_name: str, simulation_2_name: str, mode_column_input) -> Tuple[
+    dict, dict, dict]:
     # Define the target modes (normalized to lowercase for processing)
-    target_modes = ['car', 'car_passenger', 'bike', 'pt', 'walk']
+    target_modes = ['car', 'car_passenger', 'pt', 'bike', 'walk']
 
     # Find common person IDs between both dataframes
     common_persons = set(df1['person'].unique()) & set(df2['person'].unique())
-    print(f"Number of common persons: {len(common_persons)}")
+    logging.info(f"Number of common persons: {len(common_persons)}")
 
     def count_modes_by_person(df, persons):
         """Count transportation modes for each person"""
@@ -29,9 +257,8 @@ def process_transport_data(df1, df2, simulation_1_name: str, simulation_2_name: 
             # Get data for this person
             person_data = df[df['person'] == person_id]
 
-            # TODO: Ensure 'longest_distance_mode' column is the correct one to analyze
             # Count occurrences of each mode
-            mode_counter = person_data['longest_distance_mode'].value_counts()
+            mode_counter = person_data[mode_column_input].value_counts()
 
             # Map the modes to our target format
             for mode, count in mode_counter.items():
@@ -39,7 +266,7 @@ def process_transport_data(df1, df2, simulation_1_name: str, simulation_2_name: 
                 if mode_lower in target_modes:
                     # Convert to title case for JSON output
                     if mode_lower == 'pt':
-                        mode_key = 'PT'
+                        mode_key = 'Pt'  # Keep as 'Pt' for consistency with your example
                     elif mode_lower == 'car_passenger':
                         mode_key = 'Car_Passenger'
                     else:
@@ -55,65 +282,103 @@ def process_transport_data(df1, df2, simulation_1_name: str, simulation_2_name: 
     before_data = count_modes_by_person(df1, common_persons)
     after_data = count_modes_by_person(df2, common_persons)
 
-    # Calculate differences (after - before)
-    difference_data = {}
-    for person_id in before_data.keys():
-        person_diff = {}
-        for mode in before_data[person_id].keys():
-            person_diff[mode] = after_data[person_id][mode] - before_data[person_id][mode]
-        difference_data[person_id] = person_diff
-
-    # --- Save DataFrame into plots folder in parent of the script directory ---
     script_dir = os.path.dirname(os.path.abspath(__file__))
     parent_of_script = os.path.dirname(script_dir)
-    # TODO change "plots" to what ever folder you want to save to
-    plots_dir = os.path.join(parent_of_script, "plots")
-    os.makedirs(plots_dir, exist_ok=True)
+    compare_simulations_dir = os.path.join(parent_of_script, "plots//compare_simulations")
+    os.makedirs(compare_simulations_dir, exist_ok=True)
 
-    # Save to JSON files
-    with open(f'{plots_dir}/before_{simulation_1_name}.json', 'w') as f:
-        json.dump(before_data, f, indent=2)
+    try:
+        with open(f'{compare_simulations_dir}/before_{simulation_1_name}.json', 'w') as f:
+            json.dump(before_data, f, indent=2)
 
-    with open(f'{plots_dir}/after_{simulation_2_name}.json', 'w') as f:
-        json.dump(after_data, f, indent=2)
+        with open(f'{compare_simulations_dir}/after_{simulation_2_name}.json', 'w') as f:
+            json.dump(after_data, f, indent=2)
 
-    with open(f'{plots_dir}/differences_{simulation_1_name}_{simulation_2_name}.json', 'w') as f:
-        json.dump(difference_data, f, indent=2)
+        logging.info(f"JSON files created successfully in the {compare_simulations_dir} directory.")
+    except Exception as e:
+        logging.error("Error saving JSON files: " + str(e))
+        raise
 
-    print("JSON files created successfully!")
-    return before_data, after_data, difference_data
+    # Generate differences JSON
+    differences_data = generate_differences_json(before_data, after_data, simulation_1_name, simulation_2_name,
+                                                 compare_simulations_dir)
+
+    # Generate transition matrix CSV
+    csv_path = generate_transition_matrix_csv(before_data, after_data, simulation_1_name, simulation_2_name,
+                                              compare_simulations_dir)
+
+    # NEW: Delete JSON files after CSV generation
+    delete_json_files(compare_simulations_dir, simulation_1_name, simulation_2_name)
+
+    # NEW: Analyze transition data and create summary CSV
+    summary_csv_path = analyze_transition_data_and_create_summary(csv_path, compare_simulations_dir, simulation_1_name,
+                                                                  simulation_2_name)
+
+    return before_data, after_data, differences_data
 
 
-def read_output_trips(base_path: str) -> tuple[DataFrame, str]:
-
+def read_output_trips(base_path: str, num_rows) -> tuple[DataFrame, str]:
     gz_path = os.path.join(base_path, "output_trips.csv.gz")
     csv_path = os.path.join(base_path, "output_trips.csv")
+    logging.info(f"Looking for files in: {base_path}")
 
-    # Case 1: compressed file exists
-    if os.path.isfile(gz_path):
-        extracted_csv = csv_path  # same directory
-        with gzip.open(gz_path, 'rb') as f_in, open(extracted_csv, 'wb') as f_out:
-            shutil.copyfileobj(f_in, f_out)
-        print(f"Extracted {gz_path} → {extracted_csv}")
-        # TODO number of rows to read for testing
-        return pd.read_csv(extracted_csv, sep=';', low_memory=False, nrows=num_rows), base_path.split("\\")[-1]
+    if num_rows == -1:
+        num_rows = None
 
-    # Case 2: normal CSV exists (ensure it's a file, not folder)
-    elif os.path.isfile(csv_path):
-        print(f"Reading {csv_path}")
-        # TODO number of rows to read for testing
-        return pd.read_csv(csv_path, sep=';', low_memory=False, nrows=num_rows), base_path.split("\\")[-1]
+    try:
+        if os.path.isfile(gz_path):
+            extracted_csv = csv_path  # same directory
+            with gzip.open(gz_path, 'rb') as f_in, open(extracted_csv, 'wb') as f_out:
+                shutil.copyfileobj(f_in, f_out)
+            logging.info(f"Extracted {gz_path} → {extracted_csv}")
+            return pd.read_csv(extracted_csv, sep=';', low_memory=False, nrows=num_rows), base_path.split("\\")[-1]
 
-    else:
-        raise FileNotFoundError("Neither output_trips.csv.gz nor output_trips.csv file found in given path.")
+        elif os.path.isfile(csv_path):
+            logging.info(f"Reading {csv_path}")
+            return pd.read_csv(csv_path, sep=';', low_memory=False, nrows=num_rows), base_path.split("\\")[-1]
+
+        else:
+            raise FileNotFoundError("Neither output_trips.csv.gz nor output_trips.csv file found in given path.")
+    except Exception as e:
+        logging.error("Error reading output_trips file: " + str(e))
+        raise
+
 
 # main execution
 if __name__ == "__main__":
-    # TODO change these paths to your actual data folders
-    simulation_1_folder = r"E:\CM\2023_ABMT_Data\Thurgau\BaselineCalibration28"
-    simulation_2_folder = r"E:\CM\2023_ABMT_Data\Thurgau\BaselineCalibration_28_onlyUseEndtime"
 
-    df_1, sim_1_name = read_output_trips(simulation_1_folder)
-    df_2, sim_2_name = read_output_trips(simulation_2_folder)
+    setup_logging(get_log_filename())
 
-    process_transport_data(df_1, df_2, sim_1_name, sim_2_name)
+    # if you want to read all rows, set num_rows = -1
+    script_dir = os.path.dirname(os.path.abspath(__file__))
+    parent_of_script = os.path.dirname(script_dir)
+    # TODO change "plots" to what ever folder you want to save to
+    config_dir = os.path.join(parent_of_script, "config")
+    config_file_path = os.path.join(config_dir, "compare_simulations_config.json")
+    logging.info("Config file path: " + config_file_path)
+
+    try:
+        if os.path.isfile(config_file_path):
+            with open(config_file_path, 'r') as config_file:
+                config = json.load(config_file)
+                simulation_1_folder = config.get("simulation_1_folder")
+                simulation_2_folder = config.get("simulation_2_folder")
+                num_rows = config.get("num_rows", 500)
+                mode_column = config.get("mode_column", "longest_distance_mode")
+                logging.info(
+                    f"Configuration loaded: simulation_1_folder={simulation_1_folder}, simulation_2_folder={simulation_2_folder}, num_rows={num_rows}")
+    except Exception as e:
+        logging.error("Error reading config file: " + str(e))
+        sys.exit(1)
+
+    try:
+        df_1, sim_1_name = read_output_trips(simulation_1_folder, num_rows=num_rows)
+        df_2, sim_2_name = read_output_trips(simulation_2_folder, num_rows=num_rows)
+        logging.info(f"Data loaded: {sim_1_name} with {len(df_1)} rows, {sim_2_name} with {len(df_2)} rows")
+    except Exception as e:
+        logging.error("Error loading data: " + str(e))
+        sys.exit(1)
+
+    before_data, after_data, differences_data = process_transport_data(df_1, df_2, sim_1_name, sim_2_name, mode_column)
+    end_time = time.time()
+    logging.info(f"Total processing time: {end_time - start_time:.2f} seconds")
