@@ -47,6 +47,7 @@ OUT -->:
 04_synPop_sim_trips.py (1h)(Home population and trips commented because now not necessary)
 -----------------------------------------
 8 minuti adesso (senza synt e home)
+20 min 15/10/25
 
 IN --> "sim"\output_trips.csv, output_persons.csv.gz
 		WE CHECKED output_plans.persons and output_persons and they are both 398.245 of which 22999 are trucks
@@ -145,23 +146,25 @@ OUT-->:
 
 
 
-07_NotUsed_plot_sim_modal_share_by_trips
+07_plot_mode_share.py
 --------------------------------------------
+IN -->:
+	trips_all_activities_inside_mic.csv
+	trips_all_activities_inside_sim.csv	
+	travel_time_distance_mode_synt.csv (if read_SynPop )
+	
+OUT -->: 
+		ThurgauPaperAnalysisAM\plots\simNumber\Mode_shares_distance.csv
+		Mode_shares_by_trip.csv
+		Mode_shares_time.csv
+		Mode_share_by_Distance.png
+		Mode_share_by_Trips.png
 
 
 
 08_plot_mode_share_time_distance_synt.py
 -----------------------------------------
-IN -->:
-	trips_all_activities_inside_mic.csv
-	trips_all_activities_inside_sim.csv	
-	
-OUT -->:
-		Mode_shares_distance.csv
-		Mode_shares_by_trip.csv
-		Mode_shares_time.csv
-		Mode_share_by_Distance.png
-		Mode_share_by_Trips.png
+
 		
 		
 
