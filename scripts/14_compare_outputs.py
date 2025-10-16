@@ -10,6 +10,7 @@ import os
 import sys
 import logging
 import pandas as pd
+import configparser
 from functions.commonFunctions import *
 
 start_time = time.time()
@@ -318,24 +319,14 @@ def process_transport_data(df1, df2, simulation_1_name: str, simulation_2_name: 
 
 
 def read_output_trips(base_path: str, num_rows) -> tuple[DataFrame, str]:
-    gz_path = os.path.join(base_path, "output_trips.csv.gz")
-    csv_path = os.path.join(base_path, "output_trips.csv")
-    logging.info(f"Looking for files in: {base_path}")
 
     if num_rows == -1:
         num_rows = None
 
     try:
-        if os.path.isfile(gz_path):
-            extracted_csv = csv_path  # same directory
-            with gzip.open(gz_path, 'rb') as f_in, open(extracted_csv, 'wb') as f_out:
-                shutil.copyfileobj(f_in, f_out)
-            logging.info(f"Extracted {gz_path} → {extracted_csv}")
-            return pd.read_csv(extracted_csv, sep=';', low_memory=False, nrows=num_rows), base_path.split("\\")[-1]
-
-        elif os.path.isfile(csv_path):
-            logging.info(f"Reading {csv_path}")
-            return pd.read_csv(csv_path, sep=';', low_memory=False, nrows=num_rows), base_path.split("\\")[-1]
+        if os.path.isfile(base_path):
+            logging.info(f"Reading {base_path}")
+            return pd.read_csv(base_path, sep=',', low_memory=False, nrows=num_rows), base_path.split("\\")[-1]
 
         else:
             raise FileNotFoundError("Neither output_trips.csv.gz nor output_trips.csv file found in given path.")
@@ -353,32 +344,32 @@ if __name__ == "__main__":
     script_dir = os.path.dirname(os.path.abspath(__file__))
     parent_of_script = os.path.dirname(script_dir)
     # TODO change "plots" to what ever folder you want to save to
-    config_dir = os.path.join(parent_of_script, "config")
-    config_file_path = os.path.join(config_dir, "compare_simulations_config.json")
-    logging.info("Config file path: " + config_file_path)
+    config = configparser.ConfigParser()
+    config.read(f'{parent_of_script}\\config\\config.ini')
+    section = 'config_compare'
 
     try:
-        if os.path.isfile(config_file_path):
-            with open(config_file_path, 'r') as config_file:
-                config = json.load(config_file)
-                simulation_1_folder = config.get("simulation_1_folder")
-                simulation_2_folder = config.get("simulation_2_folder")
-                num_rows = config.get("num_rows", 500)
-                mode_column = config.get("mode_column", "longest_distance_mode")
-                logging.info(
-                    f"Configuration loaded: simulation_1_folder={simulation_1_folder}, simulation_2_folder={simulation_2_folder}, num_rows={num_rows}")
+        doing_comparison = config.getboolean(section, 'doing_comparison')
+        comparison_num_rows = config.getint(section, 'comparison_num_rows')
+        comparison_mode_column = config.get(section, 'comparison_mode_column')
+        sim_output_folder_1 = config.get(section, '1_sim_output_folder')
+        sim_output_folder_2 = config.get(section, '2_sim_output_folder')
     except Exception as e:
         logging.error("Error reading config file: " + str(e))
         sys.exit(1)
 
+    if not doing_comparison:
+        logging.info("Comparison is disabled in the config file. Exiting.")
+        sys.exit(0)
+
     try:
-        df_1, sim_1_name = read_output_trips(simulation_1_folder, num_rows=num_rows)
-        df_2, sim_2_name = read_output_trips(simulation_2_folder, num_rows=num_rows)
+        df_1, sim_1_name = read_output_trips(sim_output_folder_1, num_rows=comparison_num_rows)
+        df_2, sim_2_name = read_output_trips(sim_output_folder_2, num_rows=comparison_num_rows)
         logging.info(f"Data loaded: {sim_1_name} with {len(df_1)} rows, {sim_2_name} with {len(df_2)} rows")
     except Exception as e:
         logging.error("Error loading data: " + str(e))
         sys.exit(1)
 
-    before_data, after_data, differences_data = process_transport_data(df_1, df_2, sim_1_name, sim_2_name, mode_column)
+    before_data, after_data, differences_data = process_transport_data(df_1, df_2, sim_1_name, sim_2_name, comparison_mode_column)
     end_time = time.time()
     logging.info(f"Total processing time: {end_time - start_time:.2f} seconds")
