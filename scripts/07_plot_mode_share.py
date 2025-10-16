@@ -4,6 +4,7 @@ import pandas as pd
 import warnings
 import geopandas as gpd
 import matplotlib.pyplot as plt
+import numpy as np
 from datetime import datetime
 from functions.commonFunctions import *
 from functools import reduce
@@ -82,8 +83,36 @@ def main():
     if read_SynPop:
         df_synt = load_and_prepare_data(os.path.join(data_path_clean, "travel_time_distance_mode_synt.csv"))
 
+# DISTANCE MIC
+    # DISTANCE MIC - Create weighted_distance column first
     if 'household_weight' in df_mic.columns:
         df_mic['weighted_distance'] = df_mic['crowfly_distance'] * df_mic['household_weight']
+
+    if read_microcensus:
+        if 'household_weight' in df_mic.columns:
+            # weighted_distance already created above
+
+            # Calculate weighted mean and weighted std correctly
+            def weighted_mean(group):
+                return (group['crowfly_distance'] * group['household_weight']).sum() / group[
+                    'household_weight'].sum()
+
+            def weighted_std(group):
+                w_mean = weighted_mean(group)
+                variance = ((group['household_weight'] * (group['crowfly_distance'] - w_mean) ** 2).sum() /
+                            group['household_weight'].sum())
+                return np.sqrt(variance)
+
+            average_distance_by_mode_mic_wt = df_mic.groupby('mode').apply(
+                lambda x: pd.Series({
+                    'Average Distance Mic WT': weighted_mean(x),
+                    'STD Distance Mic WT': weighted_std(x)
+                }),
+                include_groups=False  # This ensures clean output
+            ).reset_index()
+
+            # Rename the 'mode' column to 'Mode' to match other dataframes
+            average_distance_by_mode_mic_wt.rename(columns={'mode': 'Mode'}, inplace=True)
 
     # Remove outside from sim and synt again in case they're added back
     df_sim = filter_out_modes(df_sim, 'mode')
@@ -99,8 +128,7 @@ def main():
 
     average_distance_by_mode_mic = df_mic.groupby('mode')['crowfly_distance'].agg(['mean', 'std']).reset_index()
     average_distance_by_mode_mic.columns = ['Mode', 'Average Distance Mic', 'STD Distance Mic']
-    average_distance_by_mode_mic_wt = df_mic.groupby('mode')['weighted_distance'].agg(['mean', 'std']).reset_index()
-    average_distance_by_mode_mic_wt.columns = ['Mode', 'Average Distance Mic WT', 'STD Distance Mic WT']
+    # average_distance_by_mode_mic_wt already calculated correctly above (lines 91-105) - DON'T recalculate!
     average_distance_by_mode_sim = df_sim.groupby('mode')['distance'].agg(['mean', 'std']).reset_index()
     average_distance_by_mode_sim.columns = ['Mode', 'Average Distance Sim', 'STD Distance Sim']
     if read_SynPop:

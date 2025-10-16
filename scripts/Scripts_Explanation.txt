@@ -154,7 +154,7 @@ IN -->:
 	travel_time_distance_mode_synt.csv (if read_SynPop )
 	
 OUT -->: 
-		ThurgauPaperAnalysisAM\plots\simNumber\Mode_shares_distance.csv
+		ThurgauPaperAnalysisAM\plots\simNumber\Mode_shares_distance.csv		includes STD and AV
 		Mode_shares_by_trip.csv
 		Mode_shares_time.csv
 		Mode_share_by_Distance.png
@@ -180,137 +180,45 @@ IN-->:
 		travel_time_distance_mode_synt.csv
 		travel_time_distance_mode_sim.csv
 
-Clean and Standardize the Data:
-
 	Removes unwanted modes like truck and outside.
-	Formats the mode names (e.g., capitalize and remove underscores).
-	Converts travel times from timedelta to seconds.
-	Creates a geometry (Point) from x and y coordinates for spatial filtering.
-
-Prepare Geographic Data:
-	Loads shapefiles for different analysis zones (Zone01, Zone02, ..., Zone25).
 	Filters the synthetic and simulated trips that fall within that zone.
-
-Calculate and Compare Mode Shares (for each zone):
-
-	By Distance:
-		Calculates total distance per mode for both synthetic and simulated trips.
-		Computes the percentage share of each mode.
-		Plots a grouped bar chart comparing Synthetic vs Simulation (Distance share).
-
-	By Travel Time:
-		Calculates total travel time per mode.
-		Computes percentage share of each mode.
-		Plots a grouped bar chart comparing Synthetic vs Simulation (Travel Time share).
-
-	By Number of Trips:
-		Counts the number of trips per mode.
-		Computes percentage share by trip count.
-		Plots a grouped bar chart comparing Synthetic vs Simulation (Number of Trips).
 
 OUT-->:
 		Distance share plot.
 		Travel time share plot.
 		Trip number share plot.
 		Saves detailed CSVs comparing synthetic and simulated mode shares.
+		arcgis_pro_dict.json for further spatial analysis or mapping in ArcGIS Pro.
 
-Export a JSON for ArcGIS Pro:
-
-Collects all percentage share results in a dictionary.
-
-Saves it to a JSON file (arcgis_pro_dict.json) for further spatial analysis or mapping in ArcGIS Pro.
-
-In short:
-✅ Load synthetic and simulated trip data.
-✅ Filter trips by geographic zone.
-✅ Calculate mode share percentages by distance, time, and number of trips.
-✅ Create plots for each zone.
-✅ Save plots and results for further use (including GIS).
-
-Would you also like a visual diagram summarizing this full workflow in a nice schematic? 🎯
-(very useful if you have to present or document it later!)
 
 
 10_plot_the_clean_csv_files.py
 -----------------------------------------
 IN-->:
-trips_mic.csv, trips_synt.csv)
+		trips_mic.csv, trips_synt.csv)
+		Activity chains (activity_chains_syn.csv, activity_chains_sim.csv, activity_chains_mic.csv)
+		Population (population_clean_mic.csv, population_clean_synth.csv, population_clean_sim.csv)
+		Legs (legs_clean_synt.csv, legs_clean_sim.csv)
+		Households (df_households_synt.csv)
+		Activities (df_activity_synt.csv, df_activity_sim.csv)
 
-Activity chains (activity_chains_syn.csv, activity_chains_sim.csv, activity_chains_mic.csv)
+		
+OUT-->:		
+		The script creates multiple comparison plots:	
+		Pie charts comparing gender distribution between:
+		Bar plots comparing household income classes between microcensus and synthetic households:
+		Bar plots Car Ownership
+		Bar plots comparing:
+			Activity types (synthetic population)
+			Trip purposes (microcensus)
+			Age Distribution
+		Bar plots comparing:
+			Departure times of trips
+			Arrival times of trips
+			Activity Chains
 
-Population (population_clean_mic.csv, population_clean_synth.csv, population_clean_sim.csv)
-
-Legs (legs_clean_synt.csv, legs_clean_sim.csv)
-
-Households (df_households_synt.csv)
-
-Activities (df_activity_synt.csv, df_activity_sim.csv)
-
-3. Preprocessing
-Standardizes gender labels (male/female → Male/Female).
-
-Renames household weight column if necessary.
-
-4. Generate Plots and Summaries
-The script creates multiple comparison plots:
-
-4.1 Gender Distribution
-Pie charts comparing gender distribution between:
-
-Microcensus population
-
-Synthetic population
-
-4.2 Household Income Distribution
-Bar plots comparing household income classes between microcensus and synthetic households:
-
-Using household weights
-
-Using direct counts
-
-4.3 Car Ownership
-Bar plots comparing number of cars owned:
-
-Using weighted and unweighted counts.
-
-4.4 Activity Type & Trip Purpose
-Bar plots comparing:
-
-Activity types (synthetic population)
-
-Trip purposes (microcensus)
-
-Excludes irrelevant activities like outside, freight_loading, etc.
-
-4.6 Age Distribution
-Bar plots comparing age distributions:
-
-Microcensus (weighted and unweighted)
-
-Synthetic population
-
-4.7 Departure & Arrival Times
-Bar plots comparing:
-
-Departure times of trips
-
-Arrival times of trips
-
-4.8 Activity Chains
-Bar plots comparing the most frequent activity chains:
-
-Top 10 activity chains comparison
-
-Full distribution comparison
-
-4.9 Save Results
-All plots are saved as high-resolution PNG images.
-
-Additionally, a final CSV file (mode_share_trip_comparison.csv) summarizing mode shares across datasets is generated and saved.
-
-Would you also like me to help you structure all these steps into a nice formatted document that you could directly use for project documentation? 🚀
-(Example: a clean script description or README)
-
+		mode_share_trip_comparison.csv
+		
 
 11_CSVs_in_a_column.py
 -----------------------------------------
