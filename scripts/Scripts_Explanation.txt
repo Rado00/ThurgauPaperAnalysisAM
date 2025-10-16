@@ -115,6 +115,18 @@ OUT-->:
 
 (Commented out: synthetic population outputs)
 
+5_2_compare_outputs.py
+--------------------------------------------
+
+IN-->:
+		sim1folder\output_trip.csv.gz
+		sim2folder\output_trip.csv.gz
+
+
+OUT-->:
+		ThurgauPaperAnalysisAM\plots\compare_simulations
+
+
 
 
 06_synt_and_sim_mode_share_by_time_distance.py
@@ -242,21 +254,17 @@ Will include DRT analysis
 11_CSVs_in_a_column.py
 -------------------------------------------
 
-
-12_DRT_Data_Analysis.py
+12_DRT_Order_Ouputs.py
 ---------------------------------------------
-
-13_DRT_Order_Ouputs.py
----------------------------------------------
-
-14_compare_outputs.py
---------------------------------------------
 
 IN-->:
-		sim1folder\output_trip.csv.gz
-		sim2folder\output_trip.csv.gz
-
-
+        drt_customer_stats_drt.csv
+        drt_detailed_distanceStats_drt.csv
+        drt_sharing_metrics_drt.csv
+        drt_vehicle_stats_drt.csv
+        output_drt_detours_drt.csv
+        modestats.csv
+        pkm_modestats.csv
+		
 OUT-->:
-		ThurgauPaperAnalysisAM\plots\compare_simulations
-
+		drt_summary_metrics.csv

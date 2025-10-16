@@ -4,6 +4,7 @@ import pandas as pd
 import warnings
 import geopandas as gpd
 import matplotlib.pyplot as plt
+import numpy as np
 from datetime import datetime
 from functions.commonFunctions import *
 from functools import reduce
@@ -113,8 +114,26 @@ def main():
     dist_sim = compute_percentage(df_sim, 'mode', 'distance').rename(columns={'Percentage Distance': 'Percentage Sim', 'Total Distance': 'Total Distance Sim'})
     dist_synt = compute_percentage(df_synt, 'mode', 'distance').rename(columns={'Percentage Distance': 'Percentage Synt'}) if read_SynPop else pd.DataFrame({'Mode': dist_sim['Mode'], 'Percentage Synt': [0.0]*len(dist_sim)})
 
-    average_distance_by_mode_mic_wt = df_mic.groupby('mode')['weighted_distance'].agg(['mean', 'std']).reset_index()
-    average_distance_by_mode_mic_wt.columns = ['Mode', 'Average Distance Mic WT', 'STD Distance Mic WT']
+    # Calculate weighted mean and weighted std correctly
+    def weighted_mean(group):
+        return (group['crowfly_distance'] * group['household_weight']).sum() / group['household_weight'].sum()
+
+    def weighted_std(group):
+        w_mean = weighted_mean(group)
+        variance = ((group['household_weight'] * (group['crowfly_distance'] - w_mean) ** 2).sum() /
+                    group['household_weight'].sum())
+        return np.sqrt(variance)
+
+    average_distance_by_mode_mic_wt = df_mic.groupby('mode').apply(
+        lambda x: pd.Series({
+            'Average Distance Mic WT': weighted_mean(x),
+            'STD Distance Mic WT': weighted_std(x)
+        }),
+        include_groups=False
+    ).reset_index()
+
+    # Rename the 'mode' column to 'Mode' to match other dataframes
+    average_distance_by_mode_mic_wt.rename(columns={'mode': 'Mode'}, inplace=True)
     average_distance_by_mode_sim = df_sim.groupby('mode')['distance'].agg(['mean', 'std']).reset_index()
     average_distance_by_mode_sim.columns = ['Mode', 'Average Distance Sim', 'STD Distance Sim']
     if read_SynPop:

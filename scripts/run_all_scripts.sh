@@ -66,7 +66,7 @@ python 08_plot_mode_share_target_area.py
 # python 10_plot_the_clean_csv_files.py
 
 echo "Running 11_CSVs_in_a_column.py..."
-python 11_CSVs_in_a_column.py
+python 12_CSVs_in_a_column.py
 
 # echo "Running 12_DRT_Data_Analysis.py..."
 # python 12_DRT_Data_Analysis.py
