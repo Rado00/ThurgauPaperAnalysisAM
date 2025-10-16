@@ -329,3 +329,26 @@ OUT-->:
 10_DRT_Data_Analysis.py
 -----------------------------------------
 Will include DRT analysis
+
+
+11_CSVs_in_a_column.py
+-------------------------------------------
+
+
+12_DRT_Data_Analysis.py
+---------------------------------------------
+
+13_DRT_Order_Ouputs.py
+---------------------------------------------
+
+14_compare_outputs.py
+--------------------------------------------
+
+IN-->:
+		sim1folder\output_trip.csv.gz
+		sim2folder\output_trip.csv.gz
+
+
+OUT-->:
+		ThurgauPaperAnalysisAM\plots\compare_simulations
+
