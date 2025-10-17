@@ -226,9 +226,8 @@ def analyze_transition_data_and_create_summary(csv_path: str, plots_dir: str, si
         logging.info(
             f"Summary contains {len(summary_data)} transition types with total of {total_transitions} transitions")
 
-        # Log top 5 transitions for verification
-        logging.info("Top 5 transitions:")
-        for i, row in enumerate(summary_data[:5]):
+        logging.info("Top transitions:")
+        for i, row in enumerate(summary_data):
             logging.info(f"{i + 1}. {row['mode_transition']}: {row['percentage']}")
 
         return summary_csv_path
