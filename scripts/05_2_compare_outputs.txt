@@ -1,0 +1,58 @@
+For each person in the dataset:
+  - Count how many trips they made by each mode (Car, PT, Bike, Walk, Car_Passenger)
+  - Store as: person_id → {mode: count}
+```
+
+### **Step 2: Create Mode Lists for Each Person**
+```
+For each person (comparing simulation 1 vs simulation 2):
+  - Create before_list: repeat each mode according to its count in simulation 1
+    Example: {Car: 3, PT: 2} → [Car, Car, Car, PT, PT]
+  - Create after_list: repeat each mode according to its count in simulation 2
+    Example: {PT: 3, Bike: 2} → [PT, PT, PT, Bike, Bike]
+```
+
+### **Step 3: Generate Transitions**
+```
+For each trip position (1 to min length of both lists):
+  - Compare mode at position i in before_list vs after_list
+  - Create transition string: "Before_Mode_After_Mode"
+    Example: Position 1: Car → PT = "Car_PT"
+```
+
+### **Step 4: Count All Transitions**
+```
+For all persons:
+  - Count occurrences of each transition type (Car_PT, PT_PT, etc.)
+  - Store in transition matrix: Person_Key → {transition: count}
+```
+
+### **Step 5: Calculate Percentages**
+```
+For each transition type:
+  - Sum all counts across all persons
+  - Total transitions = sum of all transition counts
+  - Percentage = (count / total_transitions) × 100
+```
+
+### **Step 6: Create Summary**
+```
+Output CSV with:
+  - Mode Transition (e.g., "Car_PT")
+  - Percentage Value (with . decimal)
+  - Percentage Value with Comma (with , decimal)
+Sorted by count (descending)
+```
+
+## Example:
+```
+Person 1: Before [Car, Car, PT] → After [PT, PT, PT]
+Transitions: Car_PT, Car_PT, PT_PT
+
+Person 2: Before [Car, Bike] → After [PT, Bike]
+Transitions: Car_PT, Bike_Bike
+
+Total transitions: 5
+Car_PT count: 3 → 60%
+PT_PT count: 1 → 20%
+Bike_Bike count: 1 → 20%

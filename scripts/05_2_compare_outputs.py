@@ -41,14 +41,15 @@ def generate_differences_json(before_data: dict, after_data: dict, sim_1_name, s
         for mode, count in after_modes.items():
             after_list.extend([mode] * count)
 
-        # Get the minimum length to avoid index out of range
-        mode_range = min(len(before_list), len(after_list))
+        # Use the maximum length to capture all transitions including None
+        mode_range = max(len(before_list), len(after_list))
 
         # Generate transitions for this person
         transitions = []
         for i in range(mode_range):
-            before_mode = before_list[i]
-            after_mode = after_list[i]
+            # Get mode or 'None' if index out of range
+            before_mode = before_list[i] if i < len(before_list) else 'None'
+            after_mode = after_list[i] if i < len(after_list) else 'None'
 
             # Handle PT formatting (convert back from title case)
             if before_mode == 'Pt':
@@ -77,12 +78,13 @@ def generate_transition_matrix_csv(before_data: dict, after_data: dict, sim_1_na
     """
     # Define all possible transitions in the exact order requested
     transition_columns = [
-        "Car_Car", "Car_Car_Passenger", "Car_PT", "Car_Bike", "Car_Walk",
+        "Car_Car", "Car_Car_Passenger", "Car_PT", "Car_Bike", "Car_Walk", "Car_None",
         "Car_Passenger_Car", "Car_Passenger_Car_Passenger", "Car_Passenger_PT", "Car_Passenger_Bike",
-        "Car_Passenger_Walk",
-        "PT_Car", "PT_Car_Passenger", "PT_PT", "PT_Bike", "PT_Walk",
-        "Bike_Car", "Bike_Car_Passenger", "Bike_PT", "Bike_Bike", "Bike_Walk",
-        "Walk_Car", "Walk_Car_Passenger", "Walk_PT", "Walk_Bike", "Walk_Walk"
+        "Car_Passenger_Walk", "Car_Passenger_None",
+        "PT_Car", "PT_Car_Passenger", "PT_PT", "PT_Bike", "PT_Walk", "PT_None",
+        "Bike_Car", "Bike_Car_Passenger", "Bike_PT", "Bike_Bike", "Bike_Walk", "Bike_None",
+        "Walk_Car", "Walk_Car_Passenger", "Walk_PT", "Walk_Bike", "Walk_Walk", "Walk_None",
+        "None_Car", "None_Car_Passenger", "None_PT", "None_Bike", "None_Walk"
     ]
 
     # Get common person IDs from both datasets
@@ -115,14 +117,15 @@ def generate_transition_matrix_csv(before_data: dict, after_data: dict, sim_1_na
                 normalized_mode = 'PT'
             after_list.extend([normalized_mode] * count)
 
-        # Get the minimum length to avoid index out of range
-        mode_range = min(len(before_list), len(after_list))
+        # Use the maximum length to capture all transitions including None
+        mode_range = max(len(before_list), len(after_list))
 
         # Generate transitions for this person
         transitions = []
         for i in range(mode_range):
-            before_mode = before_list[i]
-            after_mode = after_list[i]
+            # Get mode or 'None' if index out of range
+            before_mode = before_list[i] if i < len(before_list) else 'None'
+            after_mode = after_list[i] if i < len(after_list) else 'None'
             transition = f"{before_mode}_{after_mode}"
             transitions.append(transition)
 
