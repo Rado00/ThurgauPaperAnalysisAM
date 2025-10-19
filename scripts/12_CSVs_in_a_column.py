@@ -12,7 +12,15 @@ if __name__ == '__main__':
     parent_directory = os.path.dirname(directory)
     output_plots_folder_name = os.path.basename(sim_output_folder)
     plots_directory = os.path.join(parent_directory, "plots", f"plots_{output_plots_folder_name}")
-    mode_share_directory = os.path.join(plots_directory, 'mode_share')
+    mode_share_directory = os.path.join(plots_directory, 'outputs_mode_share')
+
+    # Create ModeShareOutputs_inOneColumn directory in plots folder (parallel to Compare_simulations)
+    plots_root = os.path.join(parent_directory, "plots")
+    one_column_directory = os.path.join(plots_root, "ModeShareOutputs_inOneColumn")
+    os.makedirs(one_column_directory, exist_ok=True)
+
+    # Extract scenario name from sim_output_folder for the filename
+    scenario_name = os.path.basename(sim_output_folder)
 
     specific_files = {
         "trip": "Mode_shares_by_trip.csv",
@@ -178,10 +186,28 @@ if __name__ == '__main__':
         # Create and sort DataFrame
         if consolidated_data:
             output_df = pd.DataFrame(consolidated_data, columns=['Title', 'Value'])
-            output_df['Order'] = output_df['Title'].apply(lambda x: desired_order.index(x) if x in desired_order else len(desired_order))
+            output_df['Order'] = output_df['Title'].apply(
+                lambda x: desired_order.index(x) if x in desired_order else len(desired_order))
             output_df = output_df.sort_values('Order').drop('Order', axis=1)
             output_df['Value with Comma'] = output_df['Value'].astype(str).str.replace('.', ',', regex=False)
-            output_df.to_csv(os.path.join(mode_share_directory, 'modalSplitCalibration.csv'), sep=';', index=False)
+
+            # Add empty first column
+            output_df.insert(0, 'Source File', '')
+
+            # Reorder columns to match drt_summary_metrics format
+            output_df = output_df[['Source File', 'Title', 'Value', 'Value with Comma']]
+
+            # Read and append DRT summary metrics if it exists
+            drt_file_path = os.path.join(mode_share_directory, 'drt_summary_metrics.csv')
+            if os.path.exists(drt_file_path):
+                drt_df = pd.read_csv(drt_file_path, sep=';')
+                # Concatenate the dataframes
+                output_df = pd.concat([output_df, drt_df], ignore_index=True)
+                print("DRT summary metrics appended successfully.")
+            else:
+                print(f"DRT file not found at: {drt_file_path}")
+
+            output_df.to_csv(os.path.join(one_column_directory, f'modeOutputs_{scenario_name}.csv'), sep=';', index=False)
             print("Data successfully saved.")
         else:
             print("No data found in the files.")

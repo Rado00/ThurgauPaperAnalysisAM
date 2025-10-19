@@ -139,9 +139,12 @@ def generate_transition_matrix_csv(before_data: dict, after_data: dict, sim_1_na
 
         csv_data.append(row)
 
-    # Create CSV file
-    csv_path = os.path.join(plots_dir, f"{sim_1_name}_{sim_2_name}_transition_matrix.csv")
+    # Create Transition_Matrixes subdirectory
+    transition_matrixes_dir = os.path.join(plots_dir, "Transition_Matrixes")
+    os.makedirs(transition_matrixes_dir, exist_ok=True)
 
+    # Create CSV file in the Transition_Matrixes folder
+    csv_path = os.path.join(transition_matrixes_dir, f"{sim_1_name}_{sim_2_name}_transition_matrix.csv")
     # Write CSV with headers
     headers = ["Person_Key"] + transition_columns
 
@@ -211,16 +214,26 @@ def analyze_transition_data_and_create_summary(csv_path: str, plots_dir: str, si
         # Create summary CSV
         summary_csv_path = os.path.join(plots_dir, f"{sim_1_name}_{sim_2_name}_transition_summary.csv")
 
-        with open(summary_csv_path, 'w', newline='', encoding='utf-8') as csvfile:
-            fieldnames = ['mode_transition', 'percentage']
-            writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
 
-            writer.writeheader()
-            for row in summary_data:
-                writer.writerow({
-                    'mode_transition': row['mode_transition'],
-                    'percentage': row['percentage']
-                })
+    #CREATE AN SAVE CSV transition FILE
+        # Create dataframe for proper formatting like drt_summary_metrics.csv
+        df_summary = pd.DataFrame(summary_data).copy()
+
+        # Remove the '%' from percentage and convert to float
+        df_summary['percentage_value'] = df_summary['percentage'].str.replace('%', '').astype(float)
+
+        # Create 'Value with Comma' column (replacing . with ,)
+        df_summary['Pct Value with Comma'] = df_summary['percentage_value'].apply(lambda x: f"{x:.2f}".replace('.', ','))
+
+        # Keep only the columns we want and create a clean copy
+        df_final = df_summary[['mode_transition', 'percentage_value', 'Pct Value with Comma']].copy()
+        df_final.columns = ['Mode Transition', 'Pct Value', 'Pct Value with Comma']
+
+        # Round Value to 2 decimal places
+        df_final['Pct Value'] = df_final['Pct Value'].round(2)
+
+        # Save with semicolon separator like drt_summary_metrics.csv
+        df_final.to_csv(summary_csv_path, index=False, sep=';')
 
         logging.info(f"Transition summary CSV created successfully at: {summary_csv_path}")
         logging.info(
@@ -284,7 +297,7 @@ def process_transport_data(df1, df2, simulation_1_name: str, simulation_2_name: 
 
     script_dir = os.path.dirname(os.path.abspath(__file__))
     parent_of_script = os.path.dirname(script_dir)
-    compare_simulations_dir = os.path.join(parent_of_script, "plots//compare_simulations")
+    compare_simulations_dir = os.path.join(parent_of_script, "plots//Compare_simulations")
     os.makedirs(compare_simulations_dir, exist_ok=True)
 
     try:

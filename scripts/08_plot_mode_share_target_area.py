@@ -87,7 +87,7 @@ def main():
 
     data_path_clean = os.path.join(data_path, analysis_zone_name, clean_csv_folder, percentile)
     plots_directory = os.path.join(os.path.dirname(os.getcwd()), "plots", f"plots_{os.path.basename(sim_output_folder)}")
-    mode_share_directory = os.path.join(plots_directory, 'mode_share')
+    mode_share_directory = os.path.join(plots_directory, 'outputs_mode_share')
     os.makedirs(mode_share_directory, exist_ok=True)
 
     shape_path = os.path.join(data_path, "Paper2_ShapeFiles_CH1903+_LV95_easyNames", target_area)

@@ -157,9 +157,12 @@ if __name__ == '__main__':
             "Value with Comma": formatted_commas
         })
 
-        os.makedirs(plots_directory, exist_ok=True)
+        # Create mode_share directory if it doesn't exist
+        mode_share_directory = os.path.join(plots_directory, 'outputs_mode_share')
+        os.makedirs(mode_share_directory, exist_ok=True)
+
         df_output.to_csv(
-            os.path.join(plots_directory, "drt_summary_metrics.csv"),
+            os.path.join(mode_share_directory, "drt_summary_metrics.csv"),
             index=False,
             sep=';'
         )
