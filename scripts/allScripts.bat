@@ -9,8 +9,7 @@ cd "C:\Users\corra\Documents\1_GitHub\ThurgauPaperAnalysisAM\scripts"
 
 REM Run each script in sequence
 
-
-echo Running 01_microcensus_population_filter.py...
+echo Running 01_microcensus_pre-process.py...
 python 01_microcensus_pre-process.py
 if %ERRORLEVEL% neq 0 goto :error
 
@@ -26,8 +25,12 @@ echo Running 04_synPop_sim_trips.py...
 python 04_synPop_sim_trips.py
 if %ERRORLEVEL% neq 0 goto :error
 
-echo Running 05_generate_clean_csv_files.py...
-python 05_generate_clean_csv_files.py
+echo Running 05_1_generate_clean_csv_files.py...
+python 05_1_generate_clean_csv_files.py
+if %ERRORLEVEL% neq 0 goto :error
+
+echo Running 05_2_compare_outputs.py...
+python 05_2_compare_outputs.py
 if %ERRORLEVEL% neq 0 goto :error
 
 echo Running 06_synt_mode_share_by_time_distance.py...
@@ -46,20 +49,16 @@ REM echo Running 09_plot_smaller_zones_modal_split.py...
 REM python 09_plot_smaller_zones_modal_split.py
 REM if %ERRORLEVEL% neq 0 goto :error
 
-REM echo Running 10_plot_the_clean_csv_files.py...
-REM python 10_plot_the_clean_csv_files.py
-REM if %ERRORLEVEL% neq 0 goto :error
-
-echo Running 11_CSVs_in_a_column.py...
-python 11_CSVs_in_a_column.py
+echo Running 10_plot_the_clean_csv_files.py...
+python 10_plot_the_clean_csv_files.py
 if %ERRORLEVEL% neq 0 goto :error
 
-REM echo Running 12_DRT_Data_Analysis.py...
-REM python 12_DRT_Data_Analysis.py
-REM if %ERRORLEVEL% neq 0 goto :error
+echo Running 11_DRT_Order_Ouputs.py...
+python 11_DRT_Order_Ouputs.py
+if %ERRORLEVEL% neq 0 goto :error
 
-echo Running 13_DRT_Order_Ouputs.py...
-python 13_DRT_Order_Ouputs.py
+echo Running 12_CSVs_in_a_column.py...
+python 12_CSVs_in_a_column.py
 if %ERRORLEVEL% neq 0 goto :error
 
 echo All scripts executed successfully!

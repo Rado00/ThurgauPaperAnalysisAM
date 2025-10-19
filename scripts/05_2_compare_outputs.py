@@ -214,8 +214,21 @@ def analyze_transition_data_and_create_summary(csv_path: str, plots_dir: str, si
         # Sort by count in descending order
         summary_data.sort(key=lambda x: x['count'], reverse=True)
 
-        # Create summary CSV
-        summary_csv_path = os.path.join(plots_dir, f"{sim_1_name}_{sim_2_name}_transition_summary.csv")
+        # Create summary CSV with modified naming logic
+        # If sim_2_name ends with trips_all_activities_inside_sim.csv, use the folder name instead
+        if sim_2_name.endswith('trips_all_activities_inside_sim.csv'):
+            # Get the parent folder name from the config (sim_output_folder)
+            config = configparser.ConfigParser()
+            script_dir = os.path.dirname(os.path.abspath(__file__))
+            parent_of_script = os.path.dirname(script_dir)
+            config.read(f'{parent_of_script}\\config\\config.ini')
+            sim_output_folder_2 = config.get('config_compare', '2_sim_output_folder')
+            # Extract folder name after last backslash
+            sim_2_name_modified = os.path.basename(sim_output_folder_2)
+        else:
+            sim_2_name_modified = sim_2_name
+
+        summary_csv_path = os.path.join(plots_dir, f"{sim_1_name}_{sim_2_name_modified}_transition_summary.csv")
 
 
     #CREATE AN SAVE CSV transition FILE
