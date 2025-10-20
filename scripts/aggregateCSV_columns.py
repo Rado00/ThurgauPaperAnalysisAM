@@ -1,37 +1,71 @@
 import pandas as pd
 import os
 
+
 def aggregate_modal_split(base_plots_path):
     aggregated_df = pd.DataFrame()
     titles_set = set()
 
-    # Iterate through each subdirectory in plots
-    for subfolder in os.listdir(base_plots_path):
-        subfolder_path = os.path.join(base_plots_path, subfolder)
-        if os.path.isdir(subfolder_path):
-            mode_share_csv = os.path.join(subfolder_path, "mode_share", "modalSplitCalibration.csv")
-            if os.path.exists(mode_share_csv):
-                try:
-                    df = pd.read_csv(mode_share_csv, sep=';')
-                    if aggregated_df.empty:
-                        aggregated_df['Title'] = df['Title']
-                        titles_set = set(df['Title'])
-                    else:
-                        if set(df['Title']) != titles_set:
-                            print(f"⚠️ Warning: Title mismatch in {subfolder}. Skipping.")
-                            continue
+    # Path to the ModeShareOutputs_inOneColumn directory
+    mode_share_outputs_path = os.path.join(base_plots_path, "ModeShareOutputs_inOneColumn")
 
-                    # Extract folder name after "plots_" prefix
-                    folder_label = subfolder.replace("plots_", "")
-                    aggregated_df[folder_label] = df['Value with Comma']
+    if not os.path.exists(mode_share_outputs_path):
+        print(f"❌ Directory not found: {mode_share_outputs_path}")
+        return
 
-                except Exception as e:
-                    print(f"❌ Failed to process {mode_share_csv}: {e}")
+    # Iterate through CSV files in ModeShareOutputs_inOneColumn
+    for filename in os.listdir(mode_share_outputs_path):
+        if filename.startswith("modeOutputs_") and filename.endswith(".csv"):
+            file_path = os.path.join(mode_share_outputs_path, filename)
+
+            try:
+                df = pd.read_csv(file_path, sep=';')
+
+                # Check if file is empty
+                if df.empty:
+                    print(f"⚠️ Warning: {filename} is empty. Skipping.")
+                    continue
+
+                # Check for required columns
+                if 'Title' not in df.columns or 'Value with Comma' not in df.columns:
+                    print(f"⚠️ Warning: {filename} missing required columns ('Title' or 'Value with Comma'). Skipping.")
+                    print(f"   Available columns: {list(df.columns)}")
+                    continue
+
+                # Initialize the aggregated dataframe with Title column
+                if aggregated_df.empty:
+                    aggregated_df['Title'] = df['Title']
+                    titles_set = set(df['Title'])
+                else:
+                    # Check for title consistency
+                    if set(df['Title']) != titles_set:
+                        print(f"⚠️ Warning: Title mismatch in {filename}. Skipping.")
+                        print(f"   Expected {len(titles_set)} titles, found {len(df['Title'])} titles")
+                        continue
+
+                # Extract simulation name from filename
+                # Remove "modeOutputs_" prefix and ".csv" suffix
+                simulation_name = filename.replace("modeOutputs_", "").replace(".csv", "")
+
+                # Add the column with the simulation name as header
+                aggregated_df[simulation_name] = df['Value with Comma']
+
+                print(f"✅ Processed: {filename} -> Column: {simulation_name}")
+
+            except pd.errors.EmptyDataError:
+                print(f"⚠️ Warning: {filename} is empty or corrupted. Skipping.")
+            except Exception as e:
+                print(f"❌ Failed to process {filename}: {e}")
 
     # Save aggregated CSV
-    output_path = os.path.join(base_plots_path, "aggregatedColumns.csv")
-    aggregated_df.to_csv(output_path, sep=';', index=False)
-    print(f"✅ Aggregated CSV saved to: {output_path}")
+    if not aggregated_df.empty:
+        output_path = os.path.join(mode_share_outputs_path, "aggregatedColumns.csv")
+        aggregated_df.to_csv(output_path, sep=';', index=False)
+        print(f"\n✅ Aggregated CSV saved to: {output_path}")
+        print(f"📊 Total columns aggregated: {len(aggregated_df.columns) - 1}")  # -1 for Title column
+    else:
+        print("⚠️ No data was aggregated. Check if files exist and match the pattern.")
+
 
 if __name__ == '__main__':
     # Assume script is run from project root or adjust accordingly
