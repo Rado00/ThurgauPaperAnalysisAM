@@ -16,7 +16,7 @@ config_path = os.path.join(parent_directory, 'config', config_file)
 script_to_run = 'allScripts.bat' if is_windows else './run_all_scripts.sh'
 
 # Simulation parameters
-simulations_list = list(range(17, 25))  # Adjust range as needed
+simulations_list = list(range(1, 8))  # Adjust range as needed
 base_sims_path = os.path.join('Paper2_SimsOutputs', '2_Fleet', 'Aaa_')
 
 # Load the config
