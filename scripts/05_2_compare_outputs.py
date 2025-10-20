@@ -1,368 +1,382 @@
-import json
-import gzip
-import shutil
-import csv
-from typing import Tuple
-from collections import Counter
 from pandas import DataFrame
 import time
-import os
-import sys
-import logging
+from datetime import datetime
 import pandas as pd
-import configparser
 from functions.commonFunctions import *
 
 start_time = time.time()
 
+def _fmt_mode(m):
+    """Format a mode string like 'car_ride' -> 'Car Ride'; handle None/NaN."""
+    if pd.isna(m) or m is None:
+        return "None"
+    return str(m).replace('_', ' ').title()
 
-def generate_differences_json(before_data: dict, after_data: dict, sim_1_name, sim_2_name, plots_dir: str):
+
+def _fmt_mode_series(s: pd.Series) -> pd.Series:
     """
-    Generate differences.json showing mode transitions for each person
+    Safe, vectorized formatter for mode series that may be categorical.
+    Returns a Pandas 'string' dtype series usable with .str.cat.
     """
-    differences = {}
-
-    # Get common person IDs from both datasets
-    common_persons = set(before_data.keys()) & set(after_data.keys())
-
-    for person_id in common_persons:
-        before_modes = before_data[person_id]
-        after_modes = after_data[person_id]
-
-        # Create lists for before and after modes based on their counts
-        before_list = []
-        after_list = []
-
-        # Build before_list by repeating each mode according to its count
-        for mode, count in before_modes.items():
-            before_list.extend([mode] * count)
-
-        # Build after_list by repeating each mode according to its count
-        for mode, count in after_modes.items():
-            after_list.extend([mode] * count)
-
-        # Use the maximum length to capture all transitions including None
-        mode_range = max(len(before_list), len(after_list))
-
-        # Generate transitions for this person
-        transitions = []
-        for i in range(mode_range):
-            # Get mode or 'None' if index out of range
-            before_mode = before_list[i] if i < len(before_list) else 'None'
-            after_mode = after_list[i] if i < len(after_list) else 'None'
-
-            # Handle PT formatting (convert back from title case)
-            if before_mode == 'Pt':
-                before_mode = 'PT'
-            if after_mode == 'Pt':
-                after_mode = 'PT'
-
-            # Create transition string
-            transition = f"{before_mode}_{after_mode}"
-            transitions.append(transition)
-
-        differences[person_id] = transitions
-
-    # Save differences to JSON file
-    differences_path = os.path.join(plots_dir, f"{sim_1_name}_{sim_2_name}_differences.json")
-    with open(differences_path, 'w') as f:
-        json.dump(differences, f, indent=2)
-
-    logging.info(f"Differences JSON created successfully at: {differences_path}")
-    return differences
+    # keep NaN → "None" at the end
+    ss = s.astype('string')  # doesn't force conversion to object; preserves NaN
+    ss = ss.str.replace('_', ' ', regex=False).str.title()
+    return ss.fillna('None')
 
 
-def generate_transition_matrix_csv(before_data: dict, after_data: dict, sim_1_name, sim_2_name, plots_dir: str):
+# ---------------------------
+# Summary generation
+# ---------------------------
+def generate_summary_file(
+    df1_post_freight: pd.DataFrame,
+    df2_post_freight: pd.DataFrame,
+    merged_counts: pd.DataFrame,
+    df1_filtered: pd.DataFrame,
+    df2_filtered: pd.DataFrame,
+    detailed_expanded: bool = False,
+    output_path: str = None,
+    first_file_name: str = "",
+    second_file_name: str = ""
+) -> None:
     """
-    Generate a CSV file with transition matrix showing counts of each mode transition for each person
+    Generate a summary report text file with statistics about outside mode,
+    same-mode drops, and transitions between datasets.
+
+    Parameters
+    ----------
+    df1_post_freight, df2_post_freight : DataFrames
+        DataFrames after the freight filter BUT BEFORE outside filter (to match original semantics).
+    merged_counts : DataFrame
+        (person, mode, count_1, count_2, to_drop) for equal modes across datasets.
+    df1_filtered, df2_filtered : DataFrames
+        Datasets after removing equal counts (keeping only "leftover" different modes).
+    detailed_expanded : bool
+        If True, write one line per occurrence in "Detailed Records".
+        If False (default), write aggregated counts per person/transition for speed.
     """
-    # Define all possible transitions in the exact order requested
-    transition_columns = [
-        "Car_Car", "Car_Car_Passenger", "Car_PT", "Car_Bike", "Car_Walk", "Car_None",
-        "Car_Passenger_Car", "Car_Passenger_Car_Passenger", "Car_Passenger_PT", "Car_Passenger_Bike",
-        "Car_Passenger_Walk", "Car_Passenger_None",
-        "PT_Car", "PT_Car_Passenger", "PT_PT", "PT_Bike", "PT_Walk", "PT_None",
-        "Bike_Car", "Bike_Car_Passenger", "Bike_PT", "Bike_Bike", "Bike_Walk", "Bike_None",
-        "Walk_Car", "Walk_Car_Passenger", "Walk_PT", "Walk_Bike", "Walk_Walk", "Walk_None",
-        "None_Car", "None_Car_Passenger", "None_PT", "None_Bike", "None_Walk"
-    ]
+    logging.info("Starting summary file generation")
+    t0 = time.time()
 
-    # Get common person IDs from both datasets
-    common_persons = set(before_data.keys()) & set(after_data.keys())
+    lines = []
+    # Create the empty DataFrame
+    transition_columns = ["Mode Transition", "Pct Value", "Pct Value with Comma"]
+    transition_df = pd.DataFrame(columns=transition_columns)
 
-    # Prepare CSV data
-    csv_data = []
+    # ----- Outside statistics (on post-freight, pre-outside)
+    logging.info("Calculating outside mode statistics (post-freight data)")
+    outside_count_1 = (df1_post_freight['mode'] == 'outside').sum()
+    outside_count_2 = (df2_post_freight['mode'] == 'outside').sum()
+    n1 = len(df1_post_freight)
+    n2 = len(df2_post_freight)
+    outside_1_pct = (outside_count_1 / n1 * 100) if n1 else 0.0
+    outside_2_pct = (outside_count_2 / n2 * 100) if n2 else 0.0
 
-    for person_id in sorted(common_persons):  # Sort for consistent ordering
-        before_modes = before_data[person_id]
-        after_modes = after_data[person_id]
+    new_data_list = [{
+        "Mode Transition": "outside 1",
+        "Pct Value": round(outside_1_pct, 2),
+        "Pct Value with Comma": f"{outside_1_pct:.2f}".replace('.', ',')
+    }, {
+        "Mode Transition": "outside 2",
+        "Pct Value": round(outside_2_pct, 2),
+        "Pct Value with Comma": f"{outside_2_pct:.2f}".replace('.', ',')
+    }]
 
-        # Create lists for before and after modes based on their counts
-        before_list = []
-        after_list = []
+    transition_df = pd.concat([transition_df, pd.DataFrame(new_data_list)], ignore_index=True)
 
-        # Build before_list by repeating each mode according to its count
-        for mode, count in before_modes.items():
-            # Normalize mode names for consistency
-            normalized_mode = mode
-            if mode == 'Pt':
-                normalized_mode = 'PT'
-            before_list.extend([normalized_mode] * count)
+    lines.append(f"outside records in data 1: ( {int(outside_count_1)} records - {outside_1_pct:.2f}% )\n")
+    lines.append(f"outside records in data 2: ( {int(outside_count_2)} records - {outside_2_pct:.2f}% )\n")
+    lines.append("-" * 85 + "\n")
 
-        # Build after_list by repeating each mode according to its count
-        for mode, count in after_modes.items():
-            # Normalize mode names for consistency
-            normalized_mode = mode
-            if mode == 'Pt':
-                normalized_mode = 'PT'
-            after_list.extend([normalized_mode] * count)
+    # ----- Same modes section (what was dropped as equal/common)
+    lines.append("Same Modes\n")
+    mode_summary = (
+        merged_counts.groupby('mode', observed=True)['to_drop']
+        .sum()
+        .reset_index()
+        .sort_values('to_drop', ascending=False)
+    )
 
-        # Use the maximum length to capture all transitions including None
-        mode_range = max(len(before_list), len(after_list))
+    total_clean_records = max(len(df1_post_freight),   len(df2_post_freight))
+    new_data_list = []
+    for _, r in mode_summary.iterrows():
+        mode_fmt = _fmt_mode(r['mode'])
+        pct = (r['to_drop'] / total_clean_records * 100) if total_clean_records else 0.0
+        lines.append(f"{mode_fmt}_{mode_fmt} ( {int(r['to_drop'])} records - {pct:.2f}% )\n")
+        # Add to transition summary DataFrame
+        pct_value = round((r['to_drop'] / total_clean_records * 100), 2) if total_clean_records else 0.0
+        pct_value_with_comma = f"{pct_value:.2f}".replace('.', ',')
+        new_data_list.append({
+            "Mode Transition": f"{mode_fmt}_{mode_fmt}",
+            "Pct Value": pct_value,
+            "Pct Value with Comma": pct_value_with_comma})
 
-        # Generate transitions for this person
-        transitions = []
-        for i in range(mode_range):
-            # Get mode or 'None' if index out of range
-            before_mode = before_list[i] if i < len(before_list) else 'None'
-            after_mode = after_list[i] if i < len(after_list) else 'None'
-            transition = f"{before_mode}_{after_mode}"
-            transitions.append(transition)
+    transition_df = pd.concat([transition_df, pd.DataFrame(new_data_list)], ignore_index=True)
+    lines.append("-" * 85 + "\n")
 
-        # Count occurrences of each transition
-        transition_counts = Counter(transitions)
+    # ----- Transitions (different modes between datasets)
+    lines.append("Mode Transitions (Different Modes Between Datasets)\n\n")
+    logging.info("Computing transitions summary")
 
-        # Create row for this person
-        row = [person_id]  # First column is Person Key
+    # Per-person mode counts in the filtered sets (leftover occurrences after dropping equals)
+    c1 = df1_filtered.groupby(['person', 'mode'], observed=True).size().reset_index(name='n1')
+    c2 = df2_filtered.groupby(['person', 'mode'], observed=True).size().reset_index(name='n2')
 
-        # Add counts for each transition column (0 if transition doesn't exist)
-        for transition in transition_columns:
-            count = transition_counts.get(transition, 0)
-            row.append(count)
+    # Persons present in both / only left / only right
+    p1 = pd.Index(c1['person'].unique())
+    p2 = pd.Index(c2['person'].unique())
+    common_persons = p1.intersection(p2)
+    only_left_persons = p1.difference(p2)
+    only_right_persons = p2.difference(p1)
 
-        csv_data.append(row)
+    # Common: cartesian per person -> counts multiply (matches original nested loops w/ multiplicities)
+    common = (
+        c1[c1['person'].isin(common_persons)]
+        .merge(c2[c2['person'].isin(common_persons)], on='person', how='inner', suffixes=('_first', '_second'))
+    )
+    if not common.empty:
+        # Safe concatenation with categoricals via vectorized string ops
+        left = _fmt_mode_series(common['mode_first'])
+        right = _fmt_mode_series(common['mode_second'])
+        common['display'] = left.str.cat(right, sep='_')
+        common['cnt'] = (common['n1'] * common['n2']).astype('int64')
+        common_agg = common.groupby('display', as_index=False)['cnt'].sum()
+        common_per_person = common.groupby(['person', 'display'], as_index=False)['cnt'].sum()
+    else:
+        common_agg = pd.DataFrame(columns=['display', 'cnt'])
+        common_per_person = pd.DataFrame(columns=['person', 'display', 'cnt'])
 
-    # Create Transition_Matrixes subdirectory
-    transition_matrixes_dir = os.path.join(plots_dir, "Transition_Matrixes")
-    os.makedirs(transition_matrixes_dir, exist_ok=True)
+    # Only left: (mode, None), count = n1
+    left_only = c1[c1['person'].isin(only_left_persons)].copy()
+    if not left_only.empty:
+        left_only['display'] = _fmt_mode_series(left_only['mode']).str.cat(
+            pd.Series(['None'] * len(left_only), index=left_only.index, dtype='string'),
+            sep='_'
+        )
+        left_only['cnt'] = left_only['n1'].astype('int64')
+        left_only_agg = left_only.groupby('display', as_index=False)['cnt'].sum()
+        left_only_per_person = left_only.groupby(['person', 'display'], as_index=False)['cnt'].sum()
+    else:
+        left_only_agg = pd.DataFrame(columns=['display', 'cnt'])
+        left_only_per_person = pd.DataFrame(columns=['person', 'display', 'cnt'])
 
-    # Create CSV file in the Transition_Matrixes folder
-    csv_path = os.path.join(transition_matrixes_dir, f"{sim_1_name}_{sim_2_name}_transition_matrix.csv")
-    # Write CSV with headers
-    headers = ["Person_Key"] + transition_columns
+    # Only right: (None, mode), count = n2
+    right_only = c2[c2['person'].isin(only_right_persons)].copy()
+    if not right_only.empty:
+        right_only['display'] = pd.Series(['None'] * len(right_only), index=right_only.index, dtype='string').str.cat(
+            _fmt_mode_series(right_only['mode']),
+            sep='_'
+        )
+        right_only['cnt'] = right_only['n2'].astype('int64')
+        right_only_agg = right_only.groupby('display', as_index=False)['cnt'].sum()
+        right_only_per_person = right_only.groupby(['person', 'display'], as_index=False)['cnt'].sum()
+    else:
+        right_only_agg = pd.DataFrame(columns=['display', 'cnt'])
+        right_only_per_person = pd.DataFrame(columns=['person', 'display', 'cnt'])
 
-    with open(csv_path, 'w', newline='', encoding='utf-8') as csvfile:
-        writer = csv.writer(csvfile)
-        writer.writerow(headers)
-        writer.writerows(csv_data)
+    # All transitions summary
+    transitions_summary = pd.concat([common_agg, left_only_agg, right_only_agg], ignore_index=True)
+    transitions_summary = transitions_summary.groupby('display', as_index=False)['cnt'].sum()
+    transitions_summary = transitions_summary.sort_values('cnt', ascending=False)
 
-    logging.info(f"Transition matrix CSV created successfully at: {csv_path}")
-    logging.info(f"CSV contains {len(csv_data)} persons with {len(headers)} columns")
+    total_transitions = int(transitions_summary['cnt'].sum()) if not transitions_summary.empty else 0
 
-    return csv_path
+    # Write summary totals
+    new_data_list = []
+    for _, r in transitions_summary.iterrows():
+        pct = (r['cnt'] / total_clean_records * 100) if total_clean_records else 0.0
+        lines.append(f"{r['display']} ( {int(r['cnt'])} records - {pct:.2f}% )\n")
+        # Add to transition summary DataFrame
+        pct_value = round((r['cnt'] / total_clean_records * 100), 2) if total_clean_records else 0.0
+        pct_value_with_comma = f"{pct_value:.2f}".replace('.', ',')
+        new_data_list.append({
+            "Mode Transition": r['display'],
+            "Pct Value": pct_value,
+            "Pct Value with Comma": pct_value_with_comma})
+
+    transition_df = pd.concat([transition_df, pd.DataFrame(new_data_list)], ignore_index=True)
+    lines.append(f"\nTotal Different Modes: {total_transitions} records\n")
+
+    # Detailed Records
+    lines.append("\nDetailed Records:\n")
+    per_person = pd.concat(
+        [common_per_person, left_only_per_person, right_only_per_person],
+        ignore_index=True
+    )
+    per_person = per_person.sort_values(['person', 'display'])
+
+    if detailed_expanded:
+        # WARNING: may emit an extremely large section on big data
+        for _, r in per_person.iterrows():
+            for _ in range(int(r['cnt'])):
+                lines.append(f"Person: {int(r['person'])}, Transition: {r['display']}\n")
+    else:
+        # Aggregated per person/transition (fast and compact)
+        for _, r in per_person.iterrows():
+            lines.append(f"Person: {int(r['person'])}, Transition: {r['display']}, Count: {int(r['cnt'])}\n")
+
+    transition_df.to_csv(f'{output_path}/{first_file_name}_{second_file_name}_transitions_summary.csv', index=False)
+    # Finish
+    with open(f'{output_path}/summary_report.txt', 'w', encoding='utf-8') as f:
+        f.writelines(lines)
+
+    elapsed = time.time() - t0
+    logging.info(f"Summary file generation completed in {elapsed:.2f} seconds")
+    logging.info("Summary report saved to 'summary_report.txt'")
 
 
-def delete_json_files(plots_dir: str, sim_1_name: str, sim_2_name: str):
+# ---------------------------
+# Main analysis
+# ---------------------------
+def analyze_transport_modes(
+    first_file: str,
+    second_file: str,
+    detailed_expanded: bool = False,
+    nrows: int = None,
+    output_path: str = None
+) -> pd.DataFrame:
     """
-    Delete all JSON files generated during the process
+    Compare transport modes between two datasets.
+
+    Returns:
+        comparison (DataFrame): per-person primary mode in first vs second and whether it changed.
     """
-    json_files_to_delete = [
-        f"before_{sim_1_name}.json",
-        f"after_{sim_2_name}.json",
-        f"{sim_1_name}_{sim_2_name}_differences.json"
-    ]
+    logging.info("=" * 60)
+    logging.info("Starting transport mode analysis")
+    logging.info(f"Input file 1: {first_file}")
+    logging.info(f"Input file 2: {second_file}")
 
-    for json_file in json_files_to_delete:
-        file_path = os.path.join(plots_dir, json_file)
-        try:
-            if os.path.exists(file_path):
-                os.remove(file_path)
-                logging.info(f"Deleted JSON file: {file_path}")
-        except Exception as e:
-            logging.error(f"Error deleting {file_path}: {str(e)}")
+    # ----- Load data (only what we need)
+    logging.info("Loading CSV files...")
+    t_load = time.time()
+    usecols = ['person', 'mode']
+    if nrows == -1:
+        nrows = None
+    df1 = pd.read_csv(first_file, usecols=usecols, dtype={'person': 'string', 'mode': 'category'}, nrows=nrows)
+    df2 = pd.read_csv(second_file, usecols=usecols, dtype={'person': 'string', 'mode': 'category'}, nrows=nrows)
+    logging.info(f"Data loaded in {time.time() - t_load:.2f} seconds")
+    logging.info(f"Data 1 initial shape: {df1.shape}")
+    logging.info(f"Data 2 initial shape: {df2.shape}")
 
+    first_file_name = first_file.split("\\")[-1].split(".")[0]
+    second_file_name = second_file.split("\\")[-1].split(".")[0]
 
-def analyze_transition_data_and_create_summary(csv_path: str, plots_dir: str, sim_1_name: str, sim_2_name: str):
-    """
-    Analyze the transition matrix CSV and create a summary CSV with percentages
-    """
-    try:
-        # Read the transition matrix CSV
-        df = pd.read_csv(csv_path)
+    # ----- Remove freight
+    logging.info("Filtering out freight records...")
+    freight_1 = df1['person'].str.startswith('freight', na=False)
+    freight_2 = df2['person'].str.startswith('freight', na=False)
+    df1 = df1.loc[~freight_1].copy()
+    df2 = df2.loc[~freight_2].copy()
+    logging.info(f"Removed {int(freight_1.sum())} freight records from Data 1")
+    logging.info(f"Removed {int(freight_2.sum())} freight records from Data 2")
+    logging.info(f"Data 1 after freight filter: {len(df1)} records")
+    logging.info(f"Data 2 after freight filter: {len(df2)} records")
 
-        # Remove the Person_Key column for analysis (keep only transition columns)
-        transition_columns = [col for col in df.columns if col != 'Person_Key']
+    # Keep copies for the outside stats in the summary (post-freight, pre-outside)
+    df1_post_freight = df1.copy(deep=False)
+    df2_post_freight = df2.copy(deep=False)
 
-        # Calculate the sum for each transition column
-        column_sums = df[transition_columns].sum()
+    # ----- Convert person to integers
+    logging.info("Converting person IDs to int32...")
+    # to nullable Int64 first (preserves NaN), then drop NaN and convert to int32
+    df1['person'] = pd.to_numeric(df1['person'], errors='coerce').astype('Int64')
+    df2['person'] = pd.to_numeric(df2['person'], errors='coerce').astype('Int64')
+    n1_before, n2_before = len(df1), len(df2)
+    df1 = df1.dropna(subset=['person']).copy()
+    df2 = df2.dropna(subset=['person']).copy()
+    logging.info(f"Dropped {n1_before - len(df1)} non-numeric person IDs in Data 1")
+    logging.info(f"Dropped {n2_before - len(df2)} non-numeric person IDs in Data 2")
+    df1['person'] = df1['person'].astype('int32')
+    df2['person'] = df2['person'].astype('int32')
 
-        # Calculate total transitions
-        total_transitions = column_sums.sum()
+    # ----- Drop outside mode
+    logging.info("Filtering out 'outside' mode records...")
+    outside_1 = (df1['mode'] == 'outside').sum()
+    outside_2 = (df2['mode'] == 'outside').sum()
+    df1_clean = df1.loc[df1['mode'] != 'outside'].copy()
+    df2_clean = df2.loc[df2['mode'] != 'outside'].copy()
+    logging.info(f"Removed {int(outside_1)} outside records from Data 1")
+    logging.info(f"Removed {int(outside_2)} outside records from Data 2")
+    logging.info(f"Data 1 clean: {len(df1_clean)} records")
+    logging.info(f"Data 2 clean: {len(df2_clean)} records")
 
-        # Create summary data with percentages
-        summary_data = []
+    # ----- Count occurrences per (person, mode)
+    logging.info("Counting mode occurrences per person...")
+    t_count = time.time()
+    df1_counts = df1_clean.groupby(['person', 'mode'], observed=True).size().reset_index(name='count_1')
+    df2_counts = df2_clean.groupby(['person', 'mode'], observed=True).size().reset_index(name='count_2')
+    logging.info(f"Data 1: {len(df1_counts)} unique person-mode combinations")
+    logging.info(f"Data 2: {len(df2_counts)} unique person-mode combinations")
 
-        for transition, count in column_sums.items():
-            if count > 0:  # Only include transitions that actually occurred
-                percentage = (count / total_transitions) * 100
-                summary_data.append({
-                    'mode_transition': transition,
-                    'count': count,
-                    'percentage': f"{percentage:.1f}%"
-                })
+    # Find common (person, mode) and compute to_drop = min(count_1, count_2)
+    merged_counts = pd.merge(df1_counts, df2_counts, on=['person', 'mode'], how='inner')
+    merged_counts['to_drop'] = merged_counts[['count_1', 'count_2']].min(axis=1)
+    total_to_drop = int(merged_counts['to_drop'].sum())
+    logging.info(f"Found {len(merged_counts)} common person-mode combinations")
+    logging.info(f"Total records to drop (common modes): {total_to_drop}")
+    logging.info(f"Counting completed in {time.time() - t_count:.2f} seconds")
 
-        # Sort by count in descending order
-        summary_data.sort(key=lambda x: x['count'], reverse=True)
+    # ----- Filter datasets to keep only different modes (vectorized)
+    logging.info("Filtering datasets to keep only different modes (vectorized)...")
+    t_filter = time.time()
 
-        # Create summary CSV with modified naming logic
-        # If sim_2_name ends with trips_all_activities_inside_sim.csv, use the folder name instead
-        if sim_2_name.endswith('trips_all_activities_inside_sim.csv'):
-            # Get the parent folder name from the config (sim_output_folder)
-            config = configparser.ConfigParser()
-            script_dir = os.path.dirname(os.path.abspath(__file__))
-            parent_of_script = os.path.dirname(script_dir)
-            config.read(f'{parent_of_script}\\config\\config.ini')
-            sim_output_folder_2 = config.get('config_compare', '2_sim_output_folder')
-            # Extract folder name after last backslash
-            sim_2_name_modified = os.path.basename(sim_output_folder_2)
-        else:
-            sim_2_name_modified = sim_2_name
+    # Rank entries within each (person, mode) group
+    df1_clean = df1_clean.copy()
+    df2_clean = df2_clean.copy()
+    df1_clean['rank'] = df1_clean.groupby(['person', 'mode'], observed=True).cumcount()
+    df2_clean['rank'] = df2_clean.groupby(['person', 'mode'], observed=True).cumcount()
 
-        summary_csv_path = os.path.join(plots_dir, f"{sim_1_name}_{sim_2_name_modified}_transition_summary.csv")
+    # Map to_drop to each row via merge (missing -> 0)
+    drop_map = merged_counts[['person', 'mode', 'to_drop']]
+    df1_f = df1_clean.merge(drop_map, on=['person', 'mode'], how='left')
+    df2_f = df2_clean.merge(drop_map, on=['person', 'mode'], how='left')
+    df1_f['to_drop'] = df1_f['to_drop'].fillna(0).astype('int64')
+    df2_f['to_drop'] = df2_f['to_drop'].fillna(0).astype('int64')
 
+    # Keep rows where rank >= to_drop
+    df1_filtered = df1_f.loc[df1_f['rank'] >= df1_f['to_drop'], ['person', 'mode']].reset_index(drop=True)
+    df2_filtered = df2_f.loc[df2_f['rank'] >= df2_f['to_drop'], ['person', 'mode']].reset_index(drop=True)
 
-    #CREATE AN SAVE CSV transition FILE
-        # Create dataframe for proper formatting like drt_summary_metrics.csv
-        df_summary = pd.DataFrame(summary_data).copy()
+    logging.info(f"Final filtered datasets - Data 1: {len(df1_filtered)} records, Data 2: {len(df2_filtered)} records")
+    logging.info(f"Filtering completed in {time.time() - t_filter:.2f} seconds")
 
-        # Remove the '%' from percentage and convert to float
-        df_summary['percentage_value'] = df_summary['percentage'].str.replace('%', '').astype(float)
+    # ----- Primary mode per person (before dropping equals)
+    logging.info("Calculating primary modes for each person...")
+    t_primary = time.time()
 
-        # Create 'Value with Comma' column (replacing . with ,)
-        df_summary['Pct Value with Comma'] = df_summary['percentage_value'].apply(lambda x: f"{x:.2f}".replace('.', ','))
+    def get_primary_mode(df: pd.DataFrame) -> pd.DataFrame:
+        mode_counts = df.groupby(['person', 'mode'], observed=True).size().reset_index(name='count')
+        # idxmax per person
+        idx = mode_counts.groupby('person')['count'].idxmax()
+        primary = mode_counts.loc[idx, ['person', 'mode']].rename(columns={'mode': 'primary_mode'})
+        return primary
 
-        # Keep only the columns we want and create a clean copy
-        df_final = df_summary[['mode_transition', 'percentage_value', 'Pct Value with Comma']].copy()
-        df_final.columns = ['Mode Transition', 'Pct Value', 'Pct Value with Comma']
+    primary_modes_1 = get_primary_mode(df1_clean[['person', 'mode']])
+    primary_modes_2 = get_primary_mode(df2_clean[['person', 'mode']])
 
-        # Round Value to 2 decimal places
-        df_final['Pct Value'] = df_final['Pct Value'].round(2)
+    comparison = pd.merge(
+        primary_modes_1, primary_modes_2, on='person',
+        suffixes=('_first', '_second'), how='inner'
+    )
+    comparison['mode_changed'] = comparison['primary_mode_first'] != comparison['primary_mode_second']
+    changed_count = int(comparison['mode_changed'].sum())
+    unchanged_count = len(comparison) - changed_count
+    logging.info(f"Primary mode comparison: {changed_count} persons changed mode, {unchanged_count} kept same mode")
+    logging.info(f"Primary mode analysis completed in {time.time() - t_primary:.2f} seconds")
 
-        # Save with semicolon separator like drt_summary_metrics.csv
-        df_final.to_csv(summary_csv_path, index=False, sep=';')
+    # ----- Generate summary report
+    generate_summary_file(
+        df1_post_freight=df1_post_freight,
+        df2_post_freight=df2_post_freight,
+        merged_counts=merged_counts,
+        df1_filtered=df1_filtered,
+        df2_filtered=df2_filtered,
+        detailed_expanded=detailed_expanded,
+        output_path=output_path,
+        first_file_name=first_file_name,
+        second_file_name=second_file_name
+    )
 
-        logging.info(f"Transition summary CSV created successfully at: {summary_csv_path}")
-        logging.info(
-            f"Summary contains {len(summary_data)} transition types with total of {total_transitions} transitions")
-
-        logging.info("Top transitions:")
-        for i, row in enumerate(summary_data):
-            logging.info(f"{i + 1}. {row['mode_transition']}: {row['percentage']}")
-
-        return summary_csv_path
-
-    except Exception as e:
-        logging.error(f"Error analyzing transition data: {str(e)}")
-        raise
-
-
-def process_transport_data(df1, df2, simulation_1_name: str, simulation_2_name: str, mode_column_input) -> Tuple[
-    dict, dict, dict]:
-    # Define the target modes (normalized to lowercase for processing)
-    target_modes = ['car', 'car_passenger', 'pt', 'bike', 'walk']
-
-    # Find common person IDs between both dataframes
-    common_persons = set(df1['person'].unique()) & set(df2['person'].unique())
-    logging.info(f"Number of common persons: {len(common_persons)}")
-
-    def count_modes_by_person(df, persons):
-        """Count transportation modes for each person"""
-        person_mode_counts = {}
-
-        for person_id in persons:
-            # Initialize all modes to 0
-            mode_counts = {mode.title(): 0 for mode in target_modes}
-
-            # Get data for this person
-            person_data = df[df['person'] == person_id]
-
-            # Count occurrences of each mode
-            mode_counter = person_data[mode_column_input].value_counts()
-
-            # Map the modes to our target format
-            for mode, count in mode_counter.items():
-                mode_lower = mode.lower()
-                if mode_lower in target_modes:
-                    # Convert to title case for JSON output
-                    if mode_lower == 'pt':
-                        mode_key = 'Pt'  # Keep as 'Pt' for consistency with your example
-                    elif mode_lower == 'car_passenger':
-                        mode_key = 'Car_Passenger'
-                    else:
-                        mode_key = mode_lower.title()
-
-                    mode_counts[mode_key] = count
-
-            person_mode_counts[str(person_id)] = mode_counts
-
-        return person_mode_counts
-
-    # Process both datasets
-    before_data = count_modes_by_person(df1, common_persons)
-    after_data = count_modes_by_person(df2, common_persons)
-
-    script_dir = os.path.dirname(os.path.abspath(__file__))
-    parent_of_script = os.path.dirname(script_dir)
-    compare_simulations_dir = os.path.join(parent_of_script, "plots//Compare_simulations")
-    os.makedirs(compare_simulations_dir, exist_ok=True)
-
-    try:
-        with open(f'{compare_simulations_dir}/before_{simulation_1_name}.json', 'w') as f:
-            json.dump(before_data, f, indent=2)
-
-        with open(f'{compare_simulations_dir}/after_{simulation_2_name}.json', 'w') as f:
-            json.dump(after_data, f, indent=2)
-
-        logging.info(f"JSON files created successfully in the {compare_simulations_dir} directory.")
-    except Exception as e:
-        logging.error("Error saving JSON files: " + str(e))
-        raise
-
-    # Generate differences JSON
-    differences_data = generate_differences_json(before_data, after_data, simulation_1_name, simulation_2_name,
-                                                 compare_simulations_dir)
-
-    # Generate transition matrix CSV
-    csv_path = generate_transition_matrix_csv(before_data, after_data, simulation_1_name, simulation_2_name,
-                                              compare_simulations_dir)
-
-    # NEW: Delete JSON files after CSV generation
-    delete_json_files(compare_simulations_dir, simulation_1_name, simulation_2_name)
-
-    # NEW: Analyze transition data and create summary CSV
-    summary_csv_path = analyze_transition_data_and_create_summary(csv_path, compare_simulations_dir, simulation_1_name,
-                                                                  simulation_2_name)
-
-    return before_data, after_data, differences_data
-
-
-def read_output_trips(base_path: str, num_rows) -> tuple[DataFrame, str]:
-
-    if num_rows == -1:
-        num_rows = None
-
-    try:
-        if os.path.isfile(base_path):
-            logging.info(f"Reading {base_path}")
-            return pd.read_csv(base_path, sep=',', low_memory=False, nrows=num_rows), base_path.split("\\")[-1]
-
-        else:
-            raise FileNotFoundError("Neither output_trips.csv.gz nor output_trips.csv file found in given path.")
-    except Exception as e:
-        logging.error("Error reading output_trips file: " + str(e))
-        raise
-
-
+    return comparison
 # main execution
 if __name__ == "__main__":
 
@@ -379,7 +393,6 @@ if __name__ == "__main__":
     try:
         doing_comparison = config.getboolean(section, 'doing_comparison')
         comparison_num_rows = config.getint(section, 'comparison_num_rows')
-        comparison_mode_column = config.get(section, 'comparison_mode_column')
         sim_output_folder_1 = config.get(section, '1_sim_output_folder')
         sim_output_folder_2 = config.get(section, '2_sim_output_folder')
     except Exception as e:
@@ -390,14 +403,47 @@ if __name__ == "__main__":
         logging.info("Comparison is disabled in the config file. Exiting.")
         sys.exit(0)
 
-    try:
-        df_1, sim_1_name = read_output_trips(sim_output_folder_1, num_rows=comparison_num_rows)
-        df_2, sim_2_name = read_output_trips(sim_output_folder_2, num_rows=comparison_num_rows)
-        logging.info(f"Data loaded: {sim_1_name} with {len(df_1)} rows, {sim_2_name} with {len(df_2)} rows")
-    except Exception as e:
-        logging.error("Error loading data: " + str(e))
-        sys.exit(1)
+    overall_start_time = datetime.now()
+    overall_start_ts = time.time()
 
-    before_data, after_data, differences_data = process_transport_data(df_1, df_2, sim_1_name, sim_2_name, comparison_mode_column)
-    end_time = time.time()
-    logging.info(f"Total processing time: {end_time - start_time:.2f} seconds")
+    script_dir = os.path.dirname(os.path.abspath(__file__))
+    parent_of_script = os.path.dirname(script_dir)
+    compare_simulations_dir = os.path.join(parent_of_script, "plots//Compare_simulations")
+
+    logging.info("=" * 60)
+    logging.info("TRANSPORT MODE ANALYSIS - EXECUTION START (Optimized & Fixed)")
+    logging.info(f"Start Time: {overall_start_time.strftime('%Y-%m-%d %H:%M:%S')}")
+    logging.info("=" * 60)
+
+    try:
+        # >>> Update these paths as needed <<<
+        results = analyze_transport_modes(
+            sim_output_folder_1,
+            sim_output_folder_2,
+            detailed_expanded=False,
+            nrows=comparison_num_rows,
+            output_path=compare_simulations_dir
+        )
+
+        # Record end time and duration
+        overall_end_time = datetime.now()
+        total_secs = time.time() - overall_start_ts
+        minutes, seconds = divmod(int(total_secs), 60)
+        hours, minutes = divmod(minutes, 60)
+        duration_str = f"{hours}h {minutes}m {seconds}s" if hours > 0 else f"{minutes}m {seconds}s"
+
+        logging.info("=" * 60)
+        logging.info("ANALYSIS COMPLETED SUCCESSFULLY (Optimized & Fixed)")
+        logging.info(f"End Time: {overall_end_time.strftime('%Y-%m-%d %H:%M:%S')}")
+        logging.info(f"Total Processing Time: {duration_str} ({total_secs:.2f} seconds)")
+        logging.info(f"Results: {len(results)} persons analyzed")
+        logging.info("=" * 60)
+
+    except FileNotFoundError as e:
+        overall_end_time = datetime.now()
+        logging.error(f"File not found: {e}")
+
+    except Exception as e:
+        overall_end_time = datetime.now()
+        logging.error(f"An error occurred: {e}", exc_info=True)
+
