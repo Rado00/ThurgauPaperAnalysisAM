@@ -59,7 +59,7 @@ def generate_summary_file(
 
     lines = []
     # Create the empty DataFrame
-    transition_columns = ["Mode Transition", "Pct Value", "Pct Value with Comma"]
+    transition_columns = ["Mode Transition", "Records", "Pct Value", "Pct Value with Comma"]
     transition_df = pd.DataFrame(columns=transition_columns)
 
     # ----- Outside statistics (on post-freight, pre-outside)
@@ -72,11 +72,13 @@ def generate_summary_file(
     outside_2_pct = (outside_count_2 / n2 * 100) if n2 else 0.0
 
     new_data_list = [{
-        "Mode Transition": "outside 1",
+        "Mode Transition": "Outside 1",
+        "Records": int(outside_count_1),
         "Pct Value": round(outside_1_pct, 2),
         "Pct Value with Comma": f"{outside_1_pct:.2f}".replace('.', ',')
     }, {
-        "Mode Transition": "outside 2",
+        "Mode Transition": "Outside 2",
+        "Records": int(outside_count_2),
         "Pct Value": round(outside_2_pct, 2),
         "Pct Value with Comma": f"{outside_2_pct:.2f}".replace('.', ',')
     }]
@@ -107,8 +109,11 @@ def generate_summary_file(
         pct_value_with_comma = f"{pct_value:.2f}".replace('.', ',')
         new_data_list.append({
             "Mode Transition": f"{mode_fmt}_{mode_fmt}",
+            "Records": int(r['to_drop']),
             "Pct Value": pct_value,
             "Pct Value with Comma": pct_value_with_comma})
+
+    lines.append("Total Number of Same Modes is "f"{int(mode_summary['to_drop'].sum())} records\n\n")
 
     transition_df = pd.concat([transition_df, pd.DataFrame(new_data_list)], ignore_index=True)
     lines.append("-" * 85 + "\n")
@@ -190,11 +195,18 @@ def generate_summary_file(
         pct_value_with_comma = f"{pct_value:.2f}".replace('.', ',')
         new_data_list.append({
             "Mode Transition": r['display'],
+            "Records": int(r['cnt']),
             "Pct Value": pct_value,
             "Pct Value with Comma": pct_value_with_comma})
 
     transition_df = pd.concat([transition_df, pd.DataFrame(new_data_list)], ignore_index=True)
     lines.append(f"\nTotal Different Modes: {total_transitions} records\n")
+
+    lines.append("-" * 85 + "\n")
+
+    lines.append("Total Records Processed in Data 1 (post-freight): "f"{len(df1_post_freight)}\n")
+    lines.append("Total Records Processed in Data 2 (post-freight): "f"{len(df2_post_freight)}\n")
+    lines.append("-" * 85 + "\n")
 
     # Detailed Records
     lines.append("\nDetailed Records:\n")
@@ -216,7 +228,7 @@ def generate_summary_file(
 
     transition_df.to_csv(f'{output_path}/{first_file_name}_{second_file_name}_transitions_summary.csv', index=False, sep=';')
     # Finish
-    with open(f'{output_path}/summary_report.txt', 'w', encoding='utf-8') as f:
+    with open(f'{output_path}/{first_file_name}_{second_file_name}_summary_report.txt', 'w', encoding='utf-8') as f:
         f.writelines(lines)
 
     elapsed = time.time() - t0
