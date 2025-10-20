@@ -37,7 +37,11 @@ def generate_summary_file(
         detailed_expanded: bool = False,
         output_path: str = None,
         first_file_name: str = "",
-        second_file_name: str = ""
+        second_file_name: str = "",
+        all_df_1_records: int = 0,
+        all_df_2_records: int = 0,
+        df_freight_removed_1: int = 0,
+        df_freight_removed_2: int = 0
 ) -> None:
     """
     Generate a summary report text file with statistics about outside mode,
@@ -49,6 +53,12 @@ def generate_summary_file(
     t0 = time.time()
 
     lines = []
+    lines.append(f"Total records in Original Data 1 (before filtering): {all_df_1_records}\n")
+    lines.append(f"Total records in Original Data 2 (before filtering): {all_df_2_records}\n")
+    lines.append(f"Freight records removed from Data 1: {int(df_freight_removed_1)}\n")
+    lines.append(f"Freight records removed from Data 2: {int(df_freight_removed_2)}\n")
+    lines.append("-" * 85 + "\n")
+
     # Create the empty DataFrame
     transition_columns = ["Mode Transition", "Records", "Pct Value", "Pct Value with Comma"]
     transition_df = pd.DataFrame(columns=transition_columns)
@@ -76,18 +86,27 @@ def generate_summary_file(
 
     transition_df = pd.concat([transition_df, pd.DataFrame(new_data_list)], ignore_index=True)
 
-    lines.append(f"outside records in data 1: ( {int(outside_count_1)} records - {outside_1_pct:.2f}% )\n")
-    lines.append(f"outside records in data 2: ( {int(outside_count_2)} records - {outside_2_pct:.2f}% )\n")
-    lines.append("-" * 85 + "\n")
-
     # ----- Same modes section (what was dropped as equal/common)
-    lines.append("Same Modes\n")
     mode_summary = (
         merged_counts.groupby('mode', observed=True)['to_drop']
         .sum()
         .reset_index()
         .sort_values('to_drop', ascending=False)
     )
+
+    # # Add total records statistics
+    # total_records_excluding_outside_freight = len(df1_filtered) + len(df2_filtered) + int(mode_summary['to_drop'].sum())
+    # total_overall = total_records_excluding_outside_freight + int(outside_count_1) + int(outside_count_2)
+    #
+    # lines.append(f"Total overall number of records: {total_overall}\n\n")
+    # lines.append(f"Total number of records excluding outside and freight: {total_records_excluding_outside_freight}\n")
+    #
+    # lines.append("-" * 85 + "\n")
+
+    lines.append(f"Total Outside records in Data 1: ( {int(outside_count_1)} records - {outside_1_pct:.2f}% )\n")
+    lines.append(f"Total Outside records in Data 2: ( {int(outside_count_2)} records - {outside_2_pct:.2f}% )\n")
+    lines.append("-" * 85 + "\n")
+    lines.append("Same Modes\n")
 
     total_clean_records = max(len(df1_post_freight), len(df2_post_freight))
     new_data_list = []
@@ -105,21 +124,15 @@ def generate_summary_file(
             "Pct Value with Comma": pct_value_with_comma})
 
     lines.append("\n")
-    lines.append("Total Number of Same Modes is "f"{int(mode_summary['to_drop'].sum())} records\n\n")
+    lines.append("Total Number of Same Modes is "f"{int(mode_summary['to_drop'].sum())} records\n")
 
-    # Add total records statistics
-    total_records_excluding_outside_freight = len(df1_filtered) + len(df2_filtered) + int(mode_summary['to_drop'].sum())
-    total_overall = total_records_excluding_outside_freight + int(outside_count_1) + int(outside_count_2)
 
-    lines.append(f"Total number of records excluding outside and freight: {total_records_excluding_outside_freight}\n")
-    lines.append(f"Total overall number of records: {total_overall}\n\n")
-    lines.append("-" * 85 + "\n")
 
     transition_df = pd.concat([transition_df, pd.DataFrame(new_data_list)], ignore_index=True)
     lines.append("-" * 85 + "\n")
 
     # ----- Transitions (different modes between datasets)
-    lines.append("Mode Transitions (Different Modes Between Datasets)\n\n")
+    lines.append("Mode Transitions (Different Modes Between Datasets)\n")
     logging.info("Computing transitions summary")
 
     # CORRECTED LOGIC: Track ALL differences at record level
@@ -280,7 +293,7 @@ def generate_summary_file(
 
     transition_df = pd.concat([transition_df, pd.DataFrame(new_data_list)], ignore_index=True)
     lines.append("\n")
-    lines.append("Total Number of Different Modes is "f"{int(all_transitions['cnt'].sum())} records\n\n")
+    lines.append("Total Number of Different Modes is "f"{int(all_transitions['cnt'].sum())} records\n")
     lines.append("-" * 85 + "\n")
 
     logging.info(f"Summary file generation completed in {time.time() - t0:.2f} seconds")
@@ -347,6 +360,8 @@ def analyze_transport_modes(
     nrows_arg = None if (nrows is None or nrows == -1) else nrows
     df1 = pd.read_csv(file1, nrows=nrows_arg)
     df2 = pd.read_csv(file2, nrows=nrows_arg)
+    all_df_1_records = len(df1)
+    all_df_2_records = len(df2)
     logging.info(f"Data loaded in {time.time() - t_load:.2f} seconds")
     logging.info(f"Data 1 initial shape: {df1.shape}")
     logging.info(f"Data 2 initial shape: {df2.shape}")
@@ -371,6 +386,8 @@ def analyze_transport_modes(
     n1_before, n2_before = len(df1), len(df2)
     df1 = df1.dropna(subset=['person']).copy()
     df2 = df2.dropna(subset=['person']).copy()
+    df_freight_removed_1 = n1_before - len(df1)
+    df_freight_removed_2 = n2_before - len(df2)
     logging.info(f"Dropped {n1_before - len(df1)} non-numeric person IDs in Data 1")
     logging.info(f"Dropped {n2_before - len(df2)} non-numeric person IDs in Data 2")
     df1['person'] = df1['person'].astype('int32')
@@ -466,7 +483,11 @@ def analyze_transport_modes(
         detailed_expanded=detailed_expanded,
         output_path=output_path,
         first_file_name=first_file_name,
-        second_file_name=second_file_name
+        second_file_name=second_file_name,
+        all_df_1_records=all_df_1_records,
+        all_df_2_records=all_df_2_records,
+        df_freight_removed_1=df_freight_removed_1,
+        df_freight_removed_2=df_freight_removed_2
     )
 
     return comparison
