@@ -214,7 +214,7 @@ def generate_summary_file(
         for _, r in per_person.iterrows():
             lines.append(f"Person: {int(r['person'])}, Transition: {r['display']}, Count: {int(r['cnt'])}\n")
 
-    transition_df.to_csv(f'{output_path}/{first_file_name}_{second_file_name}_transitions_summary.csv', index=False)
+    transition_df.to_csv(f'{output_path}/{first_file_name}_{second_file_name}_transitions_summary.csv', index=False, sep=';')
     # Finish
     with open(f'{output_path}/summary_report.txt', 'w', encoding='utf-8') as f:
         f.writelines(lines)
