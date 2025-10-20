@@ -107,6 +107,14 @@ def generate_summary_file(
     lines.append("\n")
     lines.append("Total Number of Same Modes is "f"{int(mode_summary['to_drop'].sum())} records\n\n")
 
+    # Add total records statistics
+    total_records_excluding_outside_freight = len(df1_filtered) + len(df2_filtered) + int(mode_summary['to_drop'].sum())
+    total_overall = total_records_excluding_outside_freight + int(outside_count_1) + int(outside_count_2)
+
+    lines.append(f"Total number of records excluding outside and freight: {total_records_excluding_outside_freight}\n")
+    lines.append(f"Total overall number of records: {total_overall}\n\n")
+    lines.append("-" * 85 + "\n")
+
     transition_df = pd.concat([transition_df, pd.DataFrame(new_data_list)], ignore_index=True)
     lines.append("-" * 85 + "\n")
 
@@ -280,7 +288,29 @@ def generate_summary_file(
     # Save summary text file
     output_file = output_path if output_path else 'summary_report.txt'
     if os.path.isdir(output_file):
-        output_file = os.path.join(output_file, f'{first_file_name}_{second_file_name}_summary_report.txt')
+        # Modify filenames if they end with trips_all_activities_inside_sim
+        modified_first_name = first_file_name
+        modified_second_name = second_file_name
+
+        # Check if names end with the specific pattern and extract folder name instead
+        if first_file_name.endswith('trips_all_activities_inside_sim'):
+            # Get the config to extract the actual folder name
+            config = configparser.ConfigParser()
+            script_dir = os.path.dirname(os.path.abspath(__file__))
+            parent_of_script = os.path.dirname(script_dir)
+            config.read(f'{parent_of_script}\\config\\config.ini')
+            sim_output_folder_1 = config.get('config_compare', '1_sim_output_folder')
+            modified_first_name = os.path.basename(os.path.dirname(sim_output_folder_1))
+
+        if second_file_name.endswith('trips_all_activities_inside_sim'):
+            config = configparser.ConfigParser()
+            script_dir = os.path.dirname(os.path.abspath(__file__))
+            parent_of_script = os.path.dirname(script_dir)
+            config.read(f'{parent_of_script}\\config\\config.ini')
+            sim_output_folder_2 = config.get('config_compare', '2_sim_output_folder')
+            modified_second_name = os.path.basename(os.path.dirname(sim_output_folder_2))
+
+        output_file = os.path.join(output_file, f'{modified_first_name}_{modified_second_name}_summary_report.txt')
 
     with open(output_file, 'w', encoding='utf-8') as f:
         f.writelines(lines)
@@ -474,8 +504,21 @@ if __name__ == "__main__":
     parent_of_script = os.path.dirname(script_dir)
     compare_simulations_dir = os.path.join(parent_of_script, "plots//Compare_simulations")
 
+    # Extract first filename
     first_file_name = sim_output_folder_1.split('\\')[-1].split('.')[0]
-    second_file_name = clean_csv_folder
+    # Remove the "trips_all_activities_inside_sim_" prefix if present
+    if first_file_name.startswith('trips_all_activities_inside_sim_'):
+        first_file_name = first_file_name.replace('trips_all_activities_inside_sim_', '', 1)
+
+    # Extract second filename
+    second_file_name_raw = sim_output_folder_2.split('\\')[-1].split('.')[0]
+    # If second file ends with trips_all_activities_inside_sim, use sim_output_folder instead
+    if second_file_name_raw == 'trips_all_activities_inside_sim':
+        # Use the last part of sim_output_folder from config
+        sim_output_folder = config.get('config', 'sim_output_folder')
+        second_file_name = sim_output_folder.split('\\')[-1]
+    else:
+        second_file_name = second_file_name_raw
 
     logging.info("=" * 60)
     logging.info("TRANSPORT MODE ANALYSIS - EXECUTION START (Corrected Version)")
