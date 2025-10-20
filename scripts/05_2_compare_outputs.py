@@ -6,6 +6,7 @@ from functions.commonFunctions import *
 
 start_time = time.time()
 
+
 def _fmt_mode(m):
     """Format a mode string like 'car_ride' -> 'Car Ride'; handle None/NaN."""
     if pd.isna(m) or m is None:
@@ -28,31 +29,21 @@ def _fmt_mode_series(s: pd.Series) -> pd.Series:
 # Summary generation
 # ---------------------------
 def generate_summary_file(
-    df1_post_freight: pd.DataFrame,
-    df2_post_freight: pd.DataFrame,
-    merged_counts: pd.DataFrame,
-    df1_filtered: pd.DataFrame,
-    df2_filtered: pd.DataFrame,
-    detailed_expanded: bool = False,
-    output_path: str = None,
-    first_file_name: str = "",
-    second_file_name: str = ""
+        df1_post_freight: pd.DataFrame,
+        df2_post_freight: pd.DataFrame,
+        merged_counts: pd.DataFrame,
+        df1_filtered: pd.DataFrame,
+        df2_filtered: pd.DataFrame,
+        detailed_expanded: bool = False,
+        output_path: str = None,
+        first_file_name: str = "",
+        second_file_name: str = ""
 ) -> None:
     """
     Generate a summary report text file with statistics about outside mode,
     same-mode drops, and transitions between datasets.
 
-    Parameters
-    ----------
-    df1_post_freight, df2_post_freight : DataFrames
-        DataFrames after the freight filter BUT BEFORE outside filter (to match original semantics).
-    merged_counts : DataFrame
-        (person, mode, count_1, count_2, to_drop) for equal modes across datasets.
-    df1_filtered, df2_filtered : DataFrames
-        Datasets after removing equal counts (keeping only "leftover" different modes).
-    detailed_expanded : bool
-        If True, write one line per occurrence in "Detailed Records".
-        If False (default), write aggregated counts per person/transition for speed.
+    CORRECTED VERSION: Now properly tracks all extra records as None_ transitions
     """
     logging.info("Starting summary file generation")
     t0 = time.time()
@@ -98,7 +89,7 @@ def generate_summary_file(
         .sort_values('to_drop', ascending=False)
     )
 
-    total_clean_records = max(len(df1_post_freight),   len(df2_post_freight))
+    total_clean_records = max(len(df1_post_freight), len(df2_post_freight))
     new_data_list = []
     for _, r in mode_summary.iterrows():
         mode_fmt = _fmt_mode(r['mode'])
@@ -113,6 +104,7 @@ def generate_summary_file(
             "Pct Value": pct_value,
             "Pct Value with Comma": pct_value_with_comma})
 
+    lines.append("\n")
     lines.append("Total Number of Same Modes is "f"{int(mode_summary['to_drop'].sum())} records\n\n")
 
     transition_df = pd.concat([transition_df, pd.DataFrame(new_data_list)], ignore_index=True)
@@ -122,7 +114,20 @@ def generate_summary_file(
     lines.append("Mode Transitions (Different Modes Between Datasets)\n\n")
     logging.info("Computing transitions summary")
 
-    # Per-person mode counts in the filtered sets (leftover occurrences after dropping equals)
+    # CORRECTED LOGIC: Track ALL differences at record level
+    # Get total record counts per person in filtered datasets
+    person_counts_1 = df1_filtered.groupby('person').size().reset_index(name='total_records_1')
+    person_counts_2 = df2_filtered.groupby('person').size().reset_index(name='total_records_2')
+
+    # Merge to see who has more/fewer records
+    person_totals = pd.merge(
+        person_counts_1, person_counts_2,
+        on='person', how='outer'
+    ).fillna(0)
+
+    person_totals['diff'] = person_totals['total_records_2'] - person_totals['total_records_1']
+
+    # Per-person mode counts in the filtered sets
     c1 = df1_filtered.groupby(['person', 'mode'], observed=True).size().reset_index(name='n1')
     c2 = df2_filtered.groupby(['person', 'mode'], observed=True).size().reset_index(name='n2')
 
@@ -133,13 +138,12 @@ def generate_summary_file(
     only_left_persons = p1.difference(p2)
     only_right_persons = p2.difference(p1)
 
-    # Common: cartesian per person -> counts multiply (matches original nested loops w/ multiplicities)
+    # Common persons: calculate transitions
     common = (
         c1[c1['person'].isin(common_persons)]
         .merge(c2[c2['person'].isin(common_persons)], on='person', how='inner', suffixes=('_first', '_second'))
     )
     if not common.empty:
-        # Safe concatenation with categoricals via vectorized string ops
         left = _fmt_mode_series(common['mode_first'])
         right = _fmt_mode_series(common['mode_second'])
         common['display'] = left.str.cat(right, sep='_')
@@ -150,7 +154,8 @@ def generate_summary_file(
         common_agg = pd.DataFrame(columns=['display', 'cnt'])
         common_per_person = pd.DataFrame(columns=['person', 'display', 'cnt'])
 
-    # Only left: (mode, None), count = n1
+    # CORRECTED: For persons with extra records in Dataset 2, attribute to None_ transitions
+    # Only left: persons only in Dataset 1
     left_only = c1[c1['person'].isin(only_left_persons)].copy()
     if not left_only.empty:
         left_only['display'] = _fmt_mode_series(left_only['mode']).str.cat(
@@ -164,132 +169,173 @@ def generate_summary_file(
         left_only_agg = pd.DataFrame(columns=['display', 'cnt'])
         left_only_per_person = pd.DataFrame(columns=['person', 'display', 'cnt'])
 
-    # Only right: (None, mode), count = n2
-    right_only = c2[c2['person'].isin(only_right_persons)].copy()
-    if not right_only.empty:
-        right_only['display'] = pd.Series(['None'] * len(right_only), index=right_only.index, dtype='string').str.cat(
-            _fmt_mode_series(right_only['mode']),
-            sep='_'
+    # CORRECTED: Only right + persons with NET POSITIVE records in Dataset 2
+    # This captures ALL extra records, not just persons completely absent from Dataset 1
+    persons_with_extra = person_totals[person_totals['diff'] > 0]['person'].values
+    logging.info(f"Found {len(persons_with_extra)} persons with extra records in Dataset 2")
+    logging.info(f"Total extra records to attribute: {int(person_totals[person_totals['diff'] > 0]['diff'].sum())}")
+
+    right_with_extra = c2[c2['person'].isin(persons_with_extra)].copy()
+
+    if not right_with_extra.empty:
+        # For each person, we need to know how many extra records they have
+        right_with_extra = right_with_extra.merge(
+            person_totals[['person', 'diff']],
+            on='person',
+            how='left'
         )
-        right_only['cnt'] = right_only['n2'].astype('int64')
-        right_only_agg = right_only.groupby('display', as_index=False)['cnt'].sum()
-        right_only_per_person = right_only.groupby(['person', 'display'], as_index=False)['cnt'].sum()
+
+        # Calculate what portion of each mode should be attributed to "None_Mode"
+        # Group by person to get total mode counts
+        person_mode_totals = right_with_extra.groupby('person').agg({
+            'n2': 'sum',
+            'diff': 'first'
+        }).reset_index()
+
+        # For simplicity, distribute extra records proportionally across modes
+        # Or we can just take all records for persons only in Dataset 2
+        right_only_persons_set = set(only_right_persons)
+
+        # Separate completely new persons vs persons with extra records
+        completely_new = right_with_extra[right_with_extra['person'].isin(right_only_persons_set)].copy()
+        has_extra_but_exists = right_with_extra[~right_with_extra['person'].isin(right_only_persons_set)].copy()
+
+        # For completely new persons, count all their records
+        if not completely_new.empty:
+            completely_new['display'] = pd.Series(['None'] * len(completely_new),
+                                                  index=completely_new.index,
+                                                  dtype='string').str.cat(
+                _fmt_mode_series(completely_new['mode']),
+                sep='_'
+            )
+            completely_new['cnt'] = completely_new['n2'].astype('int64')
+            new_persons_agg = completely_new.groupby('display', as_index=False)['cnt'].sum()
+        else:
+            new_persons_agg = pd.DataFrame(columns=['display', 'cnt'])
+
+        # For persons with extra records, attribute the DIFFERENCE proportionally
+        if not has_extra_but_exists.empty:
+            # Calculate proportion of each mode for each person
+            person_mode_props = has_extra_but_exists.groupby('person')['n2'].sum().reset_index(name='total_modes')
+            has_extra_but_exists = has_extra_but_exists.merge(person_mode_props, on='person')
+            has_extra_but_exists['mode_proportion'] = has_extra_but_exists['n2'] / has_extra_but_exists['total_modes']
+
+            # Distribute the diff proportionally to modes
+            has_extra_but_exists['extra_for_mode'] = (has_extra_but_exists['diff'] *
+                                                      has_extra_but_exists['mode_proportion']).round().astype('int64')
+
+            has_extra_but_exists['display'] = pd.Series(['None'] * len(has_extra_but_exists),
+                                                        index=has_extra_but_exists.index,
+                                                        dtype='string').str.cat(
+                _fmt_mode_series(has_extra_but_exists['mode']),
+                sep='_'
+            )
+            extra_records_agg = has_extra_but_exists.groupby('display', as_index=False)['extra_for_mode'].sum()
+            extra_records_agg.columns = ['display', 'cnt']
+        else:
+            extra_records_agg = pd.DataFrame(columns=['display', 'cnt'])
+
+        # Combine both types of "None_" records
+        right_only_agg = pd.concat([new_persons_agg, extra_records_agg], ignore_index=True)
+        if not right_only_agg.empty:
+            right_only_agg = right_only_agg.groupby('display', as_index=False)['cnt'].sum()
+
+        # For detailed per-person tracking
+        right_only_per_person = pd.concat([
+            completely_new.groupby(['person', 'display'], as_index=False)['cnt'].sum(),
+            has_extra_but_exists.groupby(['person', 'display'], as_index=False)['extra_for_mode'].sum().rename(
+                columns={'extra_for_mode': 'cnt'})
+        ], ignore_index=True)
+
     else:
         right_only_agg = pd.DataFrame(columns=['display', 'cnt'])
         right_only_per_person = pd.DataFrame(columns=['person', 'display', 'cnt'])
 
-    # All transitions summary
-    transitions_summary = pd.concat([common_agg, left_only_agg, right_only_agg], ignore_index=True)
-    transitions_summary = transitions_summary.groupby('display', as_index=False)['cnt'].sum()
-    transitions_summary = transitions_summary.sort_values('cnt', ascending=False)
+    # Concatenate all aggregated transitions
+    all_transitions = pd.concat([common_agg, left_only_agg, right_only_agg], ignore_index=True)
+    all_transitions = all_transitions.groupby('display', as_index=False)['cnt'].sum()
+    all_transitions = all_transitions.sort_values('cnt', ascending=False)
 
-    total_transitions = int(transitions_summary['cnt'].sum()) if not transitions_summary.empty else 0
-
-    # Write summary totals
+    # Write summary
     new_data_list = []
-    for _, r in transitions_summary.iterrows():
+    for _, r in all_transitions.iterrows():
         pct = (r['cnt'] / total_clean_records * 100) if total_clean_records else 0.0
         lines.append(f"{r['display']} ( {int(r['cnt'])} records - {pct:.2f}% )\n")
-        # Add to transition summary DataFrame
-        pct_value = round((r['cnt'] / total_clean_records * 100), 2) if total_clean_records else 0.0
+        pct_value = round(pct, 2)
         pct_value_with_comma = f"{pct_value:.2f}".replace('.', ',')
         new_data_list.append({
             "Mode Transition": r['display'],
             "Records": int(r['cnt']),
             "Pct Value": pct_value,
-            "Pct Value with Comma": pct_value_with_comma})
+            "Pct Value with Comma": pct_value_with_comma
+        })
 
     transition_df = pd.concat([transition_df, pd.DataFrame(new_data_list)], ignore_index=True)
-    lines.append(f"\nTotal Different Modes: {total_transitions} records\n")
-
+    lines.append("\n")
+    lines.append("Total Number of Different Modes is "f"{int(all_transitions['cnt'].sum())} records\n\n")
     lines.append("-" * 85 + "\n")
 
-    lines.append("Total Records Processed in Data 1 (post-freight): "f"{len(df1_post_freight)}\n")
-    lines.append("Total Records Processed in Data 2 (post-freight): "f"{len(df2_post_freight)}\n")
-    lines.append("-" * 85 + "\n")
+    logging.info(f"Summary file generation completed in {time.time() - t0:.2f} seconds")
 
-    # Detailed Records
-    lines.append("\nDetailed Records:\n")
-    per_person = pd.concat(
-        [common_per_person, left_only_per_person, right_only_per_person],
-        ignore_index=True
-    )
-    per_person = per_person.sort_values(['person', 'display'])
+    # Save summary text file
+    output_file = output_path if output_path else 'summary_report.txt'
+    if os.path.isdir(output_file):
+        output_file = os.path.join(output_file, f'{first_file_name}_{second_file_name}_summary_report.txt')
 
-    if detailed_expanded:
-        # WARNING: may emit an extremely large section on big data
-        for _, r in per_person.iterrows():
-            for _ in range(int(r['cnt'])):
-                lines.append(f"Person: {int(r['person'])}, Transition: {r['display']}\n")
-    else:
-        # Aggregated per person/transition (fast and compact)
-        for _, r in per_person.iterrows():
-            lines.append(f"Person: {int(r['person'])}, Transition: {r['display']}, Count: {int(r['cnt'])}\n")
-
-    transition_df.to_csv(f'{output_path}/{first_file_name}_{second_file_name}_transitions_summary.csv', index=False, sep=';')
-    # Finish
-    with open(f'{output_path}/{first_file_name}_{second_file_name}_summary_report.txt', 'w', encoding='utf-8') as f:
+    with open(output_file, 'w', encoding='utf-8') as f:
         f.writelines(lines)
 
-    elapsed = time.time() - t0
-    logging.info(f"Summary file generation completed in {elapsed:.2f} seconds")
-    logging.info("Summary report saved to 'summary_report.txt'")
+    logging.info(f"Summary report saved to '{output_file}'")
+
+    # Save CSV
+    csv_file = output_file.replace('.txt', '.csv')
+    transition_df.to_csv(csv_file, sep=';', index=False, encoding='utf-8-sig')
+    logging.info(f"Summary CSV saved to '{csv_file}'")
 
 
-# ---------------------------
-# Main analysis
-# ---------------------------
 def analyze_transport_modes(
-    first_file: str,
-    second_file: str,
-    detailed_expanded: bool = False,
-    nrows: int = None,
-    output_path: str = None
-) -> pd.DataFrame:
+        file1: str,
+        file2: str,
+        detailed_expanded: bool = False,
+        nrows: int = None,
+        output_path: str = None,
+        first_file_name: str = "",
+        second_file_name: str = ""
+):
     """
-    Compare transport modes between two datasets.
-
-    Returns:
-        comparison (DataFrame): per-person primary mode in first vs second and whether it changed.
+    Analyze transport mode changes between two simulation outputs.
+    CORRECTED VERSION: Properly tracks all extra records
     """
     logging.info("=" * 60)
     logging.info("Starting transport mode analysis")
-    logging.info(f"Input file 1: {first_file}")
-    logging.info(f"Input file 2: {second_file}")
+    logging.info(f"Input file 1: {file1}")
+    logging.info(f"Input file 2: {file2}")
 
-    # ----- Load data (only what we need)
+    # Load data
     logging.info("Loading CSV files...")
     t_load = time.time()
-    usecols = ['person', 'mode']
-    if nrows == -1:
-        nrows = None
-    df1 = pd.read_csv(first_file, usecols=usecols, dtype={'person': 'string', 'mode': 'category'}, nrows=nrows)
-    df2 = pd.read_csv(second_file, usecols=usecols, dtype={'person': 'string', 'mode': 'category'}, nrows=nrows)
+    nrows_arg = None if (nrows is None or nrows == -1) else nrows
+    df1 = pd.read_csv(file1, nrows=nrows_arg)
+    df2 = pd.read_csv(file2, nrows=nrows_arg)
     logging.info(f"Data loaded in {time.time() - t_load:.2f} seconds")
     logging.info(f"Data 1 initial shape: {df1.shape}")
     logging.info(f"Data 2 initial shape: {df2.shape}")
 
-    first_file_name = first_file.split("\\")[-1].split(".")[0]
-    second_file_name = second_file.split("\\")[-1].split(".")[0]
-
-    # ----- Remove freight
+    # ----- Filter out freight
     logging.info("Filtering out freight records...")
-    freight_1 = df1['person'].str.startswith('freight', na=False)
-    freight_2 = df2['person'].str.startswith('freight', na=False)
-    df1 = df1.loc[~freight_1].copy()
-    df2 = df2.loc[~freight_2].copy()
-    logging.info(f"Removed {int(freight_1.sum())} freight records from Data 1")
-    logging.info(f"Removed {int(freight_2.sum())} freight records from Data 2")
-    logging.info(f"Data 1 after freight filter: {len(df1)} records")
-    logging.info(f"Data 2 after freight filter: {len(df2)} records")
+    freight_1 = (df1['mode'] == 'freight').sum()
+    freight_2 = (df2['mode'] == 'freight').sum()
+    df1_post_freight = df1.loc[df1['mode'] != 'freight'].copy()
+    df2_post_freight = df2.loc[df2['mode'] != 'freight'].copy()
+    logging.info(f"Removed {int(freight_1)} freight records from Data 1")
+    logging.info(f"Removed {int(freight_2)} freight records from Data 2")
+    logging.info(f"Data 1 after freight filter: {len(df1_post_freight)} records")
+    logging.info(f"Data 2 after freight filter: {len(df2_post_freight)} records")
+    df1 = df1_post_freight
+    df2 = df2_post_freight
 
-    # Keep copies for the outside stats in the summary (post-freight, pre-outside)
-    df1_post_freight = df1.copy(deep=False)
-    df2_post_freight = df2.copy(deep=False)
-
-    # ----- Convert person to integers
+    # ----- Convert person IDs
     logging.info("Converting person IDs to int32...")
-    # to nullable Int64 first (preserves NaN), then drop NaN and convert to int32
     df1['person'] = pd.to_numeric(df1['person'], errors='coerce').astype('Int64')
     df2['person'] = pd.to_numeric(df2['person'], errors='coerce').astype('Int64')
     n1_before, n2_before = len(df1), len(df2)
@@ -310,6 +356,10 @@ def analyze_transport_modes(
     logging.info(f"Removed {int(outside_2)} outside records from Data 2")
     logging.info(f"Data 1 clean: {len(df1_clean)} records")
     logging.info(f"Data 2 clean: {len(df2_clean)} records")
+
+    # Log the difference
+    diff_records = len(df2_clean) - len(df1_clean)
+    logging.info(f"**RECORD DIFFERENCE: Dataset 2 has {diff_records} more records than Dataset 1**")
 
     # ----- Count occurrences per (person, mode)
     logging.info("Counting mode occurrences per person...")
@@ -349,6 +399,8 @@ def analyze_transport_modes(
     df2_filtered = df2_f.loc[df2_f['rank'] >= df2_f['to_drop'], ['person', 'mode']].reset_index(drop=True)
 
     logging.info(f"Final filtered datasets - Data 1: {len(df1_filtered)} records, Data 2: {len(df2_filtered)} records")
+    logging.info(
+        f"**FILTERED DIFFERENCE: {len(df2_filtered) - len(df1_filtered)} extra records in Dataset 2 filtered**")
     logging.info(f"Filtering completed in {time.time() - t_filter:.2f} seconds")
 
     # ----- Primary mode per person (before dropping equals)
@@ -357,7 +409,6 @@ def analyze_transport_modes(
 
     def get_primary_mode(df: pd.DataFrame) -> pd.DataFrame:
         mode_counts = df.groupby(['person', 'mode'], observed=True).size().reset_index(name='count')
-        # idxmax per person
         idx = mode_counts.groupby('person')['count'].idxmax()
         primary = mode_counts.loc[idx, ['person', 'mode']].rename(columns={'mode': 'primary_mode'})
         return primary
@@ -389,15 +440,15 @@ def analyze_transport_modes(
     )
 
     return comparison
+
+
 # main execution
 if __name__ == "__main__":
 
     setup_logging(get_log_filename())
 
-    # if you want to read all rows, set num_rows = -1
     script_dir = os.path.dirname(os.path.abspath(__file__))
     parent_of_script = os.path.dirname(script_dir)
-    # TODO change "plots" to what ever folder you want to save to
     config = configparser.ConfigParser()
     config.read(f'{parent_of_script}\\config\\config.ini')
     section = 'config_compare'
@@ -407,6 +458,7 @@ if __name__ == "__main__":
         comparison_num_rows = config.getint(section, 'comparison_num_rows')
         sim_output_folder_1 = config.get(section, '1_sim_output_folder')
         sim_output_folder_2 = config.get(section, '2_sim_output_folder')
+        clean_csv_folder = config.get('config', 'clean_csv_folder')
     except Exception as e:
         logging.error("Error reading config file: " + str(e))
         sys.exit(1)
@@ -422,22 +474,25 @@ if __name__ == "__main__":
     parent_of_script = os.path.dirname(script_dir)
     compare_simulations_dir = os.path.join(parent_of_script, "plots//Compare_simulations")
 
+    first_file_name = sim_output_folder_1.split('\\')[-1].split('.')[0]
+    second_file_name = clean_csv_folder
+
     logging.info("=" * 60)
-    logging.info("TRANSPORT MODE ANALYSIS - EXECUTION START (Optimized & Fixed)")
+    logging.info("TRANSPORT MODE ANALYSIS - EXECUTION START (Corrected Version)")
     logging.info(f"Start Time: {overall_start_time.strftime('%Y-%m-%d %H:%M:%S')}")
     logging.info("=" * 60)
 
     try:
-        # >>> Update these paths as needed <<<
         results = analyze_transport_modes(
             sim_output_folder_1,
             sim_output_folder_2,
             detailed_expanded=False,
             nrows=comparison_num_rows,
-            output_path=compare_simulations_dir
+            output_path=compare_simulations_dir,
+            first_file_name=first_file_name,
+            second_file_name=second_file_name
         )
 
-        # Record end time and duration
         overall_end_time = datetime.now()
         total_secs = time.time() - overall_start_ts
         minutes, seconds = divmod(int(total_secs), 60)
@@ -445,7 +500,7 @@ if __name__ == "__main__":
         duration_str = f"{hours}h {minutes}m {seconds}s" if hours > 0 else f"{minutes}m {seconds}s"
 
         logging.info("=" * 60)
-        logging.info("ANALYSIS COMPLETED SUCCESSFULLY (Optimized & Fixed)")
+        logging.info("ANALYSIS COMPLETED SUCCESSFULLY (Corrected Version)")
         logging.info(f"End Time: {overall_end_time.strftime('%Y-%m-%d %H:%M:%S')}")
         logging.info(f"Total Processing Time: {duration_str} ({total_secs:.2f} seconds)")
         logging.info(f"Results: {len(results)} persons analyzed")
@@ -458,4 +513,3 @@ if __name__ == "__main__":
     except Exception as e:
         overall_end_time = datetime.now()
         logging.error(f"An error occurred: {e}", exc_info=True)
-
