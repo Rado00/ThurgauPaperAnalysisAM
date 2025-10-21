@@ -88,31 +88,30 @@ def main():
     if 'household_weight' in df_mic.columns:
         df_mic['weighted_distance'] = df_mic['crowfly_distance'] * df_mic['household_weight']
 
-    if read_microcensus:
-        if 'household_weight' in df_mic.columns:
-            # weighted_distance already created above
+    if 'household_weight' in df_mic.columns:
+        # weighted_distance already created above
 
-            # Calculate weighted mean and weighted std correctly
-            def weighted_mean(group):
-                return (group['crowfly_distance'] * group['household_weight']).sum() / group[
-                    'household_weight'].sum()
+        # Calculate weighted mean and weighted std correctly
+        def weighted_mean(group):
+            return (group['crowfly_distance'] * group['household_weight']).sum() / group[
+                'household_weight'].sum()
 
-            def weighted_std(group):
-                w_mean = weighted_mean(group)
-                variance = ((group['household_weight'] * (group['crowfly_distance'] - w_mean) ** 2).sum() /
-                            group['household_weight'].sum())
-                return np.sqrt(variance)
+        def weighted_std(group):
+            w_mean = weighted_mean(group)
+            variance = ((group['household_weight'] * (group['crowfly_distance'] - w_mean) ** 2).sum() /
+                        group['household_weight'].sum())
+            return np.sqrt(variance)
 
-            average_distance_by_mode_mic_wt = df_mic.groupby('mode').apply(
-                lambda x: pd.Series({
-                    'Average Distance Mic WT': weighted_mean(x),
-                    'STD Distance Mic WT': weighted_std(x)
-                }),
-                include_groups=False  # This ensures clean output
-            ).reset_index()
+        average_distance_by_mode_mic_wt = df_mic.groupby('mode').apply(
+            lambda x: pd.Series({
+                'Average Distance Mic WT': weighted_mean(x),
+                'STD Distance Mic WT': weighted_std(x)
+            }),
+            include_groups=False  # This ensures clean output
+        ).reset_index()
 
-            # Rename the 'mode' column to 'Mode' to match other dataframes
-            average_distance_by_mode_mic_wt.rename(columns={'mode': 'Mode'}, inplace=True)
+        # Rename the 'mode' column to 'Mode' to match other dataframes
+        average_distance_by_mode_mic_wt.rename(columns={'mode': 'Mode'}, inplace=True)
 
     # Remove outside from sim and synt again in case they're added back
     df_sim = filter_out_modes(df_sim, 'mode')
