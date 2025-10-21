@@ -4,6 +4,7 @@ import os
 
 def aggregate_modal_split(base_plots_path):
     aggregated_df = pd.DataFrame()
+    master_titles = []  # Will store the complete list of titles from the first file
     titles_set = set()
 
     # Path to the ModeShareOutputs_inOneColumn directory
@@ -14,7 +15,7 @@ def aggregate_modal_split(base_plots_path):
         return
 
     # Iterate through CSV files in ModeShareOutputs_inOneColumn
-    for filename in os.listdir(mode_share_outputs_path):
+    for filename in sorted(os.listdir(mode_share_outputs_path)):  # Sort to ensure consistent order
         if filename.startswith("modeOutputs_") and filename.endswith(".csv"):
             file_path = os.path.join(mode_share_outputs_path, filename)
 
@@ -32,25 +33,44 @@ def aggregate_modal_split(base_plots_path):
                     print(f"   Available columns: {list(df.columns)}")
                     continue
 
-                # Initialize the aggregated dataframe with Title column
-                if aggregated_df.empty:
-                    aggregated_df['Title'] = df['Title']
-                    titles_set = set(df['Title'])
-                else:
-                    # Check for title consistency
-                    if set(df['Title']) != titles_set:
-                        print(f"⚠️ Warning: Title mismatch in {filename}. Skipping.")
-                        print(f"   Expected {len(titles_set)} titles, found {len(df['Title'])} titles")
-                        continue
-
                 # Extract simulation name from filename
-                # Remove "modeOutputs_" prefix and ".csv" suffix
                 simulation_name = filename.replace("modeOutputs_", "").replace(".csv", "")
 
-                # Add the column with the simulation name as header
-                aggregated_df[simulation_name] = df['Value with Comma']
+                # If this is the first file, initialize with its structure
+                if aggregated_df.empty:
+                    aggregated_df['Title'] = df['Title']
+                    master_titles = df['Title'].tolist()
+                    titles_set = set(master_titles)
 
-                print(f"✅ Processed: {filename} -> Column: {simulation_name}")
+                    # If the first file has more titles than others, use it as the master
+                    if 'DRT' in ' '.join(master_titles):
+                        print(f"📋 Using {filename} as master structure (includes DRT)")
+                else:
+                    # If current file has MORE titles than master (e.g., includes DRT), update master
+                    current_titles = df['Title'].tolist()
+                    if len(current_titles) > len(master_titles):
+                        print(
+                            f"📋 Updating master structure from {filename} (has {len(current_titles)} rows vs {len(master_titles)})")
+
+                        # Rebuild aggregated_df with new master structure
+                        new_aggregated_df = pd.DataFrame({'Title': current_titles})
+
+                        # Copy existing columns, filling missing rows with empty strings
+                        for col in aggregated_df.columns:
+                            if col != 'Title':
+                                # Map old values to new structure
+                                old_dict = dict(zip(aggregated_df['Title'], aggregated_df[col]))
+                                new_aggregated_df[col] = new_aggregated_df['Title'].map(old_dict).fillna('')
+
+                        aggregated_df = new_aggregated_df
+                        master_titles = current_titles
+                        titles_set = set(master_titles)
+
+                # Map current file's values to master structure
+                value_dict = dict(zip(df['Title'], df['Value with Comma']))
+                aggregated_df[simulation_name] = aggregated_df['Title'].map(value_dict).fillna('')
+
+                print(f"✅ Processed: {filename} -> Column: {simulation_name} ({len(df)} rows)")
 
             except pd.errors.EmptyDataError:
                 print(f"⚠️ Warning: {filename} is empty or corrupted. Skipping.")
@@ -62,7 +82,8 @@ def aggregate_modal_split(base_plots_path):
         output_path = os.path.join(mode_share_outputs_path, "aggregatedColumns.csv")
         aggregated_df.to_csv(output_path, sep=';', index=False)
         print(f"\n✅ Aggregated CSV saved to: {output_path}")
-        print(f"📊 Total columns aggregated: {len(aggregated_df.columns) - 1}")  # -1 for Title column
+        print(f"📊 Total columns aggregated: {len(aggregated_df.columns) - 1}")
+        print(f"📋 Total rows: {len(aggregated_df)}")
     else:
         print("⚠️ No data was aggregated. Check if files exist and match the pattern.")
 
