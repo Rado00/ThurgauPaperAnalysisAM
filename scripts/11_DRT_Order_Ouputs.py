@@ -72,8 +72,15 @@ if __name__ == '__main__':
         modestats_series = pd.Series(modestats['drt'].tail(4).values,
                                      index=[f"modestats_row_{i+1}_drt" for i in range(4)])
 
-        with open(os.path.join(output_folder_path, "operator_costs.txt"), "r") as f:
-            operator_cost = float(f.read().split(":")[-1].strip())
+        try:
+            with open(os.path.join(output_folder_path, "operator_costs.txt"), "r") as f:
+                operator_cost = float(f.read().split(":")[-1].strip())
+        except FileNotFoundError:
+            logging.warning("operator_costs.txt not found. Setting operator_cost to 0.")
+            operator_cost = 0.0
+        except Exception as e:
+            logging.warning(f"Error reading operator_costs.txt: {e}. Setting operator_cost to 0.")
+            operator_cost = 0.0
 
         pkm_last = pkm_modestats.iloc[-1].drop(labels=["Iteration"])
         pkm_last.index = ["pkm_" + col for col in pkm_last.index]
