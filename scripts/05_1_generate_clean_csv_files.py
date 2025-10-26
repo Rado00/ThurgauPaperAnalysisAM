@@ -196,6 +196,9 @@ if __name__ == '__main__':
     microcensus_path = os.path.join(data_path, analysis_zone_name, 'microzensus')
     data_path_clean = os.path.join(data_path, analysis_zone_name, clean_csv_folder, percentile)
 
+    if not os.path.exists(data_path_clean):
+        os.makedirs(data_path_clean)
+
 
 
     # Read the csv files
