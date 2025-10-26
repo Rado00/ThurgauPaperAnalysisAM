@@ -9,7 +9,9 @@ def setup_logging(log_filename):
     if not os.path.exists("logs"):
         os.makedirs("logs")
 
-    logging.basicConfig(filename=f"logs\\{log_filename}",
+    log_path = os.path.join("logs", log_filename)
+    
+    logging.basicConfig(filename=log_path,
                         level=logging.INFO,
                         format='%(levelname)s   %(asctime)s   %(message)s')
     logging.info("All setting of the logging is done")
@@ -30,7 +32,7 @@ def read_config(path='config.ini'):
 
     try:
         config = configparser.ConfigParser()
-        config_path = os.path.join(parent_directory, f'config/{path}')
+        config_path = os.path.join(parent_directory, 'config', path)
         config.read(config_path)
 
         data_path = config['config']['data_path']

@@ -311,7 +311,8 @@ def generate_summary_file(
             config = configparser.ConfigParser()
             script_dir = os.path.dirname(os.path.abspath(__file__))
             parent_of_script = os.path.dirname(script_dir)
-            config.read(f'{parent_of_script}\\config\\config.ini')
+            config.read(os.path.join(parent_of_script, 'config', 'config.ini'))
+            print(config.sections())
             sim_output_folder_1 = config.get('config_compare', '1_sim_output_folder')
             modified_first_name = os.path.basename(os.path.dirname(sim_output_folder_1))
 
@@ -319,7 +320,8 @@ def generate_summary_file(
             config = configparser.ConfigParser()
             script_dir = os.path.dirname(os.path.abspath(__file__))
             parent_of_script = os.path.dirname(script_dir)
-            config.read(f'{parent_of_script}\\config\\config.ini')
+            config.read(os.path.join(parent_of_script, 'config', 'config.ini'))
+            print(config.sections())
             sim_output_folder_2 = config.get('config_compare', '2_sim_output_folder')
             modified_second_name = os.path.basename(os.path.dirname(sim_output_folder_2))
 
@@ -501,7 +503,8 @@ if __name__ == "__main__":
     script_dir = os.path.dirname(os.path.abspath(__file__))
     parent_of_script = os.path.dirname(script_dir)
     config = configparser.ConfigParser()
-    config.read(f'{parent_of_script}\\config\\config.ini')
+    config_path = os.path.join(parent_of_script, 'config', 'config.ini')
+    config.read(config_path)
     section = 'config_compare'
 
     try:

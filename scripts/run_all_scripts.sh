@@ -51,8 +51,11 @@ python 03_synPop_and_sim_create_csv_files.py
 echo "Running 04_synPop_sim_trips.py..."
 python 04_synPop_sim_trips.py
 
-echo "Running 05_generate_clean_csv_files.py..."
-python 05_generate_clean_csv_files.py
+echo "Running 05_1_generate_clean_csv_files.py..."
+python 05_1_generate_clean_csv_files.py
+
+echo "Running 05_2_compare_outputs.py..."
+python 05_2_compare_outputs.py
 
 echo "Running 06_synt_mode_share_by_time_distance.py..."
 python 06_synt_mode_share_by_time_distance.py
@@ -67,13 +70,13 @@ python 08_plot_mode_share_target_area.py
 # echo "Running 09_plot_smaller_zones_modal_split.py..."
 # python 09_plot_smaller_zones_modal_split.py
 
-# echo "Running 10_plot_the_clean_csv_files.py..."
-# python 10_plot_the_clean_csv_files.py
+echo "Running 10_plot_the_clean_csv_files.py..."
+python 10_plot_the_clean_csv_files.py
 
-echo "Running 11_CSVs_in_a_column.py..."
+echo "Running 11_DRT_Order_Ouputs.py..."
+python 11_DRT_Order_Ouputs.py
+
+echo "Running 12_CSVs_in_a_column.py..."
 python 12_CSVs_in_a_column.py
-
-# echo "Running 12_DRT_Data_Analysis.py..."
-# python 12_DRT_Data_Analysis.py
 
 echo "All scripts executed successfully!"

@@ -14,6 +14,7 @@ logs/
 plots/
 config/
 __pycache__/
+.vscode/
 <<<<<<< HEAD
 sample_data/
 =======
