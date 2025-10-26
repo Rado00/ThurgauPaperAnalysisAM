@@ -26,6 +26,11 @@ elif [[ "$OS_TYPE" == "MINGW"* || "$OS_TYPE" == "CYGWIN"* || "$OS_TYPE" == "MSYS
     SCRIPTS_PATH="C:/Users/${USER_NAME}/Documents/3_MIEI/ThurgauPaperAnalysisAM/scripts"
     # Windows: Activate manually if needed or ensure conda is in PATH
     conda activate ThurgauAnalysisEnv
+elif [[ "$OS_TYPE" == "Linux" && "$USER_NAME" == "sarf" ]]; then
+    echo "Running on Linux as sarf"
+    source /home/sarf/projects/corrado_paper/ThurgauAnalysisEnv/bin/activate
+    SCRIPTS_PATH="/home/sarf/projects/corrado_paper/ThurgauPaperAnalysisAM/scripts"
+
 else
     echo "Unsupported system configuration"
     exit 1
