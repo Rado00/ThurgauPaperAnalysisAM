@@ -61,13 +61,13 @@ def update_config_ini(config_file, scenario_name):
         print("Error: [config] section not found in config.ini!")
         sys.exit(1)
     
-    config['config']['scenario'] = scenario_name
+    config['config']['sim_output_folder'] = scenario_name
     
     # Write back to the file
     with open(config_file, 'w') as configfile:
         config.write(configfile)
     
-    print(f"✓ Updated config.ini with scenario: {scenario_name}")
+    print(f"✓ Updated config.ini with sim_output_folder: {scenario_name}")
 
 
 def convert_windows_path_to_linux(windows_path):
