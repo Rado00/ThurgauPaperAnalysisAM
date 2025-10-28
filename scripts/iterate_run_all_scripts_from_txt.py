@@ -243,7 +243,7 @@ def main():
     script_dir = Path(__file__).parent.resolve()
     
     # File paths based on your directory structure
-    SCENARIOS_FILE = script_dir / "scenarios.txt"
+    SCENARIOS_FILE = script_dir / "simulationsToBeAnalysed.txt"
     CONFIG_FILE = script_dir.parent / "config" / "config.ini"
     SHELL_SCRIPT = script_dir / "run_all_scripts.sh"
     
