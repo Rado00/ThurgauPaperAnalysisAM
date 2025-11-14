@@ -49,12 +49,7 @@ if __name__ == '__main__':
 
     logging.info("Origin and destination points created successfully")
 
-    # First convert coordinates to float
-    output_trips_sim['start_x'] = output_trips_sim['start_x'].astype(float)
-    output_trips_sim['start_y'] = output_trips_sim['start_y'].astype(float)
-    output_trips_sim['end_x'] = output_trips_sim['end_x'].astype(float)
-    output_trips_sim['end_y'] = output_trips_sim['end_y'].astype(float)
-    logging.info("Coordinates converted to float successfully")
+    output_trips_sim = output_trips_sim.query("longest_distance_mode not in ['outside', 'truck']")
 
     # Create origin and destination GeoSeries
     origin_points = gpd.GeoSeries(gpd.points_from_xy(output_trips_sim['start_x'], output_trips_sim['start_y']),
@@ -73,7 +68,7 @@ if __name__ == '__main__':
 
     # Filtered dataframe (O OR D inside)
     filtered_trips_inside_outside = output_trips_sim[
-        origin_points.within(area_polygon) &
+        origin_points.within(area_polygon) |
         destination_points.within(area_polygon)
         ]
 
