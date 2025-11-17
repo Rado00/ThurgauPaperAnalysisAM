@@ -1,13 +1,15 @@
-import os
-import logging
-import pandas as pd
+# Import necessary libraries
+from random import sample
 import warnings
+import matsim
 import geopandas as gpd
+from shapely.geometry import Point
 import matplotlib.pyplot as plt
 import numpy as np
 from datetime import datetime
-from functions.commonFunctions import *
+import pandas as pd
 from functools import reduce
+from functions.commonFunctions import *
 
 pd.set_option('display.max_columns', 100)
 pd.set_option('display.max_rows', 100)
@@ -82,7 +84,17 @@ def load_and_prepare_data(file_path, target_area_gdf, both_in, x_col, y_col, mod
 
     return df
 
+# Calculate weighted mean and weighted std correctly
+def weighted_mean(group):
+    return (group['crowfly_distance'] * group['household_weight']).sum() / group['household_weight'].sum()
 
+def weighted_std(group):
+    w_mean = weighted_mean(group)
+    variance = ((group['household_weight'] * (group['crowfly_distance'] - w_mean) ** 2).sum() /
+                group['household_weight'].sum())
+    return np.sqrt(variance)
+    
+    
 def main():
     setup_logging(get_log_filename())
     data_path, simulation_zone_name, scenario, sim_output_folder, percentile, analysis_zone_name, csv_folder, clean_csv_folder, shapeFileName, read_SynPop, read_microcensus, sample_for_debugging, target_area = read_config()
@@ -103,11 +115,31 @@ def main():
     if read_SynPop:
         df_synt = load_and_prepare_data(os.path.join(data_path_clean, "travel_time_distance_mode_synt.csv"), target_area, False, 'start_coor_x', 'start_coor_y')
     
+    df_sim_origin_or_destination = filter_out_modes(df_sim_origin_or_destination, 'mode')
+    df_sim_origin_and_destination = filter_out_modes(df_sim_origin_and_destination, 'mode')
+
+    if read_SynPop:
+        df_synt = filter_out_modes(df_synt, 'mode')
+
+    
+
+    if read_SynPop:
+        dist_synt = compute_percentage(df_synt, 'mode', 'distance').rename(columns={'Percentage Distance': 'Percentage Synt'}) if read_SynPop else pd.DataFrame({'Mode': df_sim_origin_or_destination['Mode'], 'Percentage Synt': [0.0]*len(df_sim_origin_or_destination)})
+    
     if 'household_weight' in df_mic_origin_or_destination.columns:
         df_mic_origin_or_destination['weighted_distance'] = df_mic_origin_or_destination['crowfly_distance'] * df_mic_origin_or_destination['household_weight']
     
     if 'household_weight' in df_mic_origin_or_destination.columns:
         df_mic_origin_and_destination['weighted_distance'] = df_mic_origin_and_destination['crowfly_distance'] * df_mic_origin_and_destination['household_weight']
+        
+    dist_mic_origin_or_destination = compute_percentage(df_mic_origin_or_destination, 'mode', 'crowfly_distance').rename(columns={'Percentage Crowfly_Distance': 'Percentage Mic OR'})
+    dist_mic_wt_origin_or_destination = compute_percentage(df_mic_origin_or_destination, 'mode', 'weighted_distance').rename(columns={'Percentage Weighted_Distance': 'Percentage Mic Weighted OR'})
+
+    dist_mic_origin_and_destination = compute_percentage(df_mic_origin_and_destination, 'mode', 'crowfly_distance').rename(columns={'Percentage Crowfly_Distance': 'Percentage Mic AND'})
+    dist_mic_wt_origin_and_destination = compute_percentage(df_mic_origin_and_destination, 'mode', 'weighted_distance').rename(columns={'Percentage Weighted_Distance': 'Percentage Mic Weighted AND'})
+
+    dist_sim_origin_or_destination = compute_percentage(df_sim_origin_or_destination, 'mode', 'distance').rename(columns={'Percentage Distance': 'Percentage Sim OR', 'Total Distance': 'Total Distance Sim OR'})
+    dist_sim_origin_and_destination = compute_percentage(df_sim_origin_and_destination, 'mode', 'distance').rename(columns={'Percentage Distance': 'Percentage Sim AND', 'Total Distance': 'Total Distance Sim AND'})
 
     average_distance_by_mode_mic_wt_origin_or_destination = df_mic_origin_or_destination.groupby('mode').apply(
         lambda x: pd.Series({
