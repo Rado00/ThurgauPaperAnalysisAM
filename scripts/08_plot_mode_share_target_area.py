@@ -33,9 +33,9 @@ def save_custom_csv(file_path, *dfs):
 
 def plot_grouped_bar(dataframes, labels, title, filename, ylabel):
     modes = sorted(set.union(*[set(df['Mode']) for df in dataframes]))
-    bar_width = 0.12
+    bar_width = 0.2
     x = range(len(modes))
-    fig, ax = plt.subplots(figsize=(15, 6))
+    fig, ax = plt.subplots(figsize=(16, 6))
 
     for i, (df, label) in enumerate(zip(dataframes, labels)):
         percentage_col = [col for col in df.columns if col.lower().startswith('percentage')][0]
@@ -172,12 +172,12 @@ def main():
         average_distance_by_mode_synt = df_synt.groupby('mode')['distance'].agg(['mean', 'std']).reset_index()
         average_distance_by_mode_synt.columns = ['Mode', 'Average Distance Synt', 'STD Distance Synt']
     
-    plot_grouped_bar([dist_mic_wt_origin_or_destination, dist_mic_origin_or_destination, dist_mic_wt_origin_and_destination, dist_mic_origin_and_destination, 
+    plot_grouped_bar([dist_mic_wt_origin_or_destination, dist_mic_wt_origin_and_destination, dist_mic_origin_and_destination, 
                       dist_sim_origin_or_destination, dist_sim_origin_and_destination, dist_synt] if read_SynPop 
-                     else [dist_mic_wt_origin_or_destination, dist_mic_origin_or_destination, dist_mic_wt_origin_and_destination, dist_mic_origin_and_destination, dist_sim_origin_or_destination, dist_sim_origin_and_destination],
-                     ['Microcensus Weighted OR', 'Microcensus Single OR', 'Microcensus Weighted AND', 'Microcensus Single AND', 
+                     else [dist_mic_wt_origin_or_destination, dist_mic_wt_origin_and_destination, dist_mic_origin_and_destination, dist_sim_origin_or_destination, dist_sim_origin_and_destination],
+                     ['Microcensus Weighted OR', 'Microcensus Weighted AND',
                       'Simulation Origin or Destination', 'Simulation Origin and Destination', 'Synthetic'] if read_SynPop 
-                     else ['Microcensus Weighted OR', 'Microcensus Single OR', 'Microcensus Weighted AND', 'Microcensus Single AND', 'Simulation Origin or Destination', 
+                     else ['Microcensus Weighted OR', 'Microcensus Weighted AND', 'Simulation Origin or Destination', 
                            'Simulation Origin and Destination'],
                      'Comparison of Mode Share Distribution - % of Total Distance',
                      f"{mode_share_directory}/Mode_share_by_Distance_target_area.png", 'Percentage (%)')
@@ -267,12 +267,12 @@ def main():
         unique_modes = pd.concat([trips_mic_raw_origin_or_destination['Mode'], trips_sim_origin_or_destination['Mode']]).unique()
         trips_synt = pd.DataFrame({'Mode': unique_modes, 'Percentage Synt': [0.0] * len(unique_modes)})
     
-    plot_grouped_bar([trips_mic_wt_origin_or_destination, trips_mic_raw_origin_or_destination, trips_mic_wt_origin_and_destination, trips_mic_raw_origin_and_destination, 
+    plot_grouped_bar([trips_mic_wt_origin_or_destination, trips_mic_wt_origin_and_destination, trips_mic_raw_origin_and_destination, 
                       trips_sim_origin_or_destination, trips_sim_origin_and_destination, trips_synt] if read_SynPop 
-                     else [trips_mic_wt_origin_or_destination, trips_mic_raw_origin_or_destination, trips_mic_wt_origin_and_destination, 
+                     else [trips_mic_wt_origin_or_destination, trips_mic_wt_origin_and_destination, 
                            trips_mic_raw_origin_and_destination, trips_sim_origin_or_destination, trips_sim_origin_and_destination],
-                     ['Microcensus Weighted OR', 'Microcensus Raw OR', 'Microcensus Weighted AND', 'Microcensus Raw AND',
-                      'Simulation OR', 'Simulation AND', 'Synthetic'] if read_SynPop else ['Microcensus Weighted OR', 'Microcensus Raw OR', 'Microcensus Weighted AND', 'Microcensus Raw AND', 
+                     ['Microcensus Weighted OR', 'Microcensus Weighted AND',
+                      'Simulation OR', 'Simulation AND', 'Synthetic'] if read_SynPop else ['Microcensus Weighted OR', 'Microcensus Weighted AND', 
                                                                                            'Simulation OR', 'Simulation AND'],
                      'Comparison of Mode Share Distribution - % of Trips',
                      f"{mode_share_directory}/Mode_share_by_Trips_target_area.png", 'Percentage (%)')
