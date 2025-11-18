@@ -214,8 +214,8 @@ if __name__ == '__main__':
             else:
                 print(f"DRT file not found at: {drt_file_path}")
 
-            output_df.to_csv(os.path.join(one_column_directory, f'modeOutputs_{scenario_name}.csv'), sep=';', index=False)
-            output_df.to_csv(os.path.join(one_column_directory, f'modeOutputs_{scenario_name}_en.csv'), index=False)
+            output_df.to_csv(os.path.join(one_column_directory, f'modeOutputs_{scenario_name}_{target_area}.csv'), sep=';', index=False)
+            output_df.to_csv(os.path.join(one_column_directory, f'modeOutputs_{scenario_name}_en_{target_area}.csv'), index=False)
             print("Data successfully saved.")
         else:
             print("No data found in the files.")
