@@ -180,9 +180,9 @@ def main():
                      else ['Microcensus Weighted OR', 'Microcensus Weighted AND', 'Simulation Origin or Destination', 
                            'Simulation Origin and Destination'],
                      'Comparison of Mode Share Distribution - % of Total Distance',
-                     f"{mode_share_directory}/Mode_share_by_Distance_target_area.png", 'Percentage (%)')
+                     f"{mode_share_directory}/Mode_share_by_Distance_{target_area}.png", 'Percentage (%)')
     
-    save_custom_csv(f"{mode_share_directory}/Mode_shares_distance_target_area.csv",
+    save_custom_csv(f"{mode_share_directory}/Mode_shares_distance_{target_area}.csv",
                     dist_mic_origin_or_destination[['Mode', 'Percentage Mic OR']],
                     dist_mic_wt_origin_or_destination[['Mode', 'Percentage Mic Weighted OR']],
                     dist_mic_origin_and_destination[['Mode', 'Percentage Mic AND']],
@@ -196,7 +196,7 @@ def main():
                     )
     
     if read_SynPop:
-        save_custom_csv(f"{mode_share_directory}/Mode_shares_distance_target_area_target_area.csv",
+        save_custom_csv(f"{mode_share_directory}/Mode_shares_distance_target_area_{target_area}.csv",
                         dist_mic_origin_or_destination[['Mode', 'Percentage Mic OR']],
                         dist_mic_wt_origin_or_destination[['Mode', 'Percentage Mic Weighted OR']],
                         dist_mic_origin_and_destination[['Mode', 'Percentage Mic AND']],
@@ -220,7 +220,7 @@ def main():
     time_sim_origin_and_destination = compute_percentage(df_sim_origin_and_destination, 'mode', 'travel_time').rename(columns={'Percentage Travel_Time': 'Percentage Sim AND', 'Total Travel_Time': 'Total Time Sim AND'})
     time_synt = compute_percentage(df_synt, 'mode', 'travel_time').rename(columns={'Percentage Travel_Time': 'Percentage Synt'}) if read_SynPop else pd.DataFrame({'Mode': time_sim_origin_or_destination['Mode'], 'Percentage Synt': [0.0]*len(time_sim_origin_or_destination)})
     
-    save_custom_csv(f"{mode_share_directory}/Mode_shares_time_target_area.csv",
+    save_custom_csv(f"{mode_share_directory}/Mode_shares_time_{target_area}.csv",
                     time_synt[['Mode', 'Percentage Synt']],
                     time_sim_origin_or_destination[['Mode', 'Total Time Sim OR', 'Percentage Sim OR']],
                     time_sim_origin_and_destination[['Mode', 'Total Time Sim AND', 'Percentage Sim AND']])
@@ -275,9 +275,9 @@ def main():
                       'Simulation OR', 'Simulation AND', 'Synthetic'] if read_SynPop else ['Microcensus Weighted OR', 'Microcensus Weighted AND', 
                                                                                            'Simulation OR', 'Simulation AND'],
                      'Comparison of Mode Share Distribution - % of Trips',
-                     f"{mode_share_directory}/Mode_share_by_Trips_target_area.png", 'Percentage (%)')
+                     f"{mode_share_directory}/Mode_share_by_Trips_{target_area}.png", 'Percentage (%)')
     
-    save_custom_csv(f"{mode_share_directory}/Mode_shares_by_trip_target_area.csv",
+    save_custom_csv(f"{mode_share_directory}/Mode_shares_by_trip_{target_area}.csv",
                     trips_mic_raw_origin_or_destination[['Mode', 'Percentage Mic OR']],
                     trips_mic_wt_origin_or_destination[['Mode', 'Percentage Mic Weighted OR']],
                     trips_mic_raw_origin_and_destination[['Mode', 'Percentage Mic AND']],
