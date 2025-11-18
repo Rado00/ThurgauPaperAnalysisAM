@@ -49,7 +49,7 @@ if __name__ == '__main__':
 
     logging.info("Origin and destination points created successfully")
 
-    output_trips_sim = output_trips_sim.query("longest_distance_mode not in ['outside', 'truck']")
+    output_trips_sim = output_trips_sim.query("longest_distance_mode not in ['outside', 'truck']").reset_index(drop=True)
 
     # Create origin and destination GeoSeries
     origin_points = gpd.GeoSeries(gpd.points_from_xy(output_trips_sim['start_x'], output_trips_sim['start_y']),
