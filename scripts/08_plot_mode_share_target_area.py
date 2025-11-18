@@ -2,6 +2,7 @@
 from random import sample
 import warnings
 import matsim
+import copy
 import geopandas as gpd
 from shapely.geometry import Point
 import matplotlib.pyplot as plt
@@ -98,6 +99,7 @@ def weighted_std(group):
 def main():
     setup_logging(get_log_filename())
     data_path, simulation_zone_name, scenario, sim_output_folder, percentile, analysis_zone_name, csv_folder, clean_csv_folder, shapeFileName, read_SynPop, read_microcensus, sample_for_debugging, target_area = read_config()
+    target_name = copy.deepcopy(target_area)
 
     data_path_clean = os.path.join(data_path, analysis_zone_name, clean_csv_folder, percentile)
     plots_directory = os.path.join(os.path.dirname(os.getcwd()), "plots", f"plots_{os.path.basename(sim_output_folder)}")
@@ -180,9 +182,9 @@ def main():
                      else ['Microcensus Weighted OR', 'Microcensus Weighted AND', 'Simulation Origin or Destination', 
                            'Simulation Origin and Destination'],
                      'Comparison of Mode Share Distribution - % of Total Distance',
-                     f"{mode_share_directory}/Mode_share_by_Distance_{target_area}.png", 'Percentage (%)')
+                     f"{mode_share_directory}/Mode_share_by_Distance_{target_name}.png", 'Percentage (%)')
     
-    save_custom_csv(f"{mode_share_directory}/Mode_shares_distance_{target_area}.csv",
+    save_custom_csv(f"{mode_share_directory}/Mode_shares_distance_{target_name}.csv",
                     dist_mic_origin_or_destination[['Mode', 'Percentage Mic OR']],
                     dist_mic_wt_origin_or_destination[['Mode', 'Percentage Mic Weighted OR']],
                     dist_mic_origin_and_destination[['Mode', 'Percentage Mic AND']],
@@ -196,7 +198,7 @@ def main():
                     )
     
     if read_SynPop:
-        save_custom_csv(f"{mode_share_directory}/Mode_shares_distance_target_area_{target_area}.csv",
+        save_custom_csv(f"{mode_share_directory}/Mode_shares_distance_target_area_{target_name}.csv",
                         dist_mic_origin_or_destination[['Mode', 'Percentage Mic OR']],
                         dist_mic_wt_origin_or_destination[['Mode', 'Percentage Mic Weighted OR']],
                         dist_mic_origin_and_destination[['Mode', 'Percentage Mic AND']],
@@ -220,7 +222,7 @@ def main():
     time_sim_origin_and_destination = compute_percentage(df_sim_origin_and_destination, 'mode', 'travel_time').rename(columns={'Percentage Travel_Time': 'Percentage Sim AND', 'Total Travel_Time': 'Total Time Sim AND'})
     time_synt = compute_percentage(df_synt, 'mode', 'travel_time').rename(columns={'Percentage Travel_Time': 'Percentage Synt'}) if read_SynPop else pd.DataFrame({'Mode': time_sim_origin_or_destination['Mode'], 'Percentage Synt': [0.0]*len(time_sim_origin_or_destination)})
     
-    save_custom_csv(f"{mode_share_directory}/Mode_shares_time_{target_area}.csv",
+    save_custom_csv(f"{mode_share_directory}/Mode_shares_time_{target_name}.csv",
                     time_synt[['Mode', 'Percentage Synt']],
                     time_sim_origin_or_destination[['Mode', 'Total Time Sim OR', 'Percentage Sim OR']],
                     time_sim_origin_and_destination[['Mode', 'Total Time Sim AND', 'Percentage Sim AND']])
@@ -275,9 +277,9 @@ def main():
                       'Simulation OR', 'Simulation AND', 'Synthetic'] if read_SynPop else ['Microcensus Weighted OR', 'Microcensus Weighted AND', 
                                                                                            'Simulation OR', 'Simulation AND'],
                      'Comparison of Mode Share Distribution - % of Trips',
-                     f"{mode_share_directory}/Mode_share_by_Trips_{target_area}.png", 'Percentage (%)')
+                     f"{mode_share_directory}/Mode_share_by_Trips_{target_name}.png", 'Percentage (%)')
     
-    save_custom_csv(f"{mode_share_directory}/Mode_shares_by_trip_{target_area}.csv",
+    save_custom_csv(f"{mode_share_directory}/Mode_shares_by_trip_{target_name}.csv",
                     trips_mic_raw_origin_or_destination[['Mode', 'Percentage Mic OR']],
                     trips_mic_wt_origin_or_destination[['Mode', 'Percentage Mic Weighted OR']],
                     trips_mic_raw_origin_and_destination[['Mode', 'Percentage Mic AND']],
