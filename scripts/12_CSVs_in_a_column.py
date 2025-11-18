@@ -24,10 +24,10 @@ if __name__ == '__main__':
 
     specific_files = {
         "trip": "Mode_shares_by_trip.csv",
-        "trip_target": "Mode_shares_by_trip_target_area.csv",
+        "trip_target": f"Mode_shares_by_trip_{target_area}.csv",
         "distance": "Mode_shares_distance.csv",
-        "distance_target": "Mode_shares_distance_target_area.csv",
-        "time_target": "Mode_shares_time_target_area.csv"
+        "distance_target": f"Mode_shares_distance_{target_area}.csv",
+        "time_target": f"Mode_shares_time_{target_area}.csv"
     }
 
     mode_mappings = {
@@ -148,8 +148,10 @@ if __name__ == '__main__':
         consolidated_data += read_and_extract(
             os.path.join(mode_share_directory, specific_files["trip_target"]),
             [
-                lambda mode, row: (f"% Trips {mode} - Target Area", row["Percentage Sim"]),
-                lambda mode, row: (f"Count Trips {mode} - Target Area", row["Total Trips Sim"])
+                lambda mode, row: (f"% Trips {mode} - Target Area O OR D", row["Percentage Sim OR"]),
+                lambda mode, row: (f"Count Trips {mode} - Target Area O OR D", row["Total Trips Sim OR"]),
+                lambda mode, row: (f"% Trips {mode} - Target Area O AND D", row["Percentage Sim AND"]),
+                lambda mode, row: (f"Count Trips {mode} - Target Area O AND D", row["Total Trips Sim AND"])
             ]
         )
 
@@ -168,10 +170,14 @@ if __name__ == '__main__':
         consolidated_data += read_and_extract(
             os.path.join(mode_share_directory, specific_files["distance_target"]),
             [
-                lambda mode, row: (f"% Distance {mode}  - Target Area", row["Percentage Sim"]),
-                lambda mode, row: (f"Count Distance {mode}  - Target Area", row["Total Distance Sim"]),
-                lambda mode, row: (f"Average Distance Sim {mode}  - Target Area", row["Average Distance Sim"]),
-                lambda mode, row: (f"STD Distance Sim {mode}  - Target Area", row["STD Distance Sim"]),
+                lambda mode, row: (f"% Distance {mode}  - Target Area O OR D", row["Percentage Sim OR"]),
+                lambda mode, row: (f"Count Distance {mode}  - Target Area O OR D", row["Total Distance Sim OR"]),
+                lambda mode, row: (f"Average Distance Sim {mode}  - Target Area O OR D", row["Average Distance Sim OR"]),
+                lambda mode, row: (f"STD Distance Sim {mode}  - Target Area O OR D", row["STD Distance Sim OR"]),
+                lambda mode, row: (f"% Distance {mode}  - Target Area O AND D", row["Percentage Sim AND"]),
+                lambda mode, row: (f"Count Distance {mode}  - Target Area O AND D", row["Total Distance Sim AND"]),
+                lambda mode, row: (f"Average Distance Sim {mode}  - Target Area O AND D", row["Average Distance Sim AND"]),
+                lambda mode, row: (f"STD Distance Sim {mode}  - Target Area O AND D", row["STD Distance Sim AND"]),
             ]
         )
 
@@ -179,7 +185,8 @@ if __name__ == '__main__':
         consolidated_data += read_and_extract(
             os.path.join(mode_share_directory, specific_files["time_target"]),
             [
-                lambda mode, row: (f"Count TravelTime {mode} Target Area", row["Total Time Sim"])
+                lambda mode, row: (f"Count TravelTime {mode} Target Area O OR D", row["Total Time Sim OR"]),
+                lambda mode, row: (f"Count TravelTime {mode} Target Area O AND D", row["Total Time Sim AND"])
             ]
         )
 
@@ -208,6 +215,7 @@ if __name__ == '__main__':
                 print(f"DRT file not found at: {drt_file_path}")
 
             output_df.to_csv(os.path.join(one_column_directory, f'modeOutputs_{scenario_name}.csv'), sep=';', index=False)
+            output_df.to_csv(os.path.join(one_column_directory, f'modeOutputs_{scenario_name}_en.csv'), index=False)
             print("Data successfully saved.")
         else:
             print("No data found in the files.")
