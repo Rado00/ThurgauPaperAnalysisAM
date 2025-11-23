@@ -175,11 +175,11 @@ OUT -->:
 
 
 
-08_plot_mode_share_time_distance_synt.py
+08_plot_mode_share_target_area.py
 -----------------------------------------
+IMPORTANT: Trips O xor D count as 1, the same of O & D. With the distance we have the same logic: therefore mode share by distance is not reliable.
+		
 
-		
-		
 
 
 
