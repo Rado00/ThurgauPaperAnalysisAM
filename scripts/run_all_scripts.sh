@@ -79,4 +79,7 @@ python 11_DRT_Order_Ouputs.py
 echo "Running 12_CSVs_in_a_column.py..."
 python 12_CSVs_in_a_column.py
 
+echo "Running 13_transform_output_format.py..."
+python 13_transform_output_format.py
+
 echo "All scripts executed successfully!"
