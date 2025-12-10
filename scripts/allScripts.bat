@@ -61,6 +61,12 @@ echo Running 12_CSVs_in_a_column.py...
 python 12_CSVs_in_a_column.py
 if %ERRORLEVEL% neq 0 goto :error
 
+echo 13_transform_output_format.py...
+python 13_transform_output_format.py
+if %ERRORLEVEL% neq 0 goto :error
+
+
+
 echo All scripts executed successfully!
 exit /b 0
 
