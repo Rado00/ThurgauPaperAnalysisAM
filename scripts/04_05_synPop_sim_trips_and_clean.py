@@ -531,9 +531,10 @@ if __name__ == '__main__':
     modes_to_remove = ['truck', 'outside']
 
     # Process simulation data
+    # Note: Use df_activity_population_all_activities_inside_sim which has person_id mapped
     df_activity_population_all_activities_inside_sim_filtered, df_trips_all_activities_inside_sim_filtered = \
         process_activity_and_legs_data(
-            df_activity_sim, df_trips_all_activities_inside_sim,
+            df_activity_population_all_activities_inside_sim, df_trips_all_activities_inside_sim,
             values_to_remove, modes_to_remove
         )
 
