@@ -65,24 +65,33 @@ def filter_out_modes(df, mode_col='mode', modes_to_exclude=None):
 
 def load_and_prepare_data(file_path, target_area_gdf, both_in, x_col, y_col, mode_col='mode', modes_to_exclude=None):
     df = pd.read_csv(file_path)
+    logging.info(f"The shape of original dataframe with columns: {df.columns} is : {df.shape}")
     if mode_col in df.columns:
         df[mode_col] = df[mode_col].astype(str).str.replace('_', ' ').str.title()
         df = filter_out_modes(df, mode_col, modes_to_exclude)
-
-    if all(col in df.columns for col in ['origin_x', 'origin_y', 'destination_x', 'destination_y', 'start_x', 'start_y', 'end_x', 'end_y']):
+        logging.info(f"The shape of dataframe after mode filter is : {df.shape}")
+    
+    check_columns = all(col in df.columns for col in ['start_x', 'start_y', 'end_x', 'end_y']) or all(col in df.columns for col in ['origin_x', 'origin_y', 'destination_x', 'destination_y'])
+    logging.info(f"checking columns for {file_path}  are {check_columns}")
+    if check_columns:
         if 'origin_x' in df.columns:
             gdf_origin = gpd.GeoDataFrame(df, geometry=gpd.points_from_xy(df['origin_x'], df['origin_y']), crs=target_area_gdf.crs)
             gdf_dest = gpd.GeoDataFrame(df, geometry=gpd.points_from_xy(df['destination_x'], df['destination_y']), crs=target_area_gdf.crs)
+            logging.info("origin_x exist in df columns")
         else:
             gdf_origin = gpd.GeoDataFrame(df, geometry=gpd.points_from_xy(df['start_x'], df['start_y']), crs=target_area_gdf.crs)
             gdf_dest = gpd.GeoDataFrame(df, geometry=gpd.points_from_xy(df['end_x'], df['end_y']), crs=target_area_gdf.crs)
         origin_within = gdf_origin.geometry.within(target_area_gdf.unary_union)
         dest_within = gdf_dest.geometry.within(target_area_gdf.unary_union)
+        logging.info("origin_x does not exist in df columns")
         if both_in:
             df = df[origin_within & dest_within]
+            logging.info("Both origin and destination are in the dataframe")
         else:
             df = df[origin_within | dest_within]
+            logging.info("just one of origin or destination is in the dataframe")
 
+    logging.info(f"The final shape of dataframe is: {df.shape}")
     return df
 
 # Calculate weighted mean and weighted std correctly

@@ -58,21 +58,30 @@ if __name__ == '__main__':
                                        crs=gdf.crs)
     logging.info("Origin and destination GeoSeries created successfully")
 
-    # Filtered dataframe (O AND D inside)
-    filtered_trips_inside = output_trips_sim[
-        origin_points.within(area_polygon) &
-        destination_points.within(area_polygon)
-        ]
+    try:
+      # Filtered dataframe (O AND D inside)
+      filtered_trips_inside = output_trips_sim[
+          origin_points.within(area_polygon) &
+          destination_points.within(area_polygon)
+          ]
+  
+      logging.info("O and D Trips filtered successfully based on the shapefile polygon successfully")
+    except Exception as e:
+      logging.error("Error in filtering O and D Trips: " + str(e))
+      sys.exit()
+    
 
-    logging.info("Trips filtered successfully based on the shapefile polygon successfully")
-
-    # Filtered dataframe (O OR D inside)
-    filtered_trips_inside_outside = output_trips_sim[
-        origin_points.within(area_polygon) |
-        destination_points.within(area_polygon)
-        ]
-
-    logging.info("Trips filtered successfully based on the shapefile polygon successfully")
+    try:
+      # Filtered dataframe (O OR D inside)
+      filtered_trips_inside_outside = output_trips_sim[
+          origin_points.within(area_polygon) |
+          destination_points.within(area_polygon)
+          ]
+  
+      logging.info("O or D Trips filtered successfully based on the shapefile polygon successfully")
+    except Exception as e:
+      logging.error("Error in filtering O or D Trips: " + str(e))
+      sys.exit()
 
     rest_of_trips = output_trips_sim.drop(filtered_trips_inside.index)
 
@@ -106,18 +115,24 @@ if __name__ == '__main__':
     population_with_trips_O_or_D = df_persons_sim[
         df_persons_sim['person'].isin(filtered_trips_inside_outside['person'])]
     logging.info("Population with trips inside the area filtered successfully")
+    
+    try:
 
-    population_with_trips_O_or_D.to_csv(os.path.join(pre_processed_data_path, "population_at_least_one_activity_inside_sim.csv"), index=False)
-
-    trips_all_activities_inside = output_trips_sim[output_trips_sim['person'].isin(population_with_trips_O_and_D['person'])]
-
-    trips_all_activities_inside.to_csv(os.path.join(pre_processed_data_path, "trips_all_activities_inside_sim.csv"), index=False)
-
-    trips_at_least_one_activity_inside = output_trips_sim[ output_trips_sim['person'].isin(population_with_trips_O_or_D['person'])]
-
-    trips_at_least_one_activity_inside.to_csv( os.path.join(pre_processed_data_path, "trips_at_least_one_activity_inside_sim.csv"), index=False)
-
-    logging.info("Trips with at least one activity inside the area filtered successfully")
+      population_with_trips_O_or_D.to_csv(os.path.join(pre_processed_data_path, "population_at_least_one_activity_inside_sim.csv"), index=False)
+  
+      trips_all_activities_inside = output_trips_sim[output_trips_sim['person'].isin(population_with_trips_O_and_D['person'])]
+  
+      trips_all_activities_inside.to_csv(os.path.join(pre_processed_data_path, "trips_all_activities_inside_sim.csv"), index=False)
+  
+      trips_at_least_one_activity_inside = output_trips_sim[ output_trips_sim['person'].isin(population_with_trips_O_or_D['person'])]
+  
+      trips_at_least_one_activity_inside.to_csv( os.path.join(pre_processed_data_path, "trips_at_least_one_activity_inside_sim.csv"), index=False)
+  
+      logging.info("Trips with at least one activity inside the area filtered successfully")
+      
+    except Exception as e:
+        logging.error("Error saving to csv file: " + str(e))
+        sys.exit() 
 
     # # HOME SHP FILTER - TO ADD WHEN NEEDED, BECAUSE NOW CONSUMES A LOT OF TIME
     # df_persons_sim['home_x'] = df_persons_sim['home_x'].astype(float)
@@ -135,7 +150,6 @@ if __name__ == '__main__':
     # trips_population_home_inside = output_trips_sim[output_trips_sim['person'].isin(population_home_inside['person'])]
     # trips_population_home_inside.to_csv(os.path.join(pre_processed_data_path, "trips_population_home_inside_sim.csv"), index=False)
     # logging.info("Trips with home inside the area filtered successfully")
-
 
 
 

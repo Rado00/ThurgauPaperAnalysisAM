@@ -239,6 +239,7 @@ if __name__ == '__main__':
             'Value with Comma': [None]
         })
         
+        
         df = pd.concat([new_row, df_result], ignore_index=True)
         
         mode_share_directory = os.path.join(plots_directory, 'outputs_mode_share')
