@@ -21,12 +21,10 @@ echo Running 03_synPop_and_sim_create_csv_files.py...
 python 03_synPop_and_sim_create_csv_files.py
 if %ERRORLEVEL% neq 0 goto :error
 
-echo Running 04_synPop_sim_trips.py...
-python 04_synPop_sim_trips.py
-if %ERRORLEVEL% neq 0 goto :error
-
-echo Running 05_1_generate_clean_csv_files.py...
-python 05_1_generate_clean_csv_files.py
+REM Note: Scripts 04 and 05_1 have been merged into a single script for better performance
+REM (avoids writing/reading intermediate CSV files)
+echo Running 04_05_synPop_sim_trips_and_clean.py...
+python 04_05_synPop_sim_trips_and_clean.py
 if %ERRORLEVEL% neq 0 goto :error
 
 echo Running 05_2_compare_outputs.py...
