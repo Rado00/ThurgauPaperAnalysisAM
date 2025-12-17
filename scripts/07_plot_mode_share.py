@@ -78,7 +78,8 @@ def main():
     os.makedirs(mode_share_directory, exist_ok=True)
 
     df_mic = load_and_prepare_data(os.path.join(data_path_clean, "trips_all_activities_inside_mic.csv"))
-    df_sim = load_and_prepare_data(os.path.join(data_path_clean, "trips_all_activities_inside_sim.csv"))
+    # Simulation trips now use 'main_mode' column instead of 'mode'
+    df_sim = load_and_prepare_data(os.path.join(data_path_clean, "trips_all_activities_inside_sim.csv"), mode_col='main_mode')
 
     if read_SynPop:
         df_synt = load_and_prepare_data(os.path.join(data_path_clean, "travel_time_distance_mode_synt.csv"))
@@ -114,21 +115,21 @@ def main():
         average_distance_by_mode_mic_wt.rename(columns={'mode': 'Mode'}, inplace=True)
 
     # Remove outside from sim and synt again in case they're added back
-    df_sim = filter_out_modes(df_sim, 'mode')
+    df_sim = filter_out_modes(df_sim, 'main_mode')
     if read_SynPop:
         df_synt = filter_out_modes(df_synt, 'mode')
 
     # DISTANCE
     dist_mic = compute_percentage(df_mic, 'mode', 'crowfly_distance').rename(columns={'Percentage Crowfly_Distance': 'Percentage Mic'})
     dist_mic_wt = compute_percentage(df_mic, 'mode', 'weighted_distance').rename(columns={'Percentage Weighted_Distance': 'Percentage Mic Weighted'})
-    dist_sim = compute_percentage(df_sim, 'mode', 'distance').rename(columns={'Percentage Distance': 'Percentage Sim', 'Total Distance': 'Total Distance Sim'})
+    dist_sim = compute_percentage(df_sim, 'main_mode', 'distance').rename(columns={'Percentage Distance': 'Percentage Sim', 'Total Distance': 'Total Distance Sim'})
     if read_SynPop:
         dist_synt = compute_percentage(df_synt, 'mode', 'distance').rename(columns={'Percentage Distance': 'Percentage Synt'}) if read_SynPop else pd.DataFrame({'Mode': dist_sim['Mode'], 'Percentage Synt': [0.0]*len(dist_sim)})
 
     average_distance_by_mode_mic = df_mic.groupby('mode')['crowfly_distance'].agg(['mean', 'std']).reset_index()
     average_distance_by_mode_mic.columns = ['Mode', 'Average Distance Mic', 'STD Distance Mic']
     # average_distance_by_mode_mic_wt already calculated correctly above (lines 91-105) - DON'T recalculate!
-    average_distance_by_mode_sim = df_sim.groupby('mode')['distance'].agg(['mean', 'std']).reset_index()
+    average_distance_by_mode_sim = df_sim.groupby('main_mode')['distance'].agg(['mean', 'std']).reset_index()
     average_distance_by_mode_sim.columns = ['Mode', 'Average Distance Sim', 'STD Distance Sim']
     if read_SynPop:
         average_distance_by_mode_synt = df_synt.groupby('mode')['distance'].agg(['mean', 'std']).reset_index()
@@ -163,7 +164,7 @@ def main():
     if read_SynPop:
         df_synt['travel_time'] = pd.to_numeric(df_synt['travel_time'], errors='coerce')
 
-    time_sim = compute_percentage(df_sim, 'mode', 'travel_time').rename(columns={'Percentage Travel_Time': 'Percentage Sim', 'Total Travel_Time': 'Total Time Sim'})
+    time_sim = compute_percentage(df_sim, 'main_mode', 'travel_time').rename(columns={'Percentage Travel_Time': 'Percentage Sim', 'Total Travel_Time': 'Total Time Sim'})
     time_synt = compute_percentage(df_synt, 'mode', 'travel_time').rename(columns={'Percentage Travel_Time': 'Percentage Synt'}) if read_SynPop else pd.DataFrame({'Mode': time_sim['Mode'], 'Percentage Synt': [0.0]*len(time_sim)})
 
     save_custom_csv(f"{mode_share_directory}/Mode_shares_time.csv",
@@ -181,9 +182,10 @@ def main():
     trips_mic_wt['Percentage Mic Weighted'] = (trips_mic_wt['Weighted Count'] / total_weighted) * 100
     trips_mic_wt = trips_mic_wt[['Mode', 'Percentage Mic Weighted']]
 
-    trips_sim_counts = df_sim['mode'].value_counts().reset_index()
+    # Simulation trips use 'main_mode' column
+    trips_sim_counts = df_sim['main_mode'].value_counts().reset_index()
     trips_sim_counts.columns = ['Mode', 'Total Trips Sim']
-    trips_sim_perc = df_sim['mode'].value_counts(normalize=True).reset_index()
+    trips_sim_perc = df_sim['main_mode'].value_counts(normalize=True).reset_index()
     trips_sim_perc.columns = ['Mode', 'Percentage Sim']
     trips_sim_perc['Percentage Sim'] *= 100
     trips_sim = pd.merge(trips_sim_counts, trips_sim_perc, on='Mode', how='outer')
@@ -196,6 +198,24 @@ def main():
         unique_modes = pd.concat([trips_mic_raw['Mode'], trips_sim['Mode']]).unique()
         trips_synt = pd.DataFrame({'Mode': unique_modes, 'Percentage Synt': [0.0] * len(unique_modes)})
 
+    # =========================================================================
+    # DRT Trip Metrics
+    # =========================================================================
+    # DRT OD Trips: trips where main_mode is 'drt' (or 'Drt' after title-casing)
+    drt_od_trips = (df_sim['main_mode'].str.lower() == 'drt').sum()
+
+    # DRT Multi-modal Trips: trips where 'drt' appears in modes column but main_mode is NOT 'drt'
+    # The 'modes' column contains leg sequences like "walk-drt-walk" or "drt-pt-drt"
+    if 'modes' in df_sim.columns:
+        has_drt_in_modes = df_sim['modes'].str.contains('drt', case=False, na=False)
+        main_mode_not_drt = df_sim['main_mode'].str.lower() != 'drt'
+        drt_multimodal_trips = (has_drt_in_modes & main_mode_not_drt).sum()
+    else:
+        drt_multimodal_trips = 0
+        logging.warning("'modes' column not found in df_sim - DRT multi-modal trips set to 0")
+
+    logging.info(f"DRT OD Trips: {drt_od_trips}, DRT Multi-modal Trips: {drt_multimodal_trips}")
+
     plot_grouped_bar([trips_mic_wt, trips_mic_raw, trips_sim, trips_synt] if read_SynPop else [trips_mic_wt, trips_mic_raw, trips_sim],
                      ['Microcensus Weighted', 'Microcensus Raw', 'Simulation', 'Synthetic'] if read_SynPop else ['Microcensus Weighted', 'Microcensus Raw', 'Simulation'],
                      'Comparison of Mode Share Distribution - % of Trips',
@@ -206,6 +226,14 @@ def main():
                     trips_mic_wt[['Mode', 'Percentage Mic Weighted']],
                     trips_synt[['Mode', 'Percentage Synt']],
                     trips_sim[['Mode', 'Total Trips Sim', 'Percentage Sim']])
+
+    # Save DRT metrics to a separate row in a CSV (will be picked up by script 12)
+    drt_metrics_df = pd.DataFrame([
+        {'Mode': 'DRT OD Trips', 'Value': drt_od_trips},
+        {'Mode': 'DRT Multi-modal Trips', 'Value': drt_multimodal_trips}
+    ])
+    drt_metrics_df.to_csv(f"{mode_share_directory}/drt_trip_metrics.csv", index=False)
+    logging.info(f"DRT trip metrics saved to {mode_share_directory}/drt_trip_metrics.csv")
 
 
 if __name__ == '__main__':
