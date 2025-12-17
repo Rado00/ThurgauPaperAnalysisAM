@@ -657,33 +657,34 @@ if __name__ == '__main__':
     # STEP 22: Create final filtered trips output
     # =========================================================================
     # All activities inside
+    # Include main_mode (for modal split) and modes (legs sequence like "walk-car-walk")
     filtered_trips_all_activities_inside_sim = df_trips_all_activities_inside_sim[[
         "person", "start_link", "end_link", "dep_time", "trav_time", "euclidean_distance",
-        "main_mode", "start_x", "start_y", "end_x", "end_y"
+        "main_mode", "modes", "start_x", "start_y", "end_x", "end_y"
     ]].copy()
 
     filtered_trips_all_activities_inside_sim.rename(
-        columns={'trav_time': 'travel_time', 'euclidean_distance': 'distance', 'main_mode': 'mode'},
+        columns={'trav_time': 'travel_time', 'euclidean_distance': 'distance'},
         inplace=True
     )
-    filtered_trips_all_activities_inside_sim.dropna(subset=['mode'], inplace=True)
+    filtered_trips_all_activities_inside_sim.dropna(subset=['main_mode'], inplace=True)
     filtered_trips_all_activities_inside_sim = filtered_trips_all_activities_inside_sim[
-        ~filtered_trips_all_activities_inside_sim['mode'].isin(['truck'])
+        ~filtered_trips_all_activities_inside_sim['main_mode'].isin(['truck'])
     ]
 
     # At least one activity inside
     filtered_trips_at_least_one_activity_inside_sim = df_trips_at_least_one_activity_inside_sim[[
         "person", "start_link", "end_link", "dep_time", "trav_time", "euclidean_distance",
-        "main_mode", "start_x", "start_y", "end_x", "end_y"
+        "main_mode", "modes", "start_x", "start_y", "end_x", "end_y"
     ]].copy()
 
     filtered_trips_at_least_one_activity_inside_sim.rename(
-        columns={'trav_time': 'travel_time', 'euclidean_distance': 'distance', 'main_mode': 'mode'},
+        columns={'trav_time': 'travel_time', 'euclidean_distance': 'distance'},
         inplace=True
     )
-    filtered_trips_at_least_one_activity_inside_sim.dropna(subset=['mode'], inplace=True)
+    filtered_trips_at_least_one_activity_inside_sim.dropna(subset=['main_mode'], inplace=True)
     filtered_trips_at_least_one_activity_inside_sim = filtered_trips_at_least_one_activity_inside_sim[
-        ~filtered_trips_at_least_one_activity_inside_sim['mode'].isin(['truck'])
+        ~filtered_trips_at_least_one_activity_inside_sim['main_mode'].isin(['truck'])
     ]
 
     # Save final trip outputs
