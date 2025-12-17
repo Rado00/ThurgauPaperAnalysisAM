@@ -1,12 +1,8 @@
 
 FLOW OF THURGAU ANALYSIS SCRIPTS
 -----------------------------------------
-Updated: December 2024
-
-CONFIGURATION:
-- Config file: ../config/config.ini
-- Config dataclass available in commonFunctions.py with computed path properties
-- Helper functions: clean_population_df(), normalize_mode_column(), normalize_sex_column(), group_cars()
+15/12 Rado Laptop 40 min, 79 min with Mic
+17/12 Rado Laptop 23 min, 28 min with Mic
 
 
 01_microcensus_pre-process.py (1 TIME FOR SHP)
@@ -14,7 +10,6 @@ CONFIGURATION:
 IN --> 	microzensus/zielpersonen.csv , microzensus/haushalte.csv
 		process and merge
 OUT --> microzensus/all_population.csv
-
 
 02_microcensus_trips_filter.py (1 TIME FOR SHP)
 -----------------------------------------
@@ -24,12 +19,12 @@ OUT -->:
 		microcensus/row_trips.csv (all trips)
 		microcensus/trips_inside_O_and_D_Mic.csv
 		microcensus/trips_inside_O_or_D_Mic.csv
-		microcensus/population_all_activities_inside_Mic.csv
-		microcensus/population_at_least_one_activity_inside_Mic.csv
-		microcensus/trips_all_activities_inside_Mic.csv
-		microcensus/trips_at_least_one_activity_inside_Mic.csv
+		microcensus/population_all_activities_inside_Mic.csv  (3337)
+		microcensus/population_at_least_one_activity_inside_Mic.csv (4.757)
+		microcensus/trips_all_activities_inside_Mic.csv (12.769)
+		microcensus/trips_at_least_one_activity_inside_Mic.csv (18.532)
 		3 plots in the plots/ folder
-
+	
 CanDo: add filter based on home (commented code)
 
 
@@ -40,42 +35,30 @@ IN --> 	output_households.xml.gz , output_plans.xml.gz
 		SynPop/households.xml.gz , SynPop/population.xml.gz
 		no filters
 OUT -->:
-		0_PreProcess_CSVs_SyntheticAndOutputs/100pct/df_activity_sim.csv
-
-        .../df_activity_synt.csv
-        .../df_legs_synt.csv
-        .../df_persons_synt.csv
-        .../df_routes_synt.csv
-        .../df_households_synt.csv
-
+		0_PreProcess_CSVs_SyntheticAndOutputs\100pct\df_activity_sim.csv
+		
+        ...\df_activity_synt.csv
+        ...\df_legs_synt.csv
+        ...\df_persons_synt.csv
+        ...\df_routes_synt.csv
+        ...\df_households_synt.csv
+		
 
 04_05_synPop_sim_trips_and_clean.py (MERGED from 04 and 05_1)
 -----------------------------------------
-This script merges the functionality of the old 04_synPop_sim_trips.py and
-05_1_generate_clean_csv_files.py to avoid redundant disk I/O (data stays in memory).
+19 min senza Mic 17/12
 
 STEP 1-10: Geographic filtering of simulation trips (from old script 04)
 STEP 11-22: Data cleaning and standardization (from old script 05_1)
 
-IN -->:
-		"sim"/output_trips.csv.gz
-		"sim"/output_persons.csv.gz
-		"sim"/output_households.xml.gz
-		0_PreProcess_CSVs_SyntheticAndOutputs/100pct/df_activity_sim.csv
-
-		(if read_SynPop):
-		.../df_activity_synt.csv
-		.../df_legs_synt.csv
-		.../df_persons_synt.csv
-		.../df_routes_synt.csv
-		.../df_households_synt.csv
-
+IN --> "sim"\output_trips.csv, output_persons.csv.gz, output_households.xml.gz
+		WE CHECKED output_plans.persons and output_persons and they are both 398.245 of which 22999 are trucks
+		different trips filters 
 		(if read_microcensus):
 		microcensus/population_all_activities_inside_Mic.csv
 		microcensus/population_at_least_one_activity_inside_Mic.csv
 		microcensus/trips_all_activities_inside_Mic.csv
 		microcensus/trips_at_least_one_activity_inside_Mic.csv
-
 OUT -->:
 		Pre-processed (0_PreProcess_CSVs_SyntheticAndOutputs/100pct/):
 		- trips_inside_O_and_D_sim.csv
@@ -101,23 +84,19 @@ OUT -->:
 		- activity_chains_all_activities_inside_mic.csv
 		- activity_chains_at_least_one_activity_inside_mic.csv
 
-		(if read_SynPop):
-		- trips_synt.csv
-		- activity_chains_syn.csv
-		- population_clean_synth.csv
-		- legs_clean_synt.csv
+		
 
-
-05_2_compare_outputs.py
+5_2_compare_outputs.py
 --------------------------------------------
-Compares two simulation outputs side by side.
 
-IN -->:
-		sim1folder/output_trip.csv.gz
-		sim2folder/output_trip.csv.gz
+IN-->:
+		sim1folder\output_trip.csv.gz
+		sim2folder\output_trip.csv.gz
 
-OUT -->:
-		ThurgauPaperAnalysisAM/plots/compare_simulations/
+
+OUT-->:
+		ThurgauPaperAnalysisAM\plots\compare_simulations
+
 
 
 
@@ -157,7 +136,6 @@ OUT -->:
 		- Mode_share_by_Time.png
 
 
-
 08_plot_mode_share_target_area.py
 -----------------------------------------
 Mode share analysis for specific target area.
@@ -172,7 +150,6 @@ IN -->:
 OUT -->:
 		plots/[simNumber]/outputs_mode_share_target_area/
 		- Various mode share plots and CSVs for target area
-
 
 
 09_plot_smaller_zones_modal_split.py (OPTIONAL - commented in runner scripts)
@@ -266,11 +243,4 @@ IN -->:
 
 OUT -->:
 		plots/[simNumber]/ModeShareOutputs_Reordered/modalSplitCalibration_reordered.csv
-
-
------------------------------------------
-DEPRECATED SCRIPTS (kept for reference):
------------------------------------------
-04_synPop_sim_trips.py          -> merged into 04_05_synPop_sim_trips_and_clean.py
-05_1_generate_clean_csv_files.py -> merged into 04_05_synPop_sim_trips_and_clean.py
 
