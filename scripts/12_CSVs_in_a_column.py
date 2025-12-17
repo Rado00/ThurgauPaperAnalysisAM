@@ -2,6 +2,53 @@ import pandas as pd
 import os
 from functions.commonFunctions import *
 
+
+def compute_drt_trip_metrics(output_folder_path):
+    """
+    Compute DRT trip metrics from the raw output_trips.csv.gz file.
+
+    Returns:
+        List of tuples: [(metric_name, value), ...]
+        - "DRT OD Trips": trips where main_mode is 'drt'
+        - "DRT Multi-modal Trips": trips where 'drt' appears in modes but main_mode is NOT 'drt'
+    """
+    trips_file = os.path.join(output_folder_path, "output_trips.csv.gz")
+
+    if not os.path.exists(trips_file):
+        logging.warning(f"output_trips.csv.gz not found at {trips_file}")
+        return []
+
+    try:
+        # Load trips file with only the columns we need
+        df_trips = pd.read_csv(
+            trips_file,
+            sep=';',
+            compression='gzip',
+            usecols=['main_mode', 'modes'],
+            dtype=str
+        )
+
+        # DRT OD Trips: main_mode is 'drt'
+        drt_od_trips = (df_trips['main_mode'] == 'drt').sum()
+
+        # DRT Multi-modal Trips: 'drt' in modes column but main_mode is NOT 'drt'
+        # Check if 'drt' appears in the modes string (e.g., 'drt-pt-drt', 'walk-drt-walk')
+        has_drt_in_modes = df_trips['modes'].str.contains('drt', case=False, na=False)
+        main_mode_not_drt = df_trips['main_mode'] != 'drt'
+        drt_multimodal_trips = (has_drt_in_modes & main_mode_not_drt).sum()
+
+        logging.info(f"DRT OD Trips: {drt_od_trips}, DRT Multi-modal Trips: {drt_multimodal_trips}")
+
+        return [
+            ("DRT OD Trips", drt_od_trips),
+            ("DRT Multi-modal Trips", drt_multimodal_trips)
+        ]
+
+    except Exception as e:
+        logging.error(f"Error computing DRT trip metrics: {e}")
+        return []
+
+
 if __name__ == '__main__':
     setup_logging(get_log_filename())
 
@@ -189,6 +236,11 @@ if __name__ == '__main__':
                 lambda mode, row: (f"Count TravelTime {mode} Target Area O AND D", row["Total Time Sim AND"])
             ]
         )
+
+        # Compute DRT trip metrics from raw output_trips.csv.gz
+        output_folder_path = os.path.join(data_path, simulation_zone_name, sim_output_folder)
+        drt_metrics = compute_drt_trip_metrics(output_folder_path)
+        consolidated_data += drt_metrics
 
         # Create and sort DataFrame
         if consolidated_data:
