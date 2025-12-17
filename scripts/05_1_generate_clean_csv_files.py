@@ -366,24 +366,24 @@ if __name__ == '__main__':
             os.path.join(data_path_clean, "population_at_least_one_activity_inside_sim.csv"), index=False)
 
     filtered_trips_at_least_one_activitiy_inside_sim = df_trips_all_activities_inside_sim[[
-        "person", "start_link", "end_link", "dep_time", "trav_time", "euclidean_distance", "longest_distance_mode",
+        "person", "start_link", "end_link", "dep_time", "trav_time", "euclidean_distance", "main_mode",
         "start_x", "start_y",
         "end_x", "end_y"]]
 
     filtered_trips_at_least_one_activitiy_inside_sim.rename(
-        columns={'trav_time': 'travel_time', 'euclidean_distance': 'distance', 'longest_distance_mode': 'mode'},
+        columns={'trav_time': 'travel_time', 'euclidean_distance': 'distance', 'main_mode': 'mode'},
         inplace=True)
     filtered_trips_at_least_one_activitiy_inside_sim.dropna(subset=['mode'], inplace=True)
     filtered_trips_all_activities_inside_sim = filtered_trips_at_least_one_activitiy_inside_sim[
         ~filtered_trips_at_least_one_activitiy_inside_sim['mode'].isin(['truck'])]
 
     filtered_trips_at_least_one_activitiy_inside_sim = df_trips_at_least_one_activity_inside_sim[[
-        "person", "start_link", "end_link", "dep_time", "trav_time", "euclidean_distance", "longest_distance_mode",
+        "person", "start_link", "end_link", "dep_time", "trav_time", "euclidean_distance", "main_mode",
         "start_x", "start_y",
         "end_x", "end_y"]]
 
     filtered_trips_at_least_one_activitiy_inside_sim.rename(
-        columns={'trav_time': 'travel_time', 'euclidean_distance': 'distance', 'longest_distance_mode': 'mode'},
+        columns={'trav_time': 'travel_time', 'euclidean_distance': 'distance', 'main_mode': 'mode'},
         inplace=True)
     filtered_trips_at_least_one_activitiy_inside_sim.dropna(subset=['mode'], inplace=True)
     filtered_trips_at_least_one_activitiy_inside_sim = filtered_trips_at_least_one_activitiy_inside_sim[
