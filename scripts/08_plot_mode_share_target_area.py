@@ -120,14 +120,15 @@ def main():
 
     df_mic_origin_or_destination = load_and_prepare_data(os.path.join(data_path_clean, "trips_all_activities_inside_mic.csv"), target_area, False, 'start_coor_x', 'start_coor_y')
     df_mic_origin_and_destination = load_and_prepare_data(os.path.join(data_path_clean, "trips_all_activities_inside_mic.csv"), target_area, True, 'start_coor_x', 'start_coor_y')
-    df_sim_origin_or_destination = load_and_prepare_data(os.path.join(data_path_clean, "trips_all_activities_inside_sim.csv"), target_area, False, 'start_x', 'start_y')
-    df_sim_origin_and_destination = load_and_prepare_data(os.path.join(data_path_clean, "trips_all_activities_inside_sim.csv"), target_area, True, 'start_x', 'start_y')
+    # Simulation trips use 'main_mode' column
+    df_sim_origin_or_destination = load_and_prepare_data(os.path.join(data_path_clean, "trips_all_activities_inside_sim.csv"), target_area, False, 'start_x', 'start_y', mode_col='main_mode')
+    df_sim_origin_and_destination = load_and_prepare_data(os.path.join(data_path_clean, "trips_all_activities_inside_sim.csv"), target_area, True, 'start_x', 'start_y', mode_col='main_mode')
 
     if read_SynPop:
         df_synt = load_and_prepare_data(os.path.join(data_path_clean, "travel_time_distance_mode_synt.csv"), target_area, False, 'start_coor_x', 'start_coor_y')
-    
-    df_sim_origin_or_destination = filter_out_modes(df_sim_origin_or_destination, 'mode')
-    df_sim_origin_and_destination = filter_out_modes(df_sim_origin_and_destination, 'mode')
+
+    df_sim_origin_or_destination = filter_out_modes(df_sim_origin_or_destination, 'main_mode')
+    df_sim_origin_and_destination = filter_out_modes(df_sim_origin_and_destination, 'main_mode')
 
     if read_SynPop:
         df_synt = filter_out_modes(df_synt, 'mode')
@@ -149,8 +150,8 @@ def main():
     dist_mic_origin_and_destination = compute_percentage(df_mic_origin_and_destination, 'mode', 'crowfly_distance').rename(columns={'Percentage Crowfly_Distance': 'Percentage Mic AND'})
     dist_mic_wt_origin_and_destination = compute_percentage(df_mic_origin_and_destination, 'mode', 'weighted_distance').rename(columns={'Percentage Weighted_Distance': 'Percentage Mic Weighted AND'})
 
-    dist_sim_origin_or_destination = compute_percentage(df_sim_origin_or_destination, 'mode', 'distance').rename(columns={'Percentage Distance': 'Percentage Sim OR', 'Total Distance': 'Total Distance Sim OR'})
-    dist_sim_origin_and_destination = compute_percentage(df_sim_origin_and_destination, 'mode', 'distance').rename(columns={'Percentage Distance': 'Percentage Sim AND', 'Total Distance': 'Total Distance Sim AND'})
+    dist_sim_origin_or_destination = compute_percentage(df_sim_origin_or_destination, 'main_mode', 'distance').rename(columns={'Percentage Distance': 'Percentage Sim OR', 'Total Distance': 'Total Distance Sim OR'})
+    dist_sim_origin_and_destination = compute_percentage(df_sim_origin_and_destination, 'main_mode', 'distance').rename(columns={'Percentage Distance': 'Percentage Sim AND', 'Total Distance': 'Total Distance Sim AND'})
 
     average_distance_by_mode_mic_wt_origin_or_destination = df_mic_origin_or_destination.groupby('mode').apply(
         lambda x: pd.Series({
@@ -173,10 +174,10 @@ def main():
     # Rename the 'mode' column to 'Mode' to match other dataframes
     average_distance_by_mode_mic_wt_origin_and_destination.rename(columns={'mode': 'Mode'}, inplace=True)
     
-    average_distance_by_mode_sim_origin_or_destination = df_sim_origin_or_destination.groupby('mode')['distance'].agg(['mean', 'std']).reset_index()
+    average_distance_by_mode_sim_origin_or_destination = df_sim_origin_or_destination.groupby('main_mode')['distance'].agg(['mean', 'std']).reset_index()
     average_distance_by_mode_sim_origin_or_destination.columns = ['Mode', 'Average Distance Sim OR', 'STD Distance Sim OR']
-    
-    average_distance_by_mode_sim_origin_and_destination = df_sim_origin_and_destination.groupby('mode')['distance'].agg(['mean', 'std']).reset_index()
+
+    average_distance_by_mode_sim_origin_and_destination = df_sim_origin_and_destination.groupby('main_mode')['distance'].agg(['mean', 'std']).reset_index()
     average_distance_by_mode_sim_origin_and_destination.columns = ['Mode', 'Average Distance Sim AND', 'STD Distance Sim AND']
     
     if read_SynPop:
@@ -227,8 +228,8 @@ def main():
     if read_SynPop:
         df_synt['travel_time'] = pd.to_numeric(df_synt['travel_time'], errors='coerce')
     
-    time_sim_origin_or_destination = compute_percentage(df_sim_origin_or_destination, 'mode', 'travel_time').rename(columns={'Percentage Travel_Time': 'Percentage Sim OR', 'Total Travel_Time': 'Total Time Sim OR'})
-    time_sim_origin_and_destination = compute_percentage(df_sim_origin_and_destination, 'mode', 'travel_time').rename(columns={'Percentage Travel_Time': 'Percentage Sim AND', 'Total Travel_Time': 'Total Time Sim AND'})
+    time_sim_origin_or_destination = compute_percentage(df_sim_origin_or_destination, 'main_mode', 'travel_time').rename(columns={'Percentage Travel_Time': 'Percentage Sim OR', 'Total Travel_Time': 'Total Time Sim OR'})
+    time_sim_origin_and_destination = compute_percentage(df_sim_origin_and_destination, 'main_mode', 'travel_time').rename(columns={'Percentage Travel_Time': 'Percentage Sim AND', 'Total Travel_Time': 'Total Time Sim AND'})
     time_synt = compute_percentage(df_synt, 'mode', 'travel_time').rename(columns={'Percentage Travel_Time': 'Percentage Synt'}) if read_SynPop else pd.DataFrame({'Mode': time_sim_origin_or_destination['Mode'], 'Percentage Synt': [0.0]*len(time_sim_origin_or_destination)})
     
     save_custom_csv(f"{mode_share_directory}/Mode_shares_time_{target_name}.csv",
@@ -256,16 +257,16 @@ def main():
     trips_mic_wt_origin_and_destination['Percentage Mic Weighted AND'] = (trips_mic_wt_origin_and_destination['Weighted Count AND'] / total_weighted_origin_and_destination) * 100
     trips_mic_wt_origin_and_destination = trips_mic_wt_origin_and_destination[['Mode', 'Percentage Mic Weighted AND']]
     
-    trips_sim_counts_origin_or_destination = df_sim_origin_or_destination['mode'].value_counts().reset_index()
+    trips_sim_counts_origin_or_destination = df_sim_origin_or_destination['main_mode'].value_counts().reset_index()
     trips_sim_counts_origin_or_destination.columns = ['Mode', 'Total Trips Sim OR']
-    trips_sim_perc_origin_or_destination = df_sim_origin_or_destination['mode'].value_counts(normalize=True).reset_index()
+    trips_sim_perc_origin_or_destination = df_sim_origin_or_destination['main_mode'].value_counts(normalize=True).reset_index()
     trips_sim_perc_origin_or_destination.columns = ['Mode', 'Percentage Sim OR']
     trips_sim_perc_origin_or_destination['Percentage Sim OR'] *= 100
     trips_sim_origin_or_destination = pd.merge(trips_sim_counts_origin_or_destination, trips_sim_perc_origin_or_destination, on='Mode', how='outer')
-    
-    trips_sim_counts_origin_and_destination = df_sim_origin_and_destination['mode'].value_counts().reset_index()
+
+    trips_sim_counts_origin_and_destination = df_sim_origin_and_destination['main_mode'].value_counts().reset_index()
     trips_sim_counts_origin_and_destination.columns = ['Mode', 'Total Trips Sim AND']
-    trips_sim_perc_origin_and_destination = df_sim_origin_and_destination['mode'].value_counts(normalize=True).reset_index()
+    trips_sim_perc_origin_and_destination = df_sim_origin_and_destination['main_mode'].value_counts(normalize=True).reset_index()
     trips_sim_perc_origin_and_destination.columns = ['Mode', 'Percentage Sim AND']
     trips_sim_perc_origin_and_destination['Percentage Sim AND'] *= 100
     trips_sim_origin_and_destination = pd.merge(trips_sim_counts_origin_and_destination, trips_sim_perc_origin_and_destination, on='Mode', how='outer')
