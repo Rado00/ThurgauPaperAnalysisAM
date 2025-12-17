@@ -298,7 +298,7 @@ if __name__ == '__main__':
     # =========================================================================
     # STEP 5: Filter out unwanted modes (outside, truck)
     # =========================================================================
-    output_trips_sim = output_trips_sim.query("longest_distance_mode not in ['outside', 'truck']").reset_index(drop=True)
+    output_trips_sim = output_trips_sim.query("main_mode not in ['outside', 'truck']").reset_index(drop=True)
 
     # Create origin and destination GeoSeries for spatial filtering
     origin_points = gpd.GeoSeries(
