@@ -11,12 +11,16 @@ def read_drt_trip_metrics(mode_share_directory):
         List of tuples: [(metric_name, value), ...]
         - "DRT OD Trips": trips where main_mode is 'drt'
         - "DRT Multi-modal Trips": trips where 'drt' appears in modes but main_mode is NOT 'drt'
+        For baseline simulations without DRT, returns "n.a." values.
     """
     drt_metrics_file = os.path.join(mode_share_directory, "drt_trip_metrics.csv")
 
     if not os.path.exists(drt_metrics_file):
-        logging.warning(f"drt_trip_metrics.csv not found at {drt_metrics_file}")
-        return []
+        logging.info(f"drt_trip_metrics.csv not found (baseline simulation without DRT) - using n.a. values")
+        return [
+            ("DRT OD Trips", "n.a."),
+            ("DRT Multi-modal Trips", "n.a.")
+        ]
 
     try:
         df_drt = pd.read_csv(drt_metrics_file)
@@ -26,7 +30,10 @@ def read_drt_trip_metrics(mode_share_directory):
 
     except Exception as e:
         logging.error(f"Error reading DRT trip metrics: {e}")
-        return []
+        return [
+            ("DRT OD Trips", "n.a."),
+            ("DRT Multi-modal Trips", "n.a.")
+        ]
 
 
 if __name__ == '__main__':

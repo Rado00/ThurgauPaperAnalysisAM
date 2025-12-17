@@ -243,14 +243,21 @@ if __name__ == '__main__':
         df = pd.concat([new_row, df_result], ignore_index=True)
         
         mode_share_directory = os.path.join(plots_directory, 'outputs_mode_share')
-        
+
         drt_summary_metrics_path = os.path.join(mode_share_directory, "drt_summary_metrics.csv")
-        
-        df_drt_summary_metrics = pd.read_csv(drt_summary_metrics_path, sep=";")
-        
+
+        # Check if DRT summary metrics file exists (only for DRT simulations)
+        if os.path.exists(drt_summary_metrics_path):
+            df_drt_summary_metrics = pd.read_csv(drt_summary_metrics_path, sep=";")
+            logging.info(f"DRT summary metrics loaded from {drt_summary_metrics_path}")
+        else:
+            # For baseline simulations without DRT, create empty dataframe
+            df_drt_summary_metrics = pd.DataFrame(columns=['Source File', 'Title', 'Value', 'Value with Comma'])
+            logging.info(f"DRT summary metrics not found (baseline simulation without DRT) - skipping DRT metrics")
+
         logging.info(f"Reordering completed successfully!")
         logging.info(f"Output shape: {df_result.shape}")
-        
+
         # Display first few rows
         print("\nFirst 15 rows of reordered output:")
         final_result = pd.concat([df, df_drt_summary_metrics], ignore_index=True)
