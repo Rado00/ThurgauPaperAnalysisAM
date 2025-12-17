@@ -1,15 +1,20 @@
 
 FLOW OF THURGAU ANALYSIS SCRIPTS
 -----------------------------------------
+Updated: December 2024
+
+CONFIGURATION:
+- Config file: ../config/config.ini
+- Config dataclass available in commonFunctions.py with computed path properties
+- Helper functions: clean_population_df(), normalize_mode_column(), normalize_sex_column(), group_cars()
 
 
-
-01_microcensus_population_filter.py (1 TIME FOR SHP)
+01_microcensus_pre-process.py (1 TIME FOR SHP)
 -----------------------------------------
 IN --> 	microzensus/zielpersonen.csv , microzensus/haushalte.csv
 		process and merge
 OUT --> microzensus/all_population.csv
-Pinstrip&000
+
 
 02_microcensus_trips_filter.py (1 TIME FOR SHP)
 -----------------------------------------
@@ -19,12 +24,12 @@ OUT -->:
 		microcensus/row_trips.csv (all trips)
 		microcensus/trips_inside_O_and_D_Mic.csv
 		microcensus/trips_inside_O_or_D_Mic.csv
-		microcensus/population_all_activities_inside_Mic.csv  (3337)
-		microcensus/population_at_least_one_activity_inside_Mic.csv (4.757)
-		microcensus/trips_all_activities_inside_Mic.csv (12.769)
-		microcensus/trips_at_least_one_activity_inside_Mic.csv (18.532)
+		microcensus/population_all_activities_inside_Mic.csv
+		microcensus/population_at_least_one_activity_inside_Mic.csv
+		microcensus/trips_all_activities_inside_Mic.csv
+		microcensus/trips_at_least_one_activity_inside_Mic.csv
 		3 plots in the plots/ folder
-	
+
 CanDo: add filter based on home (commented code)
 
 
@@ -35,230 +40,189 @@ IN --> 	output_households.xml.gz , output_plans.xml.gz
 		SynPop/households.xml.gz , SynPop/population.xml.gz
 		no filters
 OUT -->:
-		0_PreProcess_CSVs_SyntheticAndOutputs\100pct\df_activity_sim.csv
-		
-        ...\df_activity_synt.csv
-        ...\df_legs_synt.csv
-        ...\df_persons_synt.csv
-        ...\df_routes_synt.csv
-        ...\df_households_synt.csv
-		
+		0_PreProcess_CSVs_SyntheticAndOutputs/100pct/df_activity_sim.csv
 
-04_synPop_sim_trips.py (1h)(Home population and trips commented because now not necessary)
+        .../df_activity_synt.csv
+        .../df_legs_synt.csv
+        .../df_persons_synt.csv
+        .../df_routes_synt.csv
+        .../df_households_synt.csv
+
+
+04_05_synPop_sim_trips_and_clean.py (MERGED from 04 and 05_1)
 -----------------------------------------
-8 minuti adesso (senza synt e home)
-20 min 15/10/25
+This script merges the functionality of the old 04_synPop_sim_trips.py and
+05_1_generate_clean_csv_files.py to avoid redundant disk I/O (data stays in memory).
 
-IN --> "sim"\output_trips.csv, output_persons.csv.gz
-		WE CHECKED output_plans.persons and output_persons and they are both 398.245 of which 22999 are trucks
-		different trips filters 
-OUT -->:
-		0_PreProcess_CSVs_SyntheticAndOutputs\100pct\trips_inside_O_and_D_sim.csv
-		...\trips_inside_O_or_D_sim.csv
-		...\population_all_activities_inside_sim.csv
-		...\population_at_least_one_activity_inside_sim.csv
-		...\trips_at_least_one_activity_inside_sim.csv
-		...\trips_all_activities_inside_sim.csv
-		**cmntd** ...\population_home_inside_sim.csv
-		**cmntd** ...\trips_population_home_inside_sim.csv
+STEP 1-10: Geographic filtering of simulation trips (from old script 04)
+STEP 11-22: Data cleaning and standardization (from old script 05_1)
 
-		
+IN -->:
+		"sim"/output_trips.csv.gz
+		"sim"/output_persons.csv.gz
+		"sim"/output_households.xml.gz
+		0_PreProcess_CSVs_SyntheticAndOutputs/100pct/df_activity_sim.csv
 
-05_1_generate_clean_csv_files.py
------------------------------------------
-(2 min)
-Ensures persons with only one "Home" activity are handled properly.
+		(if read_SynPop):
+		.../df_activity_synt.csv
+		.../df_legs_synt.csv
+		.../df_persons_synt.csv
+		.../df_routes_synt.csv
+		.../df_households_synt.csv
 
-IN-->:
-		0_PreProcess_CSVs_SyntheticAndOutputs\100pct\df_activity_sim.csv
-		...\df_legs_sim.csv
-		...\df_persons_sim.csv
-		...\df_routes_sim.csv
-		
-		...\df_activity_synt.csv (SynPop CSVs only 1 TIME FOR SHP - to be commented)
-        ...\df_legs_synt.csv
-        ...\df_persons_synt.csv
-        ...\df_routes_synt.csv
-        ...\df_households_synt.csv
-		
-
-		microcensus/population_at_least_one_activities_inside_Mic.csv
+		(if read_microcensus):
 		microcensus/population_all_activities_inside_Mic.csv
+		microcensus/population_at_least_one_activity_inside_Mic.csv
 		microcensus/trips_all_activities_inside_Mic.csv
-		microcensus/trips_at_least_one_activities_inside_Mic.csv
-		microcensus\df_population_mic
-		microcensus\df_trips_mic.
-		
-		0_PreProcess_CSVs_SyntheticAndOutputs\population_all_activities_inside_sim.csv
-		0_PreProcess_CSVs_SyntheticAndOutputs\population_at_least_one_activity_inside_sim.csv
-		0_PreProcess_CSVs_SyntheticAndOutputs\trips_at_least_one_activity_inside_sim.csv
-		0_PreProcess_CSVs_SyntheticAndOutputs\trips_all_activities_inside_sim.csv
+		microcensus/trips_at_least_one_activity_inside_Mic.csv
 
-processes various things
-create_activity_chain_mic(group) and create_activity_chain_syn(group):
-Create activity chain summaries from trip/activity sequences.
+OUT -->:
+		Pre-processed (0_PreProcess_CSVs_SyntheticAndOutputs/100pct/):
+		- trips_inside_O_and_D_sim.csv
+		- trips_inside_O_or_D_sim.csv
+		- population_all_activities_inside_sim.csv
+		- population_at_least_one_activity_inside_sim.csv
+		- trips_all_activities_inside_sim.csv
+		- trips_at_least_one_activity_inside_sim.csv
 
-OUT-->:
-		1_Cleaned_CSVs\trips_mic.csv
-		1_Cleaned_CSVs\activity_chains_sim.csv
-		1_Cleaned_CSVs\activity_chains_mic.csv
-		1_Cleaned_CSVs\population_clean_mic.csv
-		1_Cleaned_CSVs\population_clean_sim.csv	
-		1_Cleaned_CSVs\legs_clean_sim.csv
-		
-		1_Cleaned_CSVs\trips_at_least_one_activity_inside_sim.csv
-		1_Cleaned_CSVs\trips_all_activities_inside_sim.csv
-		
-		1_Cleaned_CSVs\trips_synt.csv
-		1_Cleaned_CSVs\activity_chains_syn.csv
-		1_Cleaned_CSVs\population_clean_synth.csv
-		1_Cleaned_CSVs\legs_clean_synt.csv
+		Cleaned (1_Cleaned_CSVs/100pct/):
+		- trips_all_activities_inside_sim.csv
+		- trips_at_least_one_activity_inside_sim.csv
+		- population_all_activities_inside_sim.csv
+		- population_at_least_one_activity_inside_sim.csv
+		- households_all_activities_inside_sim.csv
+		- activity_chains_sim.csv
 
-(Commented out: synthetic population outputs)
+		(if read_microcensus):
+		- trips_all_activities_inside_mic.csv
+		- trips_at_least_one_activity_inside_mic.csv
+		- population_all_activities_inside_mic.csv
+		- population_at_least_one_activity_inside_mic.csv
+		- activity_chains_all_activities_inside_mic.csv
+		- activity_chains_at_least_one_activity_inside_mic.csv
 
-5_2_compare_outputs.py
+		(if read_SynPop):
+		- trips_synt.csv
+		- activity_chains_syn.csv
+		- population_clean_synth.csv
+		- legs_clean_synt.csv
+
+
+05_2_compare_outputs.py
 --------------------------------------------
+Compares two simulation outputs side by side.
 
-IN-->:
-		sim1folder\output_trip.csv.gz
-		sim2folder\output_trip.csv.gz
+IN -->:
+		sim1folder/output_trip.csv.gz
+		sim2folder/output_trip.csv.gz
 
-
-OUT-->:
-		ThurgauPaperAnalysisAM\plots\compare_simulations
-
-
+OUT -->:
+		ThurgauPaperAnalysisAM/plots/compare_simulations/
 
 
-06_synt_and_sim_mode_share_by_time_distance.py
+
+06_synt_mode_share_by_time_distance.py
 -----------------------------------------
-7 min
-2. Define Helper Function
-	compute_avg_coordinates(start_link, end_link, link_data):
-	Takes the coordinates of a start and end link from a dictionary.
-	Calculates the average X and Y coordinate between start and end link (for midpoint mapping).
+Computes mode share by travel time and distance.
 
-IN-->:
+IN -->:
 		output_plans.xml.gz
-		working with population.xml.gz (COMMENTED AFTER 1ST)
+		(SynPop/population.xml.gz - COMMENTED AFTER 1ST RUN)
 
-	Extracts:
-		legs (movements)
-		routes (travel paths)
-		activities (activities at locations)
+	Extracts legs, routes, activities and builds link coordinate dictionary
+	for spatial mapping of trips.
 
-5. Prepare Link Coordinates
-	Builds a dictionary (link_dict_sim_str) mapping each link ID to its (X, Y) coordinates.
-	This is used later to assign spatial coordinates to each trip.
-
-Adds average coordinates (X, Y) between start and end links for each trip.
-
-OUT-->:
-		travel_time_distance_mode_sim.csv
-		travel_time_distance_mode_synt.csv
+OUT -->:
+		1_Cleaned_CSVs/travel_time_distance_mode_sim.csv
+		1_Cleaned_CSVs/travel_time_distance_mode_synt.csv
 
 
 
 07_plot_mode_share.py
 --------------------------------------------
+Creates mode share comparison plots.
+
 IN -->:
-	trips_all_activities_inside_mic.csv
-	trips_all_activities_inside_sim.csv	
-	travel_time_distance_mode_synt.csv (if read_SynPop )
-	
-OUT -->: 
-		ThurgauPaperAnalysisAM\plots\simNumber\Mode_shares_distance.csv		includes STD and AV
-		Mode_shares_by_trip.csv
-		Mode_shares_time.csv
-		Mode_share_by_Distance.png
-		Mode_share_by_Trips.png
+		1_Cleaned_CSVs/trips_all_activities_inside_mic.csv
+		1_Cleaned_CSVs/trips_all_activities_inside_sim.csv
+		1_Cleaned_CSVs/travel_time_distance_mode_synt.csv (if read_SynPop)
+
+OUT -->:
+		plots/[simNumber]/outputs_mode_share/
+		- Mode_shares_distance.csv (includes STD and AVG)
+		- Mode_shares_by_trip.csv
+		- Mode_shares_time.csv
+		- Mode_share_by_Distance.png
+		- Mode_share_by_Trips.png
+		- Mode_share_by_Time.png
 
 
 
 08_plot_mode_share_target_area.py
 -----------------------------------------
-IMPORTANT: Trips O xor D count as 1, the same of O & D. With the distance we have the same logic: therefore mode share by distance is not reliable.
-		
+Mode share analysis for specific target area.
+
+IMPORTANT: Trips O xor D count as 1, the same as O & D.
+With distance we have the same logic: therefore mode share by distance is not fully reliable.
+
+IN -->:
+		1_Cleaned_CSVs/trips_*.csv files
+		ShapeFiles/[target_area].shp
+
+OUT -->:
+		plots/[simNumber]/outputs_mode_share_target_area/
+		- Various mode share plots and CSVs for target area
 
 
 
-
-
-
-
-09_plot_smaller_zones_modal_split.py
+09_plot_smaller_zones_modal_split.py (OPTIONAL - commented in runner scripts)
 -----------------------------------------
+Creates modal split analysis for smaller geographic zones.
 
-IN-->:
-		travel_time_distance_mode_synt.csv
-		travel_time_distance_mode_sim.csv
+IN -->:
+		1_Cleaned_CSVs/travel_time_distance_mode_synt.csv
+		1_Cleaned_CSVs/travel_time_distance_mode_sim.csv
 
-	Removes unwanted modes like truck and outside.
-	Filters the synthetic and simulated trips that fall within that zone.
+	Removes unwanted modes (truck, outside).
+	Filters trips within each zone.
 
-OUT-->:
-		Distance share plot.
-		Travel time share plot.
-		Trip number share plot.
-		Saves detailed CSVs comparing synthetic and simulated mode shares.
-		arcgis_pro_dict.json for further spatial analysis or mapping in ArcGIS Pro.
+OUT -->:
+		For each zone:
+		- Distance share plot
+		- Travel time share plot
+		- Trip number share plot
+		- Detailed CSVs comparing synthetic and simulated mode shares
+		- arcgis_pro_dict.json for ArcGIS Pro mapping
 
 
 
 10_plot_the_clean_csv_files.py
 -----------------------------------------
-IN-->:
-		trips_mic.csv, trips_synt.csv)
-		Activity chains (activity_chains_syn.csv, activity_chains_sim.csv, activity_chains_mic.csv)
-		Population (population_clean_mic.csv, population_clean_synth.csv, population_clean_sim.csv)
-		Legs (legs_clean_synt.csv, legs_clean_sim.csv)
-		Households (df_households_synt.csv)
-		Activities (df_activity_synt.csv, df_activity_sim.csv)
+Creates demographic and activity comparison plots.
 
-		
-OUT-->:		
-		The script creates multiple comparison plots:	
-		Pie charts comparing gender distribution between:
-		Bar plots comparing household income classes between microcensus and synthetic households:
-		Bar plots Car Ownership
-		Bar plots comparing:
-			Activity types (synthetic population)
-			Trip purposes (microcensus)
-			Age Distribution
-		Bar plots comparing:
-			Departure times of trips
-			Arrival times of trips
-			Activity Chains
+IN -->:
+		1_Cleaned_CSVs/trips_*.csv
+		1_Cleaned_CSVs/activity_chains_*.csv
+		1_Cleaned_CSVs/population_*.csv
+		1_Cleaned_CSVs/legs_*.csv
+		0_PreProcess_CSVs_SyntheticAndOutputs/df_households_synt.csv
+		0_PreProcess_CSVs_SyntheticAndOutputs/df_activity_*.csv
 
-		mode_share_trip_comparison.csv
-		
+OUT -->:
+		plots/[simNumber]/
+		- Pie charts: gender distribution comparison
+		- Bar plots: household income classes
+		- Bar plots: car ownership
+		- Bar plots: activity types, trip purposes, age distribution
+		- Bar plots: departure/arrival times, activity chains
+		- mode_share_trip_comparison.csv
 
-11_CSVs_in_a_column.py
+
+11_DRT_Order_Ouputs.py
 -----------------------------------------
-IN-->:
-		mode_share_trip_comparison.csv
-		Mode_share_distance_comparison.csv
-		Mode_share_time_comparison.csv
+Processes DRT (Demand Responsive Transport) analysis outputs.
 
-mode_mappings, ,to. , organises in a single CSV
-
-OUT-->:
-		mode_share_directory\modalSplitCalibration.csv
-
-
-
-10_DRT_Data_Analysis.py
------------------------------------------
-Will include DRT analysis
-
-
-11_CSVs_in_a_column.py
--------------------------------------------
-
-12_DRT_Order_Ouputs.py
----------------------------------------------
-
-IN-->:
+IN -->:
         drt_customer_stats_drt.csv
         drt_detailed_distanceStats_drt.csv
         drt_sharing_metrics_drt.csv
@@ -266,8 +230,47 @@ IN-->:
         output_drt_detours_drt.csv
         modestats.csv
         pkm_modestats.csv
-		
-OUT-->:
+
+OUT -->:
 		drt_summary_metrics.csv
-		
-		
+
+
+12_CSVs_in_a_column.py
+-----------------------------------------
+Combines multiple mode share CSVs into a single columnar format.
+
+IN -->:
+		plots/[simNumber]/outputs_mode_share/Mode_shares_by_trip.csv
+		plots/[simNumber]/outputs_mode_share/Mode_share_distance_comparison.csv
+		plots/[simNumber]/outputs_mode_share/Mode_share_time_comparison.csv
+		(and target area variants)
+
+	Applies mode_mappings to organize and standardize mode names.
+
+OUT -->:
+		plots/[simNumber]/ModeShareOutputs_Reordered/modalSplitCalibration.csv
+
+
+
+13_transform_output_format.py
+---------------------------------------------
+Reorders the columnar output so metrics are grouped by area type.
+
+IN -->:
+		plots/[simNumber]/ModeShareOutputs_Reordered/modalSplitCalibration.csv
+
+	Groups each metric with:
+	1. Simulated Area first
+	2. Target Area O AND D second
+	3. Target Area O OR D third
+
+OUT -->:
+		plots/[simNumber]/ModeShareOutputs_Reordered/modalSplitCalibration_reordered.csv
+
+
+-----------------------------------------
+DEPRECATED SCRIPTS (kept for reference):
+-----------------------------------------
+04_synPop_sim_trips.py          -> merged into 04_05_synPop_sim_trips_and_clean.py
+05_1_generate_clean_csv_files.py -> merged into 04_05_synPop_sim_trips_and_clean.py
+
