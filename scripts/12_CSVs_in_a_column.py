@@ -242,16 +242,6 @@ if __name__ == '__main__':
             # Reorder columns to match drt_summary_metrics format
             output_df = output_df[['Source File', 'Title', 'Value', 'Value with Comma']]
 
-            # Read and append DRT summary metrics if it exists
-            drt_file_path = os.path.join(mode_share_directory, 'drt_summary_metrics.csv')
-            if os.path.exists(drt_file_path):
-                drt_df = pd.read_csv(drt_file_path, sep=';')
-                # Concatenate the dataframes
-                output_df = pd.concat([output_df, drt_df], ignore_index=True)
-                print("DRT summary metrics appended successfully.")
-            else:
-                print(f"DRT file not found at: {drt_file_path}")
-
             output_df.to_csv(os.path.join(one_column_directory, f'modeOutputs_{scenario_name}_{target_area}.csv'), sep=';', index=False)
             output_df.to_csv(os.path.join(one_column_directory, f'modeOutputs_{scenario_name}_en_{target_area}.csv'), index=False)
             print("Data successfully saved.")
