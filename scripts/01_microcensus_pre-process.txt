@@ -12,7 +12,7 @@
 			Creates age classes and fixes marital status for young individuals
 		Returns a cleaned DataFrame of individuals
 		
-	🏘With execute_household(path) we:
+	With execute_household(path) we:
 		Loads haushalte.csv (households)
 		Renames and calculates:
 			Household size, cars, bikes, income

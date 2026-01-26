@@ -25,6 +25,7 @@ if __name__ == '__main__':
     parent_directory = os.path.dirname(directory)
     plots_directory = os.path.join(parent_directory, "plots", f"plots_{output_plots_folder_name}")
     logging.info(f"Reading data from {output_folder_path}")
+    data_path_clean = os.path.join(data_path, analysis_zone_name, clean_csv_folder, percentile)
 
     # Load geographic data from a shapefile
     shapefile_path = os.path.join(analysis_zone_path, "ShapeFiles", "Zones")

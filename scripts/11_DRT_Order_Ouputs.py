@@ -25,8 +25,8 @@ if __name__ == '__main__':
         sharing_metrics = pd.read_csv(os.path.join(output_folder_path, "drt_sharing_metrics_drt.csv"), sep=";")
         vehicle_stats = pd.read_csv(os.path.join(output_folder_path, "drt_vehicle_stats_drt.csv"), sep=";")
         detours = pd.read_csv(os.path.join(output_folder_path, "output_drt_detours_drt.csv"), sep=";", dtype={'person': str})
-        modestats = pd.read_csv(os.path.join(output_folder_path, "modestats_Hohentanen.csv"), sep=";")
-        pkm_modestats = pd.read_csv(os.path.join(output_folder_path, "pkm_modestats_Hohentanen.csv"), sep=";")
+        modestats = pd.read_csv(os.path.join(output_folder_path, "modestats.csv"), sep=";")
+        pkm_modestats = pd.read_csv(os.path.join(output_folder_path, "pkm_modestats.csv"), sep=";")
 
         # Extract metrics
         cs_last = customer_stats.iloc[-1][[

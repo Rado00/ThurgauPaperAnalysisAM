@@ -37,7 +37,9 @@ if __name__ == '__main__':
             df_activity_synt = plans.activities
             df_persons_synt = plans.persons
             df_routes_synt = plans.routes
+            df_legs_synt = plans.legs
             df_households_synt = households_synt.households
+
 
         logging.info("Dataframes created successfully")
     except Exception as e:
@@ -59,7 +61,7 @@ if __name__ == '__main__':
             df_persons_synt.to_csv(os.path.join(pre_processed_data_path, "df_persons_synt.csv"), index=False)
             df_routes_synt.to_csv(os.path.join(pre_processed_data_path, "df_routes_synt.csv"), index=False)
             df_households_synt.to_csv(os.path.join(pre_processed_data_path, "df_households_synt.csv"), index=False)
-
+            df_legs_synt.to_csv(os.path.join(pre_processed_data_path, "df_legs_synt.csv"), index=False)
 
         logging.info("All the csv files created successfully")
     except Exception as e:

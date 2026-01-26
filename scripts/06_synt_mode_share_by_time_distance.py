@@ -36,6 +36,7 @@ if __name__ == '__main__':
     scenario_path: str = os.path.join(data_path, simulation_zone_name, scenario, percentile)
     output_folder_path: str = os.path.join(data_path, simulation_zone_name, sim_output_folder)
     pre_processed_data_path = os.path.join(data_path, analysis_zone_name, csv_folder, percentile)
+    data_path_clean = os.path.join(data_path, analysis_zone_name, clean_csv_folder, percentile)
 
     # Read csv files - ToCheck if folder changes to clean_csv_folder
     if read_SynPop:
@@ -65,5 +66,5 @@ if __name__ == '__main__':
             lambda row: compute_avg_coordinates(row["start_link"], row["end_link"], link_dict_synt_str), axis=1,
             result_type="expand")
 
-        df_synt_mode_share_time_distance.to_csv(os.path.join(pre_processed_data_path, "travel_time_distance_mode_synt.csv"), index=False)
-        logging.info("Dataframe saved as csv file successfully")
+        df_synt_mode_share_time_distance.to_csv(os.path.join(data_path_clean, "travel_time_distance_mode_synt.csv"), index=False)
+        logging.info(f"Dataframe saved as csv file successfully in {data_path_clean}")

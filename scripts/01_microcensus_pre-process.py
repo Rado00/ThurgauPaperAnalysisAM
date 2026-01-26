@@ -12,7 +12,7 @@ import pandas as pd
 from functions.process_microcensus import *
 from functions.commonFunctions import *
 import warnings
-pd.set_option('display.max_columns', None)
+pd.set_option('display.max_columns', 10)
 
 warnings.filterwarnings("ignore")
 

@@ -134,7 +134,12 @@ def process_activity_and_legs_data(df_activity, df_legs, values_to_remove, modes
     df_activity = df_activity.copy()
     df_legs = df_legs.copy()
 
+    logging.info("The columns of df_activity are: " + ", ".join(df_activity.columns))
     # Identify persons with only one 'Home' activity initially
+    if 'person_id' not in df_activity.columns and 'id' in df_activity.columns:
+        df_activity['person_id'] = df_activity['id']
+        logging.info("'person_id' column created from 'id' column in df_activity")
+
     initial_single_home = df_activity.groupby('person_id').filter(
         lambda x: len(x) == 1 and x['type'].eq('Home').all()
     )
@@ -152,7 +157,14 @@ def process_activity_and_legs_data(df_activity, df_legs, values_to_remove, modes
     df_activity_filtered = df_activity_filtered[~df_activity_filtered['type'].isin(['outside'])]
 
     # Combine 'Access Walk' and 'Egress Walk' into 'Walk' in legs DataFrame
+    logging.info("The columns of df_legs are: " + ", ".join(df_legs.columns))
+
+    if 'main_mode' not in df_legs.columns and 'mode' in df_legs.columns:
+        df_legs['main_mode'] = df_legs['mode']
+        logging.info("'main_mode' column created from 'mode' column in df_legs")
+
     df_legs['main_mode'] = df_legs['main_mode'].replace({'access_walk': 'walk', 'egress_walk': 'walk'})
+    logging.info("Combined 'access_walk' and 'egress_walk' into 'walk' in legs DataFrame")
 
     # Remove specified modes from the legs DataFrame
     df_legs_filtered = df_legs[~df_legs['main_mode'].isin(modes_to_remove)]
@@ -161,6 +173,7 @@ def process_activity_and_legs_data(df_activity, df_legs, values_to_remove, modes
     final_single_home = df_activity_filtered.groupby('person_id').filter(
         lambda x: len(x) == 1 and x['type'].eq('Home').all()
     )
+    logging.info('Identified persons with only one Home activity after cleaning')
 
     # Exclude persons who initially had only one 'Home' activity
     final_single_home = final_single_home[~final_single_home['person_id'].isin(initial_single_home['person_id'])]
@@ -481,7 +494,7 @@ if __name__ == '__main__':
 
     if cfg.read_SynPop:
         df_persons_synt = df_persons_synt.rename(columns={'id': 'hh_id'})
-        df_persons_synt = clean_population_df(df_persons_synt, person_col='person_id', min_age=6)
+        df_persons_synt = clean_population_df(df_persons_synt, person_col='hh_id', min_age=6)
         df_persons_synt = normalize_sex_column(df_persons_synt)
 
     logging.info("Population DataFrames cleaned successfully")
@@ -542,6 +555,7 @@ if __name__ == '__main__':
     df_activity_population_all_activities_inside_sim = normalize_type_column(
         df_activity_population_all_activities_inside_sim
     )
+    logging.info("Activity DataFrame cleaned successfully")
 
     if cfg.read_SynPop:
         df_activity_synt_filtered, df_legs_synt_filtered = process_activity_and_legs_data(
@@ -549,6 +563,7 @@ if __name__ == '__main__':
         )
         df_activity_synt = normalize_type_column(df_activity_synt_filtered)
         df_activity_chains_syn = df_activity_synt.groupby(['plan_id']).apply(create_activity_chain_syn).reset_index()
+        logging.info("Activity Chains synt cleaned successfully")
 
         df_legs_synt = normalize_mode_column(df_legs_synt_filtered)
 

@@ -118,32 +118,45 @@ def main():
     shape_path = os.path.join(data_path, "Paper2_ShapeFiles_CH1903+_LV95_easyNames", target_area)
     target_area = gpd.read_file(shape_path)
 
-    df_mic_origin_or_destination = load_and_prepare_data(os.path.join(data_path_clean, "trips_all_activities_inside_mic.csv"), target_area, False, 'start_coor_x', 'start_coor_y')
-    df_mic_origin_and_destination = load_and_prepare_data(os.path.join(data_path_clean, "trips_all_activities_inside_mic.csv"), target_area, True, 'start_coor_x', 'start_coor_y')
-    # Simulation trips use 'main_mode' column
-    df_sim_origin_or_destination = load_and_prepare_data(os.path.join(data_path_clean, "trips_all_activities_inside_sim.csv"), target_area, False, 'start_x', 'start_y', mode_col='main_mode')
-    df_sim_origin_and_destination = load_and_prepare_data(os.path.join(data_path_clean, "trips_all_activities_inside_sim.csv"), target_area, True, 'start_x', 'start_y', mode_col='main_mode')
+    try:
+        df_mic_origin_or_destination = load_and_prepare_data(os.path.join(data_path_clean, "trips_all_activities_inside_mic.csv"), target_area, False, 'start_coor_x', 'start_coor_y')
+        df_mic_origin_and_destination = load_and_prepare_data(os.path.join(data_path_clean, "trips_all_activities_inside_mic.csv"), target_area, True, 'start_coor_x', 'start_coor_y')
+        # Simulation trips use 'main_mode' column
+        df_sim_origin_or_destination = load_and_prepare_data(os.path.join(data_path_clean, "trips_all_activities_inside_sim.csv"), target_area, False, 'start_x', 'start_y', mode_col='main_mode')
+        df_sim_origin_and_destination = load_and_prepare_data(os.path.join(data_path_clean, "trips_all_activities_inside_sim.csv"), target_area, True, 'start_x', 'start_y', mode_col='main_mode')
+        logging.info(f"Mic and Sim Data loaded from {data_path_clean}")
+    except Exception as e:
+        logging.error(f"Error reading microcensus/simulation CSV files: {str(e)}")
+        sys.exit()
 
-    if read_SynPop:
-        df_synt = load_and_prepare_data(os.path.join(data_path_clean, "travel_time_distance_mode_synt.csv"), target_area, False, 'start_coor_x', 'start_coor_y')
+    try:
+        if read_SynPop:
+            df_synt = load_and_prepare_data(os.path.join(data_path_clean, "travel_time_distance_mode_synt.csv"), target_area, False, 'start_coor_x', 'start_coor_y')
 
-    df_sim_origin_or_destination = filter_out_modes(df_sim_origin_or_destination, 'main_mode')
-    df_sim_origin_and_destination = filter_out_modes(df_sim_origin_and_destination, 'main_mode')
+        df_sim_origin_or_destination = filter_out_modes(df_sim_origin_or_destination, 'main_mode')
+        df_sim_origin_and_destination = filter_out_modes(df_sim_origin_and_destination, 'main_mode')
 
-    if read_SynPop:
-        df_synt = filter_out_modes(df_synt, 'mode')
+        logging.info(f"df_sim_origin_or_destination is created successfully.")
+        if read_SynPop:
+            df_synt = filter_out_modes(df_synt, 'mode')
 
-    
+            logging.info(f"df_synt is filtered out of modes successfully.")
 
-    if read_SynPop:
-        dist_synt = compute_percentage(df_synt, 'mode', 'distance').rename(columns={'Percentage Distance': 'Percentage Synt'}) if read_SynPop else pd.DataFrame({'Mode': df_sim_origin_or_destination['Mode'], 'Percentage Synt': [0.0]*len(df_sim_origin_or_destination)})
-    
-    if 'household_weight' in df_mic_origin_or_destination.columns:
-        df_mic_origin_or_destination['weighted_distance'] = df_mic_origin_or_destination['crowfly_distance'] * df_mic_origin_or_destination['household_weight']
-    
-    if 'household_weight' in df_mic_origin_or_destination.columns:
-        df_mic_origin_and_destination['weighted_distance'] = df_mic_origin_and_destination['crowfly_distance'] * df_mic_origin_and_destination['household_weight']
+        if read_SynPop:
+            dist_synt = compute_percentage(df_synt, 'mode', 'distance').rename(columns={'Percentage Distance': 'Percentage Synt'}) if read_SynPop else pd.DataFrame({'Mode': df_sim_origin_or_destination['Mode'], 'Percentage Synt': [0.0]*len(df_sim_origin_or_destination)})
+
+        if 'household_weight' in df_mic_origin_or_destination.columns:
+            df_mic_origin_or_destination['weighted_distance'] = df_mic_origin_or_destination['crowfly_distance'] * df_mic_origin_or_destination['household_weight']
+
+        if 'household_weight' in df_mic_origin_or_destination.columns:
+            df_mic_origin_and_destination['weighted_distance'] = df_mic_origin_and_destination['crowfly_distance'] * df_mic_origin_and_destination['household_weight']
+
+        logging.info("mic and sim and synt df are processed successfully.")
+    except Exception as e:
+        logging.error(f"Error processing dataframes: {str(e)}")
+        sys.exit()
         
+    logging.info("Starting computation of percentages and averages.")
     dist_mic_origin_or_destination = compute_percentage(df_mic_origin_or_destination, 'mode', 'crowfly_distance').rename(columns={'Percentage Crowfly_Distance': 'Percentage Mic OR'})
     dist_mic_wt_origin_or_destination = compute_percentage(df_mic_origin_or_destination, 'mode', 'weighted_distance').rename(columns={'Percentage Weighted_Distance': 'Percentage Mic Weighted OR'})
 
@@ -152,6 +165,7 @@ def main():
 
     dist_sim_origin_or_destination = compute_percentage(df_sim_origin_or_destination, 'main_mode', 'distance').rename(columns={'Percentage Distance': 'Percentage Sim OR', 'Total Distance': 'Total Distance Sim OR'})
     dist_sim_origin_and_destination = compute_percentage(df_sim_origin_and_destination, 'main_mode', 'distance').rename(columns={'Percentage Distance': 'Percentage Sim AND', 'Total Distance': 'Total Distance Sim AND'})
+    logging.info(f"dist_mic_origin_or_destination is created successfully.")
 
     average_distance_by_mode_mic_wt_origin_or_destination = df_mic_origin_or_destination.groupby('mode').apply(
         lambda x: pd.Series({
@@ -160,6 +174,7 @@ def main():
         }),
         include_groups=False
     ).reset_index()
+    logging.info("average_distance_by_mode_mic_wt_origin_or_destination is created successfully.")
     
     # Rename the 'mode' column to 'Mode' to match other dataframes
     average_distance_by_mode_mic_wt_origin_or_destination.rename(columns={'mode': 'Mode'}, inplace=True)
@@ -171,41 +186,53 @@ def main():
         }),
         include_groups=False
     ).reset_index()
-    # Rename the 'mode' column to 'Mode' to match other dataframes
-    average_distance_by_mode_mic_wt_origin_and_destination.rename(columns={'mode': 'Mode'}, inplace=True)
-    
-    average_distance_by_mode_sim_origin_or_destination = df_sim_origin_or_destination.groupby('main_mode')['distance'].agg(['mean', 'std']).reset_index()
-    average_distance_by_mode_sim_origin_or_destination.columns = ['Mode', 'Average Distance Sim OR', 'STD Distance Sim OR']
+    logging.info("average_distance_by_mode_mic_wt_origin_and_destination is created successfully.")
+    try:
+        # Rename the 'mode' column to 'Mode' to match other dataframes
+        average_distance_by_mode_mic_wt_origin_and_destination.rename(columns={'mode': 'Mode'}, inplace=True)
 
-    average_distance_by_mode_sim_origin_and_destination = df_sim_origin_and_destination.groupby('main_mode')['distance'].agg(['mean', 'std']).reset_index()
-    average_distance_by_mode_sim_origin_and_destination.columns = ['Mode', 'Average Distance Sim AND', 'STD Distance Sim AND']
+        average_distance_by_mode_sim_origin_or_destination = df_sim_origin_or_destination.groupby('main_mode')['distance'].agg(['mean', 'std']).reset_index()
+        average_distance_by_mode_sim_origin_or_destination.columns = ['Mode', 'Average Distance Sim OR', 'STD Distance Sim OR']
+
+        average_distance_by_mode_sim_origin_and_destination = df_sim_origin_and_destination.groupby('main_mode')['distance'].agg(['mean', 'std']).reset_index()
+        average_distance_by_mode_sim_origin_and_destination.columns = ['Mode', 'Average Distance Sim AND', 'STD Distance Sim AND']
+        logging.info("average_distance_by_mode_sim_origin_and_destination is created successfully.")
+    except Exception as e:
+        logging.error(f"Error computing average distances: {str(e)}")
+        sys.exit()
     
     if read_SynPop:
         average_distance_by_mode_synt = df_synt.groupby('mode')['distance'].agg(['mean', 'std']).reset_index()
         average_distance_by_mode_synt.columns = ['Mode', 'Average Distance Synt', 'STD Distance Synt']
+        logging.info("average_distance_by_mode_synt is created successfully.")
     
-    plot_grouped_bar([dist_mic_wt_origin_or_destination, dist_mic_wt_origin_and_destination, dist_mic_origin_and_destination, 
-                      dist_sim_origin_or_destination, dist_sim_origin_and_destination, dist_synt] if read_SynPop 
-                     else [dist_mic_wt_origin_or_destination, dist_mic_wt_origin_and_destination, dist_mic_origin_and_destination, dist_sim_origin_or_destination, dist_sim_origin_and_destination],
-                     ['Microcensus Weighted OR', 'Microcensus Weighted AND',
-                      'Simulation Origin or Destination', 'Simulation Origin and Destination', 'Synthetic'] if read_SynPop 
-                     else ['Microcensus Weighted OR', 'Microcensus Weighted AND', 'Simulation Origin or Destination', 
-                           'Simulation Origin and Destination'],
-                     'Comparison of Mode Share Distribution - % of Total Distance',
-                     f"{mode_share_directory}/Mode_share_by_Distance_{target_name}.png", 'Percentage (%)')
-    
-    save_custom_csv(f"{mode_share_directory}/Mode_shares_distance_{target_name}.csv",
-                    dist_mic_origin_or_destination[['Mode', 'Percentage Mic OR']],
-                    dist_mic_wt_origin_or_destination[['Mode', 'Percentage Mic Weighted OR']],
-                    dist_mic_origin_and_destination[['Mode', 'Percentage Mic AND']],
-                    dist_mic_wt_origin_and_destination[['Mode', 'Percentage Mic Weighted AND']],
-                    dist_sim_origin_or_destination[['Mode', 'Total Distance Sim OR', 'Percentage Sim OR']],
-                    dist_sim_origin_and_destination[['Mode', 'Total Distance Sim AND', 'Percentage Sim AND']],
-                    average_distance_by_mode_mic_wt_origin_or_destination[['Mode', 'Average Distance Mic WT OR', 'STD Distance Mic WT OR']],
-                    average_distance_by_mode_mic_wt_origin_and_destination[['Mode', 'Average Distance Mic WT AND', 'STD Distance Mic WT AND']],
-                    average_distance_by_mode_sim_origin_or_destination[['Mode', 'Average Distance Sim OR', 'STD Distance Sim OR']],
-                    average_distance_by_mode_sim_origin_and_destination[['Mode', 'Average Distance Sim AND', 'STD Distance Sim AND']]
-                    )
+    try:
+        plot_grouped_bar([dist_mic_wt_origin_or_destination, dist_mic_wt_origin_and_destination, dist_mic_origin_and_destination,
+                          dist_sim_origin_or_destination, dist_sim_origin_and_destination, dist_synt] if read_SynPop
+                         else [dist_mic_wt_origin_or_destination, dist_mic_wt_origin_and_destination, dist_mic_origin_and_destination, dist_sim_origin_or_destination, dist_sim_origin_and_destination],
+                         ['Microcensus Weighted OR', 'Microcensus Weighted AND',
+                          'Simulation Origin or Destination', 'Simulation Origin and Destination', 'Synthetic'] if read_SynPop
+                         else ['Microcensus Weighted OR', 'Microcensus Weighted AND', 'Simulation Origin or Destination',
+                               'Simulation Origin and Destination'],
+                         'Comparison of Mode Share Distribution - % of Total Distance',
+                         f"{mode_share_directory}/Mode_share_by_Distance_{target_name}.png", 'Percentage (%)')
+
+        save_custom_csv(f"{mode_share_directory}/Mode_shares_distance_{target_name}.csv",
+                        dist_mic_origin_or_destination[['Mode', 'Percentage Mic OR']],
+                        dist_mic_wt_origin_or_destination[['Mode', 'Percentage Mic Weighted OR']],
+                        dist_mic_origin_and_destination[['Mode', 'Percentage Mic AND']],
+                        dist_mic_wt_origin_and_destination[['Mode', 'Percentage Mic Weighted AND']],
+                        dist_sim_origin_or_destination[['Mode', 'Total Distance Sim OR', 'Percentage Sim OR']],
+                        dist_sim_origin_and_destination[['Mode', 'Total Distance Sim AND', 'Percentage Sim AND']],
+                        average_distance_by_mode_mic_wt_origin_or_destination[['Mode', 'Average Distance Mic WT OR', 'STD Distance Mic WT OR']],
+                        average_distance_by_mode_mic_wt_origin_and_destination[['Mode', 'Average Distance Mic WT AND', 'STD Distance Mic WT AND']],
+                        average_distance_by_mode_sim_origin_or_destination[['Mode', 'Average Distance Sim OR', 'STD Distance Sim OR']],
+                        average_distance_by_mode_sim_origin_and_destination[['Mode', 'Average Distance Sim AND', 'STD Distance Sim AND']]
+                        )
+        logging.info("Distance mode share plots and CSVs created successfully without synthetic.")
+    except Exception as e:
+        logging.error(f"Error creating distance mode share plots or CSVs: {str(e)}")
+        sys.exit()
     
     if read_SynPop:
         save_custom_csv(f"{mode_share_directory}/Mode_shares_distance_target_area_{target_name}.csv",
@@ -222,54 +249,65 @@ def main():
                         average_distance_by_mode_sim_origin_and_destination[['Mode', 'Average Distance Sim AND', 'STD Distance Sim AND']],
                         average_distance_by_mode_synt[['Mode', 'Average Distance Synt', 'STD Distance Synt']]
                         )
+        logging.info("Distance mode share plots and CSVs created successfully with synthetic.")
     
     df_sim_origin_or_destination['travel_time'] = pd.to_numeric(df_sim_origin_or_destination['travel_time'], errors='coerce')
     df_sim_origin_and_destination['travel_time'] = pd.to_numeric(df_sim_origin_and_destination['travel_time'], errors='coerce')
     if read_SynPop:
         df_synt['travel_time'] = pd.to_numeric(df_synt['travel_time'], errors='coerce')
-    
-    time_sim_origin_or_destination = compute_percentage(df_sim_origin_or_destination, 'main_mode', 'travel_time').rename(columns={'Percentage Travel_Time': 'Percentage Sim OR', 'Total Travel_Time': 'Total Time Sim OR'})
-    time_sim_origin_and_destination = compute_percentage(df_sim_origin_and_destination, 'main_mode', 'travel_time').rename(columns={'Percentage Travel_Time': 'Percentage Sim AND', 'Total Travel_Time': 'Total Time Sim AND'})
-    time_synt = compute_percentage(df_synt, 'mode', 'travel_time').rename(columns={'Percentage Travel_Time': 'Percentage Synt'}) if read_SynPop else pd.DataFrame({'Mode': time_sim_origin_or_destination['Mode'], 'Percentage Synt': [0.0]*len(time_sim_origin_or_destination)})
-    
-    save_custom_csv(f"{mode_share_directory}/Mode_shares_time_{target_name}.csv",
-                    time_synt[['Mode', 'Percentage Synt']],
-                    time_sim_origin_or_destination[['Mode', 'Total Time Sim OR', 'Percentage Sim OR']],
-                    time_sim_origin_and_destination[['Mode', 'Total Time Sim AND', 'Percentage Sim AND']])
-    
-    trips_mic_raw_origin_or_destination = df_mic_origin_or_destination['mode'].value_counts(normalize=True).reset_index()
-    trips_mic_raw_origin_or_destination.columns = ['Mode', 'Percentage Mic OR']
-    trips_mic_raw_origin_or_destination['Percentage Mic OR'] *= 100
-    
-    trips_mic_raw_origin_and_destination = df_mic_origin_and_destination['mode'].value_counts(normalize=True).reset_index()
-    trips_mic_raw_origin_and_destination.columns = ['Mode', 'Percentage Mic AND']
-    trips_mic_raw_origin_and_destination['Percentage Mic AND'] *= 100
-    
-    trips_mic_wt_origin_or_destination = df_mic_origin_or_destination.groupby('mode')['household_weight'].sum().reset_index()
-    trips_mic_wt_origin_or_destination.columns = ['Mode', 'Weighted Count OR']
-    total_weighted_origin_or_destination = trips_mic_wt_origin_or_destination['Weighted Count OR'].sum()
-    trips_mic_wt_origin_or_destination['Percentage Mic Weighted OR'] = (trips_mic_wt_origin_or_destination['Weighted Count OR'] / total_weighted_origin_or_destination) * 100
-    trips_mic_wt_origin_or_destination = trips_mic_wt_origin_or_destination[['Mode', 'Percentage Mic Weighted OR']]
-    
-    trips_mic_wt_origin_and_destination = df_mic_origin_and_destination.groupby('mode')['household_weight'].sum().reset_index()
-    trips_mic_wt_origin_and_destination.columns = ['Mode', 'Weighted Count AND']
-    total_weighted_origin_and_destination = trips_mic_wt_origin_and_destination['Weighted Count AND'].sum()
-    trips_mic_wt_origin_and_destination['Percentage Mic Weighted AND'] = (trips_mic_wt_origin_and_destination['Weighted Count AND'] / total_weighted_origin_and_destination) * 100
-    trips_mic_wt_origin_and_destination = trips_mic_wt_origin_and_destination[['Mode', 'Percentage Mic Weighted AND']]
-    
-    trips_sim_counts_origin_or_destination = df_sim_origin_or_destination['main_mode'].value_counts().reset_index()
-    trips_sim_counts_origin_or_destination.columns = ['Mode', 'Total Trips Sim OR']
-    trips_sim_perc_origin_or_destination = df_sim_origin_or_destination['main_mode'].value_counts(normalize=True).reset_index()
-    trips_sim_perc_origin_or_destination.columns = ['Mode', 'Percentage Sim OR']
-    trips_sim_perc_origin_or_destination['Percentage Sim OR'] *= 100
-    trips_sim_origin_or_destination = pd.merge(trips_sim_counts_origin_or_destination, trips_sim_perc_origin_or_destination, on='Mode', how='outer')
 
-    trips_sim_counts_origin_and_destination = df_sim_origin_and_destination['main_mode'].value_counts().reset_index()
-    trips_sim_counts_origin_and_destination.columns = ['Mode', 'Total Trips Sim AND']
-    trips_sim_perc_origin_and_destination = df_sim_origin_and_destination['main_mode'].value_counts(normalize=True).reset_index()
-    trips_sim_perc_origin_and_destination.columns = ['Mode', 'Percentage Sim AND']
-    trips_sim_perc_origin_and_destination['Percentage Sim AND'] *= 100
-    trips_sim_origin_and_destination = pd.merge(trips_sim_counts_origin_and_destination, trips_sim_perc_origin_and_destination, on='Mode', how='outer')
+    try:
+        time_sim_origin_or_destination = compute_percentage(df_sim_origin_or_destination, 'main_mode', 'travel_time').rename(columns={'Percentage Travel_Time': 'Percentage Sim OR', 'Total Travel_Time': 'Total Time Sim OR'})
+        time_sim_origin_and_destination = compute_percentage(df_sim_origin_and_destination, 'main_mode', 'travel_time').rename(columns={'Percentage Travel_Time': 'Percentage Sim AND', 'Total Travel_Time': 'Total Time Sim AND'})
+        time_synt = compute_percentage(df_synt, 'mode', 'travel_time').rename(columns={'Percentage Travel_Time': 'Percentage Synt'}) if read_SynPop else pd.DataFrame({'Mode': time_sim_origin_or_destination['Mode'], 'Percentage Synt': [0.0]*len(time_sim_origin_or_destination)})
+
+        save_custom_csv(f"{mode_share_directory}/Mode_shares_time_{target_name}.csv",
+                        time_synt[['Mode', 'Percentage Synt']],
+                        time_sim_origin_or_destination[['Mode', 'Total Time Sim OR', 'Percentage Sim OR']],
+                        time_sim_origin_and_destination[['Mode', 'Total Time Sim AND', 'Percentage Sim AND']])
+
+        trips_mic_raw_origin_or_destination = df_mic_origin_or_destination['mode'].value_counts(normalize=True).reset_index()
+        trips_mic_raw_origin_or_destination.columns = ['Mode', 'Percentage Mic OR']
+        trips_mic_raw_origin_or_destination['Percentage Mic OR'] *= 100
+
+        trips_mic_raw_origin_and_destination = df_mic_origin_and_destination['mode'].value_counts(normalize=True).reset_index()
+        trips_mic_raw_origin_and_destination.columns = ['Mode', 'Percentage Mic AND']
+        trips_mic_raw_origin_and_destination['Percentage Mic AND'] *= 100
+        logging.info(f"trips_mic_raw_origin_and_destination is created successfully.")
+    except Exception as e:
+        logging.error(f"Error computing time percentages or trip counts: {str(e)}")
+        sys.exit()
+
+    try:
+        trips_mic_wt_origin_or_destination = df_mic_origin_or_destination.groupby('mode')['household_weight'].sum().reset_index()
+        trips_mic_wt_origin_or_destination.columns = ['Mode', 'Weighted Count OR']
+        total_weighted_origin_or_destination = trips_mic_wt_origin_or_destination['Weighted Count OR'].sum()
+        trips_mic_wt_origin_or_destination['Percentage Mic Weighted OR'] = (trips_mic_wt_origin_or_destination['Weighted Count OR'] / total_weighted_origin_or_destination) * 100
+        trips_mic_wt_origin_or_destination = trips_mic_wt_origin_or_destination[['Mode', 'Percentage Mic Weighted OR']]
+
+        trips_mic_wt_origin_and_destination = df_mic_origin_and_destination.groupby('mode')['household_weight'].sum().reset_index()
+        trips_mic_wt_origin_and_destination.columns = ['Mode', 'Weighted Count AND']
+        total_weighted_origin_and_destination = trips_mic_wt_origin_and_destination['Weighted Count AND'].sum()
+        trips_mic_wt_origin_and_destination['Percentage Mic Weighted AND'] = (trips_mic_wt_origin_and_destination['Weighted Count AND'] / total_weighted_origin_and_destination) * 100
+        trips_mic_wt_origin_and_destination = trips_mic_wt_origin_and_destination[['Mode', 'Percentage Mic Weighted AND']]
+
+        trips_sim_counts_origin_or_destination = df_sim_origin_or_destination['main_mode'].value_counts().reset_index()
+        trips_sim_counts_origin_or_destination.columns = ['Mode', 'Total Trips Sim OR']
+        trips_sim_perc_origin_or_destination = df_sim_origin_or_destination['main_mode'].value_counts(normalize=True).reset_index()
+        trips_sim_perc_origin_or_destination.columns = ['Mode', 'Percentage Sim OR']
+        trips_sim_perc_origin_or_destination['Percentage Sim OR'] *= 100
+        trips_sim_origin_or_destination = pd.merge(trips_sim_counts_origin_or_destination, trips_sim_perc_origin_or_destination, on='Mode', how='outer')
+
+        trips_sim_counts_origin_and_destination = df_sim_origin_and_destination['main_mode'].value_counts().reset_index()
+        trips_sim_counts_origin_and_destination.columns = ['Mode', 'Total Trips Sim AND']
+        trips_sim_perc_origin_and_destination = df_sim_origin_and_destination['main_mode'].value_counts(normalize=True).reset_index()
+        trips_sim_perc_origin_and_destination.columns = ['Mode', 'Percentage Sim AND']
+        trips_sim_perc_origin_and_destination['Percentage Sim AND'] *= 100
+        trips_sim_origin_and_destination = pd.merge(trips_sim_counts_origin_and_destination, trips_sim_perc_origin_and_destination, on='Mode', how='outer')
+        logging.info(f"trips_sim_origin_and_destination is created successfully.")
+    except Exception as e:
+        logging.error(f"Error computing trip counts or percentages: {str(e)}")
+        sys.exit()
     
     if read_SynPop:
         trips_synt = df_synt['mode'].value_counts(normalize=True).reset_index()
@@ -278,25 +316,30 @@ def main():
     else:
         unique_modes = pd.concat([trips_mic_raw_origin_or_destination['Mode'], trips_sim_origin_or_destination['Mode']]).unique()
         trips_synt = pd.DataFrame({'Mode': unique_modes, 'Percentage Synt': [0.0] * len(unique_modes)})
-    
-    plot_grouped_bar([trips_mic_wt_origin_or_destination, trips_mic_wt_origin_and_destination, trips_mic_raw_origin_and_destination, 
-                      trips_sim_origin_or_destination, trips_sim_origin_and_destination, trips_synt] if read_SynPop 
-                     else [trips_mic_wt_origin_or_destination, trips_mic_wt_origin_and_destination, 
-                           trips_mic_raw_origin_and_destination, trips_sim_origin_or_destination, trips_sim_origin_and_destination],
-                     ['Microcensus Weighted OR', 'Microcensus Weighted AND',
-                      'Simulation OR', 'Simulation AND', 'Synthetic'] if read_SynPop else ['Microcensus Weighted OR', 'Microcensus Weighted AND', 
-                                                                                           'Simulation OR', 'Simulation AND'],
-                     'Comparison of Mode Share Distribution - % of Trips',
-                     f"{mode_share_directory}/Mode_share_by_Trips_{target_name}.png", 'Percentage (%)')
-    
-    save_custom_csv(f"{mode_share_directory}/Mode_shares_by_trip_{target_name}.csv",
-                    trips_mic_raw_origin_or_destination[['Mode', 'Percentage Mic OR']],
-                    trips_mic_wt_origin_or_destination[['Mode', 'Percentage Mic Weighted OR']],
-                    trips_mic_raw_origin_and_destination[['Mode', 'Percentage Mic AND']],
-                    trips_mic_wt_origin_and_destination[['Mode', 'Percentage Mic Weighted AND']],
-                    trips_synt[['Mode', 'Percentage Synt']],
-                    trips_sim_origin_or_destination[['Mode', 'Total Trips Sim OR', 'Percentage Sim OR']],
-                    trips_sim_origin_and_destination[['Mode', 'Total Trips Sim AND', 'Percentage Sim AND']])
+
+    try:
+        plot_grouped_bar([trips_mic_wt_origin_or_destination, trips_mic_wt_origin_and_destination, trips_mic_raw_origin_and_destination,
+                          trips_sim_origin_or_destination, trips_sim_origin_and_destination, trips_synt] if read_SynPop
+                         else [trips_mic_wt_origin_or_destination, trips_mic_wt_origin_and_destination,
+                               trips_mic_raw_origin_and_destination, trips_sim_origin_or_destination, trips_sim_origin_and_destination],
+                         ['Microcensus Weighted OR', 'Microcensus Weighted AND',
+                          'Simulation OR', 'Simulation AND', 'Synthetic'] if read_SynPop else ['Microcensus Weighted OR', 'Microcensus Weighted AND',
+                                                                                               'Simulation OR', 'Simulation AND'],
+                         'Comparison of Mode Share Distribution - % of Trips',
+                         f"{mode_share_directory}/Mode_share_by_Trips_{target_name}.png", 'Percentage (%)')
+
+        save_custom_csv(f"{mode_share_directory}/Mode_shares_by_trip_{target_name}.csv",
+                        trips_mic_raw_origin_or_destination[['Mode', 'Percentage Mic OR']],
+                        trips_mic_wt_origin_or_destination[['Mode', 'Percentage Mic Weighted OR']],
+                        trips_mic_raw_origin_and_destination[['Mode', 'Percentage Mic AND']],
+                        trips_mic_wt_origin_and_destination[['Mode', 'Percentage Mic Weighted AND']],
+                        trips_synt[['Mode', 'Percentage Synt']],
+                        trips_sim_origin_or_destination[['Mode', 'Total Trips Sim OR', 'Percentage Sim OR']],
+                        trips_sim_origin_and_destination[['Mode', 'Total Trips Sim AND', 'Percentage Sim AND']])
+        logging.info("Trip mode share plots and CSVs created successfully.")
+    except Exception as e:
+        logging.error(f"Error creating trip mode share plots or CSVs: {str(e)}")
+        sys.exit()
         
 
 
