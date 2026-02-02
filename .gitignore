@@ -6,7 +6,7 @@
 *.jpeg
 *.csv
 *.pkl
-test.py
+scripts/test.py
 
 
 #folders
