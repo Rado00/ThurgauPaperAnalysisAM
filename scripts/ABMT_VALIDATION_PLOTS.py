@@ -454,18 +454,13 @@ def plot_mode_share_comparison(plans_sim_full, population_sim_ids, output_path):
             logging.warning("No legs dataframe available - skipping mode share plot")
             return
 
-        # Get legs for people in our study area
+        # Get all legs from simulation
         legs_sim = plans_sim_full.legs.copy()
 
-        # Filter to only include legs from people in study area
-        legs_sim_filtered = legs_sim[legs_sim['plan_id'].astype(str).str.split('_').str[0].isin(
-            population_sim_ids.astype(str)
-        )]
-
-        logging.info(f"Total legs: {len(legs_sim)}, Filtered legs (study area): {len(legs_sim_filtered)}")
+        logging.info(f"Total legs in simulation: {len(legs_sim)}")
 
         # Get mode distribution
-        mode_counts = legs_sim_filtered['mode'].value_counts()
+        mode_counts = legs_sim['mode'].value_counts()
         mode_pct = (mode_counts / mode_counts.sum() * 100)
 
         # Filter out non-passenger modes
@@ -535,23 +530,17 @@ def plot_activity_type_comparison(plans_sim_full, population_sim_ids, output_pat
             logging.warning("No activities dataframe available - skipping activity plot")
             return
 
-        # Get activities for people in our study area
+        # Get all activities from simulation
         activities_sim = plans_sim_full.activities.copy()
 
-        # Filter to only include activities from people in study area
-        activities_sim_filtered = activities_sim[
-            activities_sim['plan_id'].astype(str).str.split('_').str[0].isin(
-                population_sim_ids.astype(str)
-            )
-        ]
-
-        logging.info(
-            f"Total activities: {len(activities_sim)}, Filtered activities (study area): {len(activities_sim_filtered)}")
+        logging.info(f"Total activities in simulation: {len(activities_sim)}")
 
         # Filter out "interaction" activities (these are MATSim artifacts, not real activities)
-        activities_real = activities_sim_filtered[
-            ~activities_sim_filtered['type'].str.contains('interaction', case=False, na=False)
+        activities_real = activities_sim[
+            ~activities_sim['type'].str.contains('interaction', case=False, na=False)
         ]
+
+        logging.info(f"Real activities (excluding interactions): {len(activities_real)}")
 
         # Get activity type distribution
         activity_counts = activities_real['type'].value_counts()
