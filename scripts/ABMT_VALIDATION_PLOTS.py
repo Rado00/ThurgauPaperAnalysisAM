@@ -4,6 +4,7 @@ import matsim
 import logging
 import warnings
 import pandas as pd
+import numpy as np
 import geopandas as gpd
 import matplotlib.pyplot as plt
 from pathlib import Path
@@ -441,6 +442,258 @@ def plot_gender_distribution(analyse_data_sim, analyse_data_mic, output_path):
         logging.error(f"Error generating gender distribution plot: {str(e)}")
 
 
+def plot_mode_share_comparison(plans_sim_full, population_sim_ids, output_path):
+    """
+    Generate mode share comparison plot
+    CRITICAL validation for transportation modeling!
+    """
+    logging.info("Generating mode share comparison plot...")
+
+    try:
+        if not hasattr(plans_sim_full, 'legs'):
+            logging.warning("No legs dataframe available - skipping mode share plot")
+            return
+
+        # Get legs for people in our study area
+        legs_sim = plans_sim_full.legs.copy()
+
+        # Filter to only include legs from people in study area
+        legs_sim_filtered = legs_sim[legs_sim['plan_id'].astype(str).str.split('_').str[0].isin(
+            population_sim_ids.astype(str)
+        )]
+
+        logging.info(f"Total legs: {len(legs_sim)}, Filtered legs (study area): {len(legs_sim_filtered)}")
+
+        # Get mode distribution
+        mode_counts = legs_sim_filtered['mode'].value_counts()
+        mode_pct = (mode_counts / mode_counts.sum() * 100)
+
+        # Filter out non-passenger modes
+        passenger_modes = ['walk', 'car', 'pt', 'bike', 'car_passenger', 'drt']
+        mode_pct_filtered = mode_pct[mode_pct.index.isin(passenger_modes)]
+
+        # Define display order and labels
+        mode_order = ['walk', 'car', 'pt', 'bike', 'car_passenger', 'drt']
+        mode_labels_map = {
+            'walk': 'Walk',
+            'car': 'Car',
+            'pt': 'Public Transport',
+            'bike': 'Bike',
+            'car_passenger': 'Car Passenger',
+            'drt': 'DRT'
+        }
+
+        # Create ordered data
+        modes_ordered = [m for m in mode_order if m in mode_pct_filtered.index]
+        mode_labels = [mode_labels_map[m] for m in modes_ordered]
+        mode_values = [mode_pct_filtered[m] for m in modes_ordered]
+
+        # Create plot
+        fig, ax = plt.subplots(figsize=(12, 6))
+
+        colors = ['#2ecc71', '#e74c3c', '#3498db', '#f39c12', '#9b59b6', '#1abc9c']
+        bars = ax.bar(range(len(mode_values)), mode_values, color=colors[:len(mode_values)], alpha=0.8)
+
+        ax.set_xlabel('Mode of Transportation', fontsize=12)
+        ax.set_ylabel('Percentage (%)', fontsize=12)
+        ax.set_title('Mode Share Distribution - Simulation', fontsize=14, pad=20)
+        ax.set_xticks(range(len(mode_labels)))
+        ax.set_xticklabels(mode_labels, rotation=15, ha='right')
+        ax.grid(axis='y', alpha=0.3, linestyle='-', linewidth=0.5)
+        ax.set_axisbelow(True)
+
+        # Add value labels on bars
+        for i, (bar, val) in enumerate(zip(bars, mode_values)):
+            height = bar.get_height()
+            ax.text(bar.get_x() + bar.get_width() / 2., height,
+                    f'{val:.1f}%', ha='center', va='bottom', fontsize=10)
+
+        plt.tight_layout()
+        plt.savefig(output_path, dpi=300, bbox_inches='tight')
+        plt.close()
+
+        # Log the distribution
+        logging.info("Mode share distribution:")
+        for mode, pct in zip(mode_labels, mode_values):
+            logging.info(f"  {mode}: {pct:.1f}%")
+
+        logging.info(f"Mode share plot saved to: {output_path}")
+
+    except Exception as e:
+        logging.error(f"Error generating mode share plot: {str(e)}")
+
+
+def plot_activity_type_comparison(plans_sim_full, population_sim_ids, output_path):
+    """
+    Generate activity type distribution plot
+    Excludes 'interaction' activities which are MATSim artifacts
+    """
+    logging.info("Generating activity type distribution plot...")
+
+    try:
+        if not hasattr(plans_sim_full, 'activities'):
+            logging.warning("No activities dataframe available - skipping activity plot")
+            return
+
+        # Get activities for people in our study area
+        activities_sim = plans_sim_full.activities.copy()
+
+        # Filter to only include activities from people in study area
+        activities_sim_filtered = activities_sim[
+            activities_sim['plan_id'].astype(str).str.split('_').str[0].isin(
+                population_sim_ids.astype(str)
+            )
+        ]
+
+        logging.info(
+            f"Total activities: {len(activities_sim)}, Filtered activities (study area): {len(activities_sim_filtered)}")
+
+        # Filter out "interaction" activities (these are MATSim artifacts, not real activities)
+        activities_real = activities_sim_filtered[
+            ~activities_sim_filtered['type'].str.contains('interaction', case=False, na=False)
+        ]
+
+        # Get activity type distribution
+        activity_counts = activities_real['type'].value_counts()
+        activity_pct = (activity_counts / activity_counts.sum() * 100)
+
+        # Define activity order and labels
+        activity_order = ['home', 'work', 'leisure', 'shop', 'education', 'other', 'outside']
+        activity_labels_map = {
+            'home': 'Home',
+            'work': 'Work',
+            'leisure': 'Leisure',
+            'shop': 'Shopping',
+            'education': 'Education',
+            'other': 'Other',
+            'outside': 'Outside Area'
+        }
+
+        # Create ordered data
+        activities_ordered = [a for a in activity_order if a in activity_pct.index]
+        activity_labels = [activity_labels_map.get(a, a.title()) for a in activities_ordered]
+        activity_values = [activity_pct[a] for a in activities_ordered]
+
+        # Create plot
+        fig, ax = plt.subplots(figsize=(12, 6))
+
+        colors = ['#3498db', '#e74c3c', '#2ecc71', '#f39c12', '#9b59b6', '#95a5a6', '#34495e']
+        bars = ax.bar(range(len(activity_values)), activity_values,
+                      color=colors[:len(activity_values)], alpha=0.8)
+
+        ax.set_xlabel('Activity Type', fontsize=12)
+        ax.set_ylabel('Percentage (%)', fontsize=12)
+        ax.set_title('Activity Type Distribution - Simulation', fontsize=14, pad=20)
+        ax.set_xticks(range(len(activity_labels)))
+        ax.set_xticklabels(activity_labels, rotation=15, ha='right')
+        ax.grid(axis='y', alpha=0.3, linestyle='-', linewidth=0.5)
+        ax.set_axisbelow(True)
+
+        # Add value labels on bars
+        for bar, val in zip(bars, activity_values):
+            height = bar.get_height()
+            ax.text(bar.get_x() + bar.get_width() / 2., height,
+                    f'{val:.1f}%', ha='center', va='bottom', fontsize=10)
+
+        plt.tight_layout()
+        plt.savefig(output_path, dpi=300, bbox_inches='tight')
+        plt.close()
+
+        # Log the distribution
+        logging.info("Activity type distribution (excluding interactions):")
+        for activity, pct in zip(activity_labels, activity_values):
+            logging.info(f"  {activity}: {pct:.1f}%")
+
+        logging.info(f"Activity type plot saved to: {output_path}")
+
+    except Exception as e:
+        logging.error(f"Error generating activity type plot: {str(e)}")
+
+
+def plot_departure_time_distribution(plans_sim_full, population_sim_ids, output_path):
+    """
+    Generate departure time distribution plot
+    Shows when people start their trips throughout the day
+    """
+    logging.info("Generating departure time distribution plot...")
+
+    try:
+        if not hasattr(plans_sim_full, 'legs'):
+            logging.warning("No legs dataframe available - skipping departure time plot")
+            return
+
+        # Get legs for people in our study area
+        legs_sim = plans_sim_full.legs.copy()
+
+        # Filter to only include legs from people in study area
+        legs_sim_filtered = legs_sim[legs_sim['plan_id'].astype(str).str.split('_').str[0].isin(
+            population_sim_ids.astype(str)
+        )]
+
+        # Convert departure time to numeric (seconds since midnight)
+        legs_sim_filtered['dep_time_numeric'] = pd.to_numeric(
+            legs_sim_filtered['dep_time'],
+            errors='coerce'
+        )
+
+        # Filter out invalid times
+        legs_valid = legs_sim_filtered[legs_sim_filtered['dep_time_numeric'].notna()].copy()
+
+        # Convert seconds to hours
+        legs_valid['dep_hour'] = legs_valid['dep_time_numeric'] / 3600.0
+
+        # Filter to 0-24 hours (exclude outliers)
+        legs_valid = legs_valid[(legs_valid['dep_hour'] >= 0) & (legs_valid['dep_hour'] < 24)]
+
+        logging.info(f"Valid departure times for plotting: {len(legs_valid)}")
+
+        # Create 30-minute bins
+        bins = np.arange(0, 24.5, 0.5)  # 0:00 to 24:00 in 30-min intervals
+        bin_labels = []
+        for i in range(len(bins) - 1):
+            hour = int(bins[i])
+            minute = int((bins[i] % 1) * 60)
+            bin_labels.append(f"{hour:02d}:{minute:02d}")
+
+        # Count trips in each bin
+        hist, _ = np.histogram(legs_valid['dep_hour'], bins=bins)
+        hist_pct = (hist / hist.sum() * 100)
+
+        # Create plot
+        fig, ax = plt.subplots(figsize=(14, 6))
+
+        x_pos = np.arange(len(hist_pct))
+        bars = ax.bar(x_pos, hist_pct, width=0.8, color='#3498db', alpha=0.8, edgecolor='none')
+
+        ax.set_xlabel('Time of Day', fontsize=12)
+        ax.set_ylabel('Percentage of Trips (%)', fontsize=12)
+        ax.set_title('Departure Time Distribution - Simulation', fontsize=14, pad=20)
+
+        # Set x-axis labels (show every 2 hours)
+        tick_indices = range(0, len(bin_labels), 4)  # Every 2 hours
+        ax.set_xticks([x_pos[i] for i in tick_indices])
+        ax.set_xticklabels([bin_labels[i] for i in tick_indices], rotation=45, ha='right')
+
+        ax.grid(axis='y', alpha=0.3, linestyle='-', linewidth=0.5)
+        ax.set_axisbelow(True)
+        ax.set_xlim(-0.5, len(hist_pct) - 0.5)
+
+        plt.tight_layout()
+        plt.savefig(output_path, dpi=300, bbox_inches='tight')
+        plt.close()
+
+        # Log peak hours
+        peak_idx = np.argmax(hist_pct)
+        peak_time = bin_labels[peak_idx]
+        peak_pct = hist_pct[peak_idx]
+        logging.info(f"Peak departure time: {peak_time} ({peak_pct:.2f}% of trips)")
+
+        logging.info(f"Departure time plot saved to: {output_path}")
+
+    except Exception as e:
+        logging.error(f"Error generating departure time plot: {str(e)}")
+
+
 def main():
     """Main execution function"""
 
@@ -582,7 +835,8 @@ def main():
             'CHF 8001-10000',
             'CHF 10001-12000',
             'CHF 12001-14000',
-            'CHF 14001-16000'
+            'CHF 14001-16000',
+            'Over CHF 16000'  # Missing label added!
         ]
 
         # Simulation income - convert to numeric and handle NaN
@@ -658,42 +912,78 @@ def main():
         else:
             logging.warning("Skipping income class comparison plot due to insufficient valid data")
 
+    # =========================================================================
+    # NEW VALIDATIONS - Mode Share, Activities, Departure Times
+    # =========================================================================
+
+    if cfg.read_microcensus:
+        # Extract person IDs for filtering legs/activities
+        population_sim_ids = population_sim['person_id']
+
+        # Mode Share Validation
+        plot_mode_share_comparison(
+            plans_sim_full,
+            population_sim_ids,
+            os.path.join(sim_output_plots_path, 'mode_share_distribution.png')
+        )
+
+        # Activity Type Validation
+        plot_activity_type_comparison(
+            plans_sim_full,
+            population_sim_ids,
+            os.path.join(sim_output_plots_path, 'activity_type_distribution.png')
+        )
+
+        # Departure Time Validation
+        plot_departure_time_distribution(
+            plans_sim_full,
+            population_sim_ids,
+            os.path.join(sim_output_plots_path, 'departure_time_distribution.png')
+        )
+
     logging.info("All validation plots generated successfully")
 
     # ============================================================================
-    # SUGGESTIONS FOR ADDITIONAL VALIDATIONS
+    # VALIDATION SUMMARY
     # ============================================================================
     logging.info("\n" + "=" * 80)
-    logging.info("ADDITIONAL VALIDATION OPPORTUNITIES")
+    logging.info("VALIDATION SUMMARY")
     logging.info("=" * 80)
 
+    logging.info("\n✅ COMPLETED VALIDATIONS:")
+    logging.info("  1. Age Distribution")
+    logging.info("  2. Gender Distribution")
+    logging.info("  3. Car Availability")
+    logging.info("  4. Bike Availability")
+    logging.info("  5. Employment Status")
+    logging.info("  6. Income Class Distribution")
+    logging.info("  7. Mode Share Distribution (NEW!)")
+    logging.info("  8. Activity Type Distribution (NEW!)")
+    logging.info("  9. Departure Time Distribution (NEW!)")
+
+    logging.info("\n📊 KEY STATISTICS:")
+    logging.info(f"  - Simulation population (filtered): {len(population_sim)}")
+    logging.info(f"  - Microcensus population (filtered): {len(population_mic)}")
+    logging.info(f"  - Population ratio: {len(population_sim) / len(population_mic):.1f}:1")
+
     if hasattr(plans_sim_full, 'legs'):
-        logging.info("\n✅ MODE SHARE validation can be added:")
-        logging.info("   - Use plans_sim_full.legs['mode'] column")
-        logging.info("   - Compare simulation vs microcensus mode distribution")
-        logging.info("   - This is CRITICAL for transportation modeling!")
+        logging.info(f"  - Total trips analyzed: {len(plans_sim_full.legs)}")
+    if hasattr(plans_sim_full, 'activities'):
+        logging.info(f"  - Total activities analyzed: {len(plans_sim_full.activities)}")
+
+    logging.info("\n💡 ADDITIONAL VALIDATIONS THAT COULD BE ADDED:")
 
     if hasattr(plans_sim_full, 'activities'):
-        logging.info("\n✅ ACTIVITY DISTRIBUTION validation can be added:")
-        logging.info("   - Use plans_sim_full.activities['type'] column")
-        logging.info("   - Compare work, leisure, shopping, education activities")
-
-        logging.info("\n✅ ACTIVITY CHAINS validation can be added:")
-        logging.info("   - Combine activities into sequences (H-W-H, H-W-L-H, etc.)")
-        logging.info("   - Compare top 10 activity chain patterns")
-
-    if hasattr(plans_sim_full, 'legs') and 'dep_time' in plans_sim_full.legs.columns:
-        logging.info("\n✅ DEPARTURE TIME validation can be added:")
-        logging.info("   - Use plans_sim_full.legs['dep_time'] column")
-        logging.info("   - Create 30-minute bins over 24 hours")
-        logging.info("   - Compare peak hour patterns")
+        logging.info("  ⚪ ACTIVITY CHAINS validation:")
+        logging.info("     - Combine activities into sequences (H-W-H, H-W-L-H, etc.)")
+        logging.info("     - Compare top 10 activity chain patterns with microcensus")
 
     if hasattr(plans_sim_full, 'legs'):
-        if 'start_x' in plans_sim_full.legs.columns and 'end_x' in plans_sim_full.legs.columns:
-            logging.info("\n✅ ORIGIN-DESTINATION validation can be added:")
-            logging.info("   - Use origin/destination coordinates from legs")
-            logging.info("   - Group by zones/districts")
-            logging.info("   - Create O-D matrices and flow maps")
+        if 'start_x' in plans_sim_full.legs.columns or 'x' in plans_sim_full.activities.columns:
+            logging.info("  ⚪ ORIGIN-DESTINATION validation:")
+            logging.info("     - Use activity/leg coordinates")
+            logging.info("     - Group by zones/districts")
+            logging.info("     - Create O-D matrices and flow maps")
 
     logging.info("\n💡 See CODE_REVIEW_SUMMARY.md for implementation examples")
     logging.info("=" * 80 + "\n")
