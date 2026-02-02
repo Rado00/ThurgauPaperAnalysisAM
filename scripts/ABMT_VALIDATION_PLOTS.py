@@ -197,7 +197,7 @@ def load_and_clean_simulation_data(output_folder_path, area_polygon, gdf_crs):
     clean_person_sim = clean_person_sim[
         clean_person_sim['home_coordiante_x'].notnull() &
         clean_person_sim['home_coordiante_y'].notnull()
-        ]
+    ]
 
     # Rename columns
     clean_person_sim.rename(columns={
@@ -311,17 +311,38 @@ def load_and_clean_microcensus_data(analysis_zone_path, area_polygon, gdf_crs, n
     # Continue with normal data processing
     # ============================================================================
 
+    # FIXED: After merge, columns are home_x_x and home_y_x (not home_x and home_y)
     clean_person_mic = df_persons_mic[[
         'person_id', 'age', 'sex', 'car_availability', 'employed',
-        'income_class', 'home_x', 'home_y', 'number_of_bikes', 'person_weight'
+        'income_class', 'home_x_x', 'home_y_x', 'number_of_bikes', 'person_weight'
     ]].copy()
+
+    # Rename columns to standard names
+    clean_person_mic.rename(columns={
+        'home_x_x': 'home_x',
+        'home_y_x': 'home_y'
+    }, inplace=True)
+
+    # FIXED: Map income_class from numeric codes (0-8) to string values matching simulation format
+    income_class_mapping = {
+        0: '2000.0',      # Under CHF 2000
+        1: '4000.0',      # CHF 2000–4000
+        2: '6000.0',      # CHF 4001–6000
+        3: '8000.0',      # CHF 6001–8000
+        4: '10000.0',     # CHF 8001–10000
+        5: '12000.0',     # CHF 10001–12000
+        6: '14000.0',     # CHF 12001–14000
+        7: '16000.0',     # CHF 14001–16000
+        8: '18000.0'      # More than CHF 16000
+    }
+    clean_person_mic['income_class'] = clean_person_mic['income_class'].map(income_class_mapping)
 
     # Filter and clean
     clean_person_mic = clean_person_mic[clean_person_mic['age'] >= 6]
     clean_person_mic = clean_person_mic[
         clean_person_mic['home_x'].notnull() &
         clean_person_mic['home_y'].notnull()
-        ]
+    ]
 
     # Transform variables
     clean_person_mic['bike_availability'] = clean_person_mic['number_of_bikes'].apply(
@@ -455,7 +476,7 @@ def plot_gender_distribution(analyse_data_sim, analyse_data_mic, output_path):
         logging.error(f"Error generating gender distribution plot: {str(e)}")
 
 
-def plot_mode_share_comparison(plans_sim_full, population_sim_ids, output_path):
+def plot_mode_share_comparison(plans_sim_full, population_sim, output_path):
     """
     Generate mode share comparison plot
     CRITICAL validation for transportation modeling!
@@ -496,6 +517,10 @@ def plot_mode_share_comparison(plans_sim_full, population_sim_ids, output_path):
         mode_labels = [mode_labels_map[m] for m in modes_ordered]
         mode_values = [mode_pct_filtered[m] for m in modes_ordered]
 
+        if len(mode_values) == 0:
+            logging.warning("No passenger modes found")
+            return
+
         # Create plot
         fig, ax = plt.subplots(figsize=(12, 6))
 
@@ -529,9 +554,11 @@ def plot_mode_share_comparison(plans_sim_full, population_sim_ids, output_path):
 
     except Exception as e:
         logging.error(f"Error generating mode share plot: {str(e)}")
+        import traceback
+        logging.error(traceback.format_exc())
 
 
-def plot_activity_type_comparison(plans_sim_full, population_sim_ids, output_path):
+def plot_activity_type_comparison(plans_sim_full, population_sim, output_path):
     """
     Generate activity type distribution plot
     Excludes 'interaction' activities which are MATSim artifacts
@@ -576,6 +603,10 @@ def plot_activity_type_comparison(plans_sim_full, population_sim_ids, output_pat
         activity_labels = [activity_labels_map.get(a, a.title()) for a in activities_ordered]
         activity_values = [activity_pct[a] for a in activities_ordered]
 
+        if len(activity_values) == 0:
+            logging.warning("No real activities found")
+            return
+
         # Create plot
         fig, ax = plt.subplots(figsize=(12, 6))
 
@@ -610,9 +641,11 @@ def plot_activity_type_comparison(plans_sim_full, population_sim_ids, output_pat
 
     except Exception as e:
         logging.error(f"Error generating activity type plot: {str(e)}")
+        import traceback
+        logging.error(traceback.format_exc())
 
 
-def plot_departure_time_distribution(plans_sim_full, population_sim_ids, output_path):
+def plot_departure_time_distribution(plans_sim_full, population_sim, output_path):
     """
     Generate departure time distribution plot
     Shows when people start their trips throughout the day
@@ -624,22 +657,17 @@ def plot_departure_time_distribution(plans_sim_full, population_sim_ids, output_
             logging.warning("No legs dataframe available - skipping departure time plot")
             return
 
-        # Get legs for people in our study area
+        # FIXED: Get ALL legs from simulation (don't filter by study area)
         legs_sim = plans_sim_full.legs.copy()
 
-        # Filter to only include legs from people in study area
-        legs_sim_filtered = legs_sim[legs_sim['plan_id'].astype(str).str.split('_').str[0].isin(
-            population_sim_ids.astype(str)
-        )]
-
         # Convert departure time to numeric (seconds since midnight)
-        legs_sim_filtered['dep_time_numeric'] = pd.to_numeric(
-            legs_sim_filtered['dep_time'],
+        legs_sim['dep_time_numeric'] = pd.to_numeric(
+            legs_sim['dep_time'],
             errors='coerce'
         )
 
         # Filter out invalid times
-        legs_valid = legs_sim_filtered[legs_sim_filtered['dep_time_numeric'].notna()].copy()
+        legs_valid = legs_sim[legs_sim['dep_time_numeric'].notna()].copy()
 
         # Convert seconds to hours
         legs_valid['dep_hour'] = legs_valid['dep_time_numeric'] / 3600.0
@@ -648,6 +676,10 @@ def plot_departure_time_distribution(plans_sim_full, population_sim_ids, output_
         legs_valid = legs_valid[(legs_valid['dep_hour'] >= 0) & (legs_valid['dep_hour'] < 24)]
 
         logging.info(f"Valid departure times for plotting: {len(legs_valid)}")
+
+        if len(legs_valid) == 0:
+            logging.warning("No valid departure times found")
+            return
 
         # Create 30-minute bins
         bins = np.arange(0, 24.5, 0.5)  # 0:00 to 24:00 in 30-min intervals
@@ -694,6 +726,8 @@ def plot_departure_time_distribution(plans_sim_full, population_sim_ids, output_
 
     except Exception as e:
         logging.error(f"Error generating departure time plot: {str(e)}")
+        import traceback
+        logging.error(traceback.format_exc())
 
 
 def main():
@@ -838,7 +872,7 @@ def main():
             'CHF 10001-12000',
             'CHF 12001-14000',
             'CHF 14001-16000',
-            'Over CHF 16000'  # Missing label added!
+            'Over CHF 16000'
         ]
 
         # Simulation income - convert to numeric and handle NaN
@@ -919,27 +953,24 @@ def main():
     # =========================================================================
 
     if cfg.read_microcensus:
-        # Extract person IDs for filtering legs/activities
-        population_sim_ids = population_sim['person_id']
-
         # Mode Share Validation
         plot_mode_share_comparison(
             plans_sim_full,
-            population_sim_ids,
+            population_sim,
             os.path.join(sim_output_plots_path, 'mode_share_distribution.png')
         )
 
         # Activity Type Validation
         plot_activity_type_comparison(
             plans_sim_full,
-            population_sim_ids,
+            population_sim,
             os.path.join(sim_output_plots_path, 'activity_type_distribution.png')
         )
 
         # Departure Time Validation
         plot_departure_time_distribution(
             plans_sim_full,
-            population_sim_ids,
+            population_sim,
             os.path.join(sim_output_plots_path, 'departure_time_distribution.png')
         )
 
