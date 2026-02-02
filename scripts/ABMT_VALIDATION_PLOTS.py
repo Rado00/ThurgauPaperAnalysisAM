@@ -252,10 +252,23 @@ def load_and_clean_microcensus_data(analysis_zone_path, area_polygon, gdf_crs, n
     """Load and clean Microcensus data"""
     logging.info("Loading Microcensus data...")
 
-    df_persons_mic = pd.read_csv(
+    df_persons_row_mic = pd.read_csv(
         os.path.join(analysis_zone_path, "microzensus", "all_population.csv"),
         low_memory=False,
         nrows=n_rows
+    )
+
+    df_row_trips_mic = pd.read_csv(
+        os.path.join(analysis_zone_path, "microzensus", "row_trips.csv"),
+        low_memory=False,
+        nrows=n_rows
+    )
+
+    df_persons_mic = df_persons_row_mic.merge(
+        df_row_trips_mic,
+        how='left',
+        left_on='person_id',
+        right_on='person_id'
     )
 
     # ============================================================================
