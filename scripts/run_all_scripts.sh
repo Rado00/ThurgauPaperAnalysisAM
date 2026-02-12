@@ -16,8 +16,7 @@ if [[ "$OS_TYPE" == "Linux" && "$USER_NAME" == "muaa" ]]; then
 
 elif [[ "$OS_TYPE" == "Linux" && "$USER_NAME" == "comura" ]]; then
     echo "Running on UZH Linux as comura"
-    module load anaconda3/2024.02-1
-    source /apps/opt/spack/linux-ubuntu20.04-x86_64/gcc-9.3.0/anaconda3-2024.02-1-whphrx3ledrvyrcnibu7lezfvvqltgt5/etc/profile.d/conda.sh
+    eval "$(~/miniconda3/bin/conda shell.bash hook)"
     conda activate ThurgauAnalysisEnv
     SCRIPTS_PATH="/home/comura/ThurgauPaperAnalysisAM/scripts"
 
