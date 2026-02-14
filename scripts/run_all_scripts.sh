@@ -8,7 +8,22 @@ USER_NAME=$(whoami)
 OS_TYPE=$(uname)
 
 # Set up conda and paths
-if [[ "$OS_TYPE" == "Linux" && "$USER_NAME" == "muaa" ]]; then
+if [[ "$OS_TYPE" == "Linux" && "$USER_NAME" == "gsangiovanni" ]]; then
+    echo "Running on Terastat cluster as gsangiovanni"
+    
+    # Load Anaconda module
+    module load anaconda/2022.10
+    
+    # Initialize conda for this script
+    source /lustre/software/anaconda/2022.10_all/etc/profile.d/conda.sh
+    
+    # Activate environment
+    conda activate ThurgauAnalysisEnv
+    
+    # Set scripts path
+    SCRIPTS_PATH="/lustre/home/gsangiovanni/Rado/ThurgauPaperAnalysisAM/scripts"
+    
+elif [[ "$OS_TYPE" == "Linux" && "$USER_NAME" == "muaa" ]]; then
     echo "Running on ZHAW or local Linux as muaa"
     source /home/muaa/miniconda3/etc/profile.d/conda.sh
     conda activate ThurgauAnalysisEnv
