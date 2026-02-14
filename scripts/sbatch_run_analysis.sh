@@ -7,17 +7,29 @@
 #SBATCH --cpus-per-task=4
 #SBATCH --partition=standard
 
-SCRIPTS_DIR="/home/comura/ThurgauPaperAnalysisAM/scripts"
-CONFIG_FILE="/home/comura/ThurgauPaperAnalysisAM/config/config.ini"
-# SIM_OUTPUT_FOLDER is passed via --export from sbatch_iterate_simulations.sh
-# If not set, use $1 as fallback for manual runs
-SIM_OUTPUT_FOLDER="${SIM_OUTPUT_FOLDER:-$1}"
+USER_NAME=$(whoami)
 
+if [[ "$USER_NAME" == "comura" ]]; then
+    SCRIPTS_DIR="/home/comura/ThurgauPaperAnalysisAM/scripts"
+    CONFIG_FILE="/home/comura/ThurgauPaperAnalysisAM/config/config.ini"
+elif [[ "$USER_NAME" == "muaa" ]]; then
+    SCRIPTS_DIR="/home/muaa/ThurgauPaperAnalysisAM/scripts"
+    CONFIG_FILE="/home/muaa/ThurgauPaperAnalysisAM/config/config.ini"
+elif [[ "$USER_NAME" == "gsangiovanni" ]]; then
+    SCRIPTS_DIR="/lustre/home/gsangiovanni/Rado/ThurgauPaperAnalysisAM/scripts"
+    CONFIG_FILE="/lustre/home/gsangiovanni/Rado/ThurgauPaperAnalysisAM/config/config.ini"
+else
+    echo "Unsupported user: $USER_NAME"
+    exit 1
+fi
+
+SIM_OUTPUT_FOLDER="${SIM_OUTPUT_FOLDER:-$1}"
 mkdir -p "${SCRIPTS_DIR}/logs"
 
 echo "Job started at $(date)"
 echo "Running on node: $(hostname)"
 echo "Job ID: $SLURM_JOB_ID"
+echo "User: $USER_NAME"
 
 if [ -n "$SIM_OUTPUT_FOLDER" ]; then
     echo "Updating config.ini with sim_output_folder = $SIM_OUTPUT_FOLDER"
