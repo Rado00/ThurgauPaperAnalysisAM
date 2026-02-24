@@ -3,10 +3,14 @@ USER_NAME=$(whoami)
 
 if [[ "$USER_NAME" == "comura" ]]; then
     SCRIPTS_DIR="/home/comura/ThurgauPaperAnalysisAM/scripts"
+    PARTITION="standard"
 elif [[ "$USER_NAME" == "muaa" ]]; then
     SCRIPTS_DIR="/home/muaa/ThurgauPaperAnalysisAM/scripts"
+    PARTITION="gpu"
 elif [[ "$USER_NAME" == "gsangiovanni" ]]; then
     SCRIPTS_DIR="/lustre/home/gsangiovanni/Rado/ThurgauPaperAnalysisAM/scripts"
+    PARTITION="standard"
+
 else
     echo "Unsupported user: $USER_NAME"
     exit 1
