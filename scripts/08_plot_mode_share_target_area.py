@@ -83,7 +83,7 @@ def load_and_prepare_data(file_path, target_area_gdf, both_in, x_col, y_col, mod
             gdf_dest = gpd.GeoDataFrame(df, geometry=gpd.points_from_xy(df['end_x'], df['end_y']), crs=target_area_gdf.crs)
         origin_within = gdf_origin.geometry.within(target_area_gdf.unary_union)
         dest_within = gdf_dest.geometry.within(target_area_gdf.unary_union)
-        logging.info("origin_x does not exist in df columns")
+        logging.info(f"Spatial filter: {origin_within.sum()} origins and {dest_within.sum()} destinations within target area (out of {len(df)} trips)")
         if both_in:
             df = df[origin_within & dest_within]
             logging.info("Both origin and destination are in the dataframe")
@@ -117,6 +117,8 @@ def main():
 
     shape_path = os.path.join(data_path, "Paper2_ShapeFiles_CH1903+_LV95_easyNames", target_area)
     target_area = gpd.read_file(shape_path)
+    logging.info(f"Target area shapefile loaded: {shape_path}")
+    logging.info(f"Target area CRS: {target_area.crs}, number of features: {len(target_area)}")
 
     try:
         df_mic_origin_or_destination = load_and_prepare_data(os.path.join(data_path_clean, "trips_all_activities_inside_mic.csv"), target_area, False, 'start_coor_x', 'start_coor_y')
