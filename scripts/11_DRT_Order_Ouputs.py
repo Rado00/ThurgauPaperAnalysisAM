@@ -4,6 +4,7 @@ from functions.commonFunctions import *
 import pandas as pd
 import numpy as np
 import os
+import re
 
 if __name__ == '__main__':
     setup_logging(get_log_filename())
@@ -74,20 +75,37 @@ if __name__ == '__main__':
 
         try:
             with open(os.path.join(output_folder_path, "operator_costs.txt"), "r") as f:
-                operator_cost = float(f.read().split(":")[-1].strip())
+                oc_content = f.read()
+            def _extract_oc(pattern, text, default=0.0):
+                m = re.search(pattern, text)
+                return float(m.group(1)) if m else default
+            total_operator_cost = _extract_oc(r"TOTAL COSTS:\s+([\d.]+)\s+CHF", oc_content)
+            total_revenues = _extract_oc(r"TOTAL REVENUES:\s+([\d.]+)\s+CHF", oc_content)
+            cost_recovery_match = re.search(r"Cost recovery ratio:\s+([\d.]+)%", oc_content)
+            cost_recovery_ratio = float(cost_recovery_match.group(1)) / 100.0 if cost_recovery_match else 0.0
+            subsidy_per_trip = _extract_oc(r"Subsidy required per trip:\s+([\d.]+)\s+CHF", oc_content)
         except FileNotFoundError:
-            logging.warning("operator_costs.txt not found. Setting operator_cost to 0.")
-            operator_cost = 0.0
+            logging.warning("operator_costs.txt not found. Setting operator costs to 0.")
+            total_operator_cost = 0.0
+            total_revenues = 0.0
+            cost_recovery_ratio = 0.0
+            subsidy_per_trip = 0.0
         except Exception as e:
-            logging.warning(f"Error reading operator_costs.txt: {e}. Setting operator_cost to 0.")
-            operator_cost = 0.0
+            logging.warning(f"Error reading operator_costs.txt: {e}. Setting operator costs to 0.")
+            total_operator_cost = 0.0
+            total_revenues = 0.0
+            cost_recovery_ratio = 0.0
+            subsidy_per_trip = 0.0
 
         pkm_last = pkm_modestats.iloc[-1].drop(labels=["Iteration"])
         pkm_last.index = ["pkm_" + col for col in pkm_last.index]
 
         final_series = pd.concat([
             cs_last, dds_last, sm_last, vs_last, detour_stats,
-            pd.Series({"operator_cost": operator_cost}), pkm_last, modestats_series
+            pd.Series({"total_operator_cost": total_operator_cost,
+                       "total_revenues": total_revenues,
+                       "cost_recovery_ratio": cost_recovery_ratio,
+                       "subsidy_per_trip": subsidy_per_trip}), pkm_last, modestats_series
         ])
 
         # Initial source mapping BEFORE renaming or conversion
@@ -98,7 +116,10 @@ if __name__ == '__main__':
                       **{k: "output_drt_detours_drt.csv" for k in detour_stats.index},
                       **{f"modestats_row_{56 + i}_drt": "modestats.csv" for i in range(4)},
                       **{k: "pkm_modestats.csv" for k in pkm_last.index},
-                      "operator_cost": "operator_costs.txt"}
+                      "total_operator_cost": "operator_costs.txt",
+                      "total_revenues": "operator_costs.txt",
+                      "cost_recovery_ratio": "operator_costs.txt",
+                      "subsidy_per_trip": "operator_costs.txt"}
 
         formatted_values = []
         formatted_commas = []
