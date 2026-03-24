@@ -21,7 +21,7 @@ def load_population_data(file_path):
     return df
 
 def plot_gender_distribution(df_mic, df_sim, plots_directory):
-    mic_gender = df_mic[df_mic['sex'].isin(['Male', 'Female'])].groupby('sex')['household_weight'].sum().reset_index()
+    mic_gender = df_mic[df_mic['sex'].isin(['Male', 'Female'])].groupby('sex')['person_weight'].sum().reset_index()
     mic_gender.columns = ['Gender', 'Count']
 
     if 'sex' in df_sim.columns:
@@ -36,7 +36,7 @@ def plot_gender_distribution(df_mic, df_sim, plots_directory):
     ax1.set_title('Gender Distribution Synthetic Population')
     ax2.pie(mic_gender['Count'], labels=mic_gender['Gender'], autopct='%1.1f%%', startangle=90)
     ax2.set_title('Gender Distribution - Microcensus')
-    fig.suptitle("Comparative Gender Distribution With Household Weight")
+    fig.suptitle("Comparative Gender Distribution With Person Weight")
     plt.tight_layout()
     fig.subplots_adjust(top=0.85)
     plt.savefig(f"{plots_directory}/gender_distribution.png", dpi=300)
@@ -44,7 +44,7 @@ def plot_gender_distribution(df_mic, df_sim, plots_directory):
 
 def plot_car_ownership(df_mic, df_households_sim, plots_directory):
     df_mic['car_availability'] = df_mic['car_availability'].astype(str)
-    mic = df_mic.groupby('car_availability')['household_weight'].sum().reset_index()
+    mic = df_mic.groupby('car_availability')['person_weight'].sum().reset_index()
     mic.columns = ['Number of Cars', 'Microcensus']
     mic_total = mic['Microcensus'].sum()
     mic['Microcensus'] = (mic['Microcensus'] / mic_total) * 100
@@ -66,7 +66,7 @@ def plot_car_ownership(df_mic, df_households_sim, plots_directory):
     ax.bar([i + 0.2 for i in x], merged['Simulation'], width=0.4, label='Synthetic - Car Ownership', color='red')
     ax.set_xticks(x)
     ax.set_xticklabels(merged['Number of Cars'])
-    ax.set_title('Comparison of Car Ownership Distribution - Percentage With Household Weight')
+    ax.set_title('Comparison of Car Ownership Distribution - Percentage With Person Weight')
     ax.set_ylabel('Percentage (%)')
 
     for i, (m, s) in enumerate(zip(merged['Microcensus'], merged['Simulation'])):
@@ -100,9 +100,9 @@ def plot_income_distribution(df_mic, df_sim, plots_directory):
         7: 'CHF 14001–16000', 8: 'More than CHF 16000'
     }
     df_mic = df_mic[df_mic['income_class'].isin(income_class_labels.keys())]
-    mic = df_mic.groupby('income_class')['household_weight'].sum().reset_index()
+    mic = df_mic.groupby('income_class')['person_weight'].sum().reset_index()
     mic['Income Class'] = mic['income_class'].map(income_class_labels)
-    mic = mic[['Income Class', 'household_weight']].rename(columns={'household_weight': 'Microcensus'})
+    mic = mic[['Income Class', 'person_weight']].rename(columns={'person_weight': 'Microcensus'})
 
     if 'income_class' in df_sim.columns:
         sim = df_sim['income_class'].value_counts().reset_index()

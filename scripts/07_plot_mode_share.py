@@ -92,22 +92,22 @@ def main():
         return
 
     # DISTANCE MIC - Create weighted_distance column first
-    if 'household_weight' in df_mic.columns:
-        df_mic['weighted_distance'] = df_mic['crowfly_distance'] * df_mic['household_weight']
+    if 'person_weight' in df_mic.columns:
+        df_mic['weighted_distance'] = df_mic['crowfly_distance'] * df_mic['person_weight']
         logging.info(f"weighted_distance column created in Mic Data")
 
-    if 'household_weight' in df_mic.columns:
+    if 'person_weight' in df_mic.columns:
         # weighted_distance already created above
         logging.info(f"Weighted Mic Data loaded from {data_path_clean}")
         # Calculate weighted mean and weighted std correctly
         def weighted_mean(group):
-            return (group['crowfly_distance'] * group['household_weight']).sum() / group[
-                'household_weight'].sum()
+            return (group['crowfly_distance'] * group['person_weight']).sum() / group[
+                'person_weight'].sum()
 
         def weighted_std(group):
             w_mean = weighted_mean(group)
-            variance = ((group['household_weight'] * (group['crowfly_distance'] - w_mean) ** 2).sum() /
-                        group['household_weight'].sum())
+            variance = ((group['person_weight'] * (group['crowfly_distance'] - w_mean) ** 2).sum() /
+                        group['person_weight'].sum())
             return np.sqrt(variance)
 
         average_distance_by_mode_mic_wt = df_mic.groupby('mode').apply(
@@ -204,7 +204,7 @@ def main():
         trips_mic_raw.columns = ['Mode', 'Percentage Mic']
         trips_mic_raw['Percentage Mic'] *= 100
 
-        trips_mic_wt = df_mic.groupby('mode')['household_weight'].sum().reset_index()
+        trips_mic_wt = df_mic.groupby('mode')['person_weight'].sum().reset_index()
         trips_mic_wt.columns = ['Mode', 'Weighted Count']
         total_weighted = trips_mic_wt['Weighted Count'].sum()
         trips_mic_wt['Percentage Mic Weighted'] = (trips_mic_wt['Weighted Count'] / total_weighted) * 100
