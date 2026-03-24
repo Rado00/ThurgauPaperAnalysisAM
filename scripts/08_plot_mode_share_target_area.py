@@ -83,7 +83,7 @@ def load_and_prepare_data(file_path, target_area_gdf, both_in, x_col, y_col, mod
             gdf_dest = gpd.GeoDataFrame(df, geometry=gpd.points_from_xy(df['end_x'], df['end_y']), crs=target_area_gdf.crs)
         origin_within = gdf_origin.geometry.within(target_area_gdf.unary_union)
         dest_within = gdf_dest.geometry.within(target_area_gdf.unary_union)
-        logging.info("origin_x does not exist in df columns")
+        logging.info(f"Spatial filter: {origin_within.sum()} origins and {dest_within.sum()} destinations within target area (out of {len(df)} trips)")
         if both_in:
             df = df[origin_within & dest_within]
             logging.info("Both origin and destination are in the dataframe")
@@ -96,12 +96,12 @@ def load_and_prepare_data(file_path, target_area_gdf, both_in, x_col, y_col, mod
 
 # Calculate weighted mean and weighted std correctly
 def weighted_mean(group):
-    return (group['crowfly_distance'] * group['household_weight']).sum() / group['household_weight'].sum()
+    return (group['crowfly_distance'] * group['person_weight']).sum() / group['person_weight'].sum()
 
 def weighted_std(group):
     w_mean = weighted_mean(group)
-    variance = ((group['household_weight'] * (group['crowfly_distance'] - w_mean) ** 2).sum() /
-                group['household_weight'].sum())
+    variance = ((group['person_weight'] * (group['crowfly_distance'] - w_mean) ** 2).sum() /
+                group['person_weight'].sum())
     return np.sqrt(variance)
     
     
@@ -117,6 +117,8 @@ def main():
 
     shape_path = os.path.join(data_path, "Paper2_ShapeFiles_CH1903+_LV95_easyNames", target_area)
     target_area = gpd.read_file(shape_path)
+    logging.info(f"Target area shapefile loaded: {shape_path}")
+    logging.info(f"Target area CRS: {target_area.crs}, number of features: {len(target_area)}")
 
     try:
         df_mic_origin_or_destination = load_and_prepare_data(os.path.join(data_path_clean, "trips_all_activities_inside_mic.csv"), target_area, False, 'start_coor_x', 'start_coor_y')
@@ -145,11 +147,11 @@ def main():
         if read_SynPop:
             dist_synt = compute_percentage(df_synt, 'mode', 'distance').rename(columns={'Percentage Distance': 'Percentage Synt'}) if read_SynPop else pd.DataFrame({'Mode': df_sim_origin_or_destination['Mode'], 'Percentage Synt': [0.0]*len(df_sim_origin_or_destination)})
 
-        if 'household_weight' in df_mic_origin_or_destination.columns:
-            df_mic_origin_or_destination['weighted_distance'] = df_mic_origin_or_destination['crowfly_distance'] * df_mic_origin_or_destination['household_weight']
+        if 'person_weight' in df_mic_origin_or_destination.columns:
+            df_mic_origin_or_destination['weighted_distance'] = df_mic_origin_or_destination['crowfly_distance'] * df_mic_origin_or_destination['person_weight']
 
-        if 'household_weight' in df_mic_origin_or_destination.columns:
-            df_mic_origin_and_destination['weighted_distance'] = df_mic_origin_and_destination['crowfly_distance'] * df_mic_origin_and_destination['household_weight']
+        if 'person_weight' in df_mic_origin_or_destination.columns:
+            df_mic_origin_and_destination['weighted_distance'] = df_mic_origin_and_destination['crowfly_distance'] * df_mic_origin_and_destination['person_weight']
 
         logging.info("mic and sim and synt df are processed successfully.")
     except Exception as e:
@@ -279,13 +281,13 @@ def main():
         sys.exit()
 
     try:
-        trips_mic_wt_origin_or_destination = df_mic_origin_or_destination.groupby('mode')['household_weight'].sum().reset_index()
+        trips_mic_wt_origin_or_destination = df_mic_origin_or_destination.groupby('mode')['person_weight'].sum().reset_index()
         trips_mic_wt_origin_or_destination.columns = ['Mode', 'Weighted Count OR']
         total_weighted_origin_or_destination = trips_mic_wt_origin_or_destination['Weighted Count OR'].sum()
         trips_mic_wt_origin_or_destination['Percentage Mic Weighted OR'] = (trips_mic_wt_origin_or_destination['Weighted Count OR'] / total_weighted_origin_or_destination) * 100
         trips_mic_wt_origin_or_destination = trips_mic_wt_origin_or_destination[['Mode', 'Percentage Mic Weighted OR']]
 
-        trips_mic_wt_origin_and_destination = df_mic_origin_and_destination.groupby('mode')['household_weight'].sum().reset_index()
+        trips_mic_wt_origin_and_destination = df_mic_origin_and_destination.groupby('mode')['person_weight'].sum().reset_index()
         trips_mic_wt_origin_and_destination.columns = ['Mode', 'Weighted Count AND']
         total_weighted_origin_and_destination = trips_mic_wt_origin_and_destination['Weighted Count AND'].sum()
         trips_mic_wt_origin_and_destination['Percentage Mic Weighted AND'] = (trips_mic_wt_origin_and_destination['Weighted Count AND'] / total_weighted_origin_and_destination) * 100

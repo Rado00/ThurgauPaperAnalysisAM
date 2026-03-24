@@ -292,8 +292,10 @@ if __name__ == '__main__':
     # STEP 3: Load shapefile for geographic filtering
     # =========================================================================
     gdf = gpd.read_file(cfg.shapefile_path, engine="pyogrio")
-    area_polygon = gdf.iloc[0]['geometry']
-    logging.info("Shapefile loaded successfully and area_polygon created")
+    logging.info(f"Shapefile loaded: {cfg.shapefile_path}")
+    logging.info(f"Shapefile CRS: {gdf.crs}, number of features: {len(gdf)}")
+    area_polygon = gdf.unary_union
+    logging.info(f"Area polygon created using unary_union of all {len(gdf)} features")
 
     # =========================================================================
     # STEP 4: Convert coordinate columns to float and create geometry points
@@ -333,7 +335,7 @@ if __name__ == '__main__':
             origin_points.within(area_polygon) &
             destination_points.within(area_polygon)
         ]
-        logging.info("O and D Trips filtered successfully based on the shapefile polygon")
+        logging.info(f"O and D Trips filtered: {len(filtered_trips_inside)} of {len(output_trips_sim)} trips retained")
     except Exception as e:
         logging.error("Error in filtering O and D Trips: " + str(e))
         sys.exit()
@@ -344,7 +346,7 @@ if __name__ == '__main__':
             origin_points.within(area_polygon) |
             destination_points.within(area_polygon)
         ]
-        logging.info("O or D Trips filtered successfully based on the shapefile polygon")
+        logging.info(f"O or D Trips filtered: {len(filtered_trips_inside_outside)} of {len(output_trips_sim)} trips retained")
     except Exception as e:
         logging.error("Error in filtering O or D Trips: " + str(e))
         sys.exit()
