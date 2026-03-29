@@ -69,7 +69,7 @@ def map_person_id_to_activities(df_activities, df_persons, activity_type='Home')
 
     Args:
         df_activities: DataFrame containing activities with coordinates (x, y) and plan_id.
-        df_persons: DataFrame containing person data with home coordinates (home_x, home_y) and hh_id.
+        df_persons: DataFrame containing person data with home coordinates (home_coordiante_x, home_coordiante_y) and hh_id.
         activity_type: The type of activity used to map person IDs (default 'Home').
 
     Returns:
@@ -81,8 +81,8 @@ def map_person_id_to_activities(df_activities, df_persons, activity_type='Home')
     # Ensure coordinates are of type float64
     df_activities['x'] = pd.to_numeric(df_activities['x'], errors='coerce')
     df_activities['y'] = pd.to_numeric(df_activities['y'], errors='coerce')
-    df_persons['home_x'] = pd.to_numeric(df_persons['home_x'], errors='coerce')
-    df_persons['home_y'] = pd.to_numeric(df_persons['home_y'], errors='coerce')
+    df_persons['home_x'] = pd.to_numeric(df_persons['home_coordiante_x'], errors='coerce')
+    df_persons['home_y'] = pd.to_numeric(df_persons['home_coordiante_y'], errors='coerce')
 
     # Filter df_activities for rows where type is the specified activity type
     home_activities = df_activities[df_activities['type'] == activity_type]
@@ -381,15 +381,15 @@ if __name__ == '__main__':
         )
         logging.info("Output persons data loaded successfully")
 
-        df_persons_sim['home_x'] = pd.to_numeric(df_persons_sim['home_x'], errors='coerce')
-        df_persons_sim['home_y'] = pd.to_numeric(df_persons_sim['home_y'], errors='coerce')
+        df_persons_sim['home_coordiante_x'] = pd.to_numeric(df_persons_sim['home_coordiante_x'], errors='coerce')
+        df_persons_sim['home_coordiante_y'] = pd.to_numeric(df_persons_sim['home_coordiante_y'], errors='coerce')
 
         # Remove rows with missing coordinates
-        df_persons_sim = df_persons_sim.dropna(subset=['home_x', 'home_y'])
+        df_persons_sim = df_persons_sim.dropna(subset=['home_coordiante_x', 'home_coordiante_y'])
 
         # Create geometry from coordinates
-        sim_geometry = [Point(xy) for xy in zip(df_persons_sim['home_x'],
-                                                df_persons_sim['home_y'])]
+        sim_geometry = [Point(xy) for xy in zip(df_persons_sim['home_coordiante_x'],
+                                                df_persons_sim['home_coordiante_y'])]
 
         # Create GeoDataFrame from persons data
         sim_gdf_persons = gpd.GeoDataFrame(df_persons_sim, geometry=sim_geometry)
