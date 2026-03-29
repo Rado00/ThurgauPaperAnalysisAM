@@ -222,114 +222,205 @@ if __name__ == '__main__':
         trips = execute(analysis_zone_path)
         # TODO remove this line
         # trips = trips.head(100)
-        trips.to_csv(os.path.join(analysis_zone_path, "microzensus", "row_trips.csv"))
-        logging.info("Microcensus trips filtered successfully")
+                                                                                      
+                                                               
 
-        # Load geographic data from a shapefile
-        shapefile_path = os.path.join(analysis_zone_path, "ShapeFiles", shapeFileName)
+        try:
+            trips.to_csv(os.path.join(analysis_zone_path, "microzensus", "row_trips.csv"))
+            logging.info("Microcensus trips filtered successfully")
 
-        gdf = gpd.read_file(shapefile_path, engine="pyogrio")
+            # Load geographic data from a shapefile
+            shapefile_path = os.path.join(analysis_zone_path, "ShapeFiles", shapeFileName)
 
-        area_polygon = gdf.iloc[0]['geometry']
-        logging.info("Shapefile loaded successfully and area_polygon created successfully")
+                                              
+                                                                                           
 
-        # Create Point geometries for origin and destination
-        trips['origin_point'] = trips.apply(lambda row: Point(row['origin_x'], row['origin_y']), axis=1)
-        trips['destination_point'] = trips.apply(lambda row: Point(row['destination_x'], row['destination_y']), axis=1)
+            gdf = gpd.read_file(shapefile_path, engine="pyogrio")
+                                                                                                        
+                                                                                                                       
 
-        # Filter trips where both origin and destination are within the given city polygon shapefile
-        filtered_trips_inside = trips[
-            trips['origin_point'].apply(lambda point: point.within(area_polygon)) &
-            trips['destination_point'].apply(lambda point: point.within(area_polygon))
-            ]
+            area_polygon = gdf.iloc[0]['geometry']
+            logging.info("Shapefile loaded successfully and area_polygon created successfully")
+                                                                                   
+                                                                                      
+             
 
-        logging.info("Trips filtered successfully based on the shapefile polygon successfully")
+            # Create Point geometries for origin and destination
+            trips['origin_point'] = trips.apply(lambda row: Point(row['origin_x'], row['origin_y']), axis=1)
+            trips['destination_point'] = trips.apply(lambda row: Point(row['destination_x'], row['destination_y']), axis=1)
 
-        rest_of_trips = trips.drop(filtered_trips_inside.index)
+            # Filter trips where both origin and destination are within the given city polygon shapefile
+            filtered_trips_inside = trips[
+                trips['origin_point'].apply(lambda point: point.within(area_polygon)) &
+                trips['destination_point'].apply(lambda point: point.within(area_polygon))
+                ]
 
-        # The ids of the people who have trips inside the area
-        ids_inside = set(filtered_trips_inside['person_id'])
+            logging.info("Trips filtered successfully based on the shapefile polygon successfully")
+        except Exception as e:
+            logging.error("There is an error in Filtering trips: " + str(e))
 
-        # The ids of the people who have trips outside the area
-        ids_rest = set(rest_of_trips['person_id'])
+        try:
+            rest_of_trips = trips.drop(filtered_trips_inside.index)
 
-        # The ids of the people who have trips inside the area but not outside
-        unique_ids = ids_inside.difference(ids_rest)
+            # The ids of the people who have trips inside the area
+            ids_inside = set(filtered_trips_inside['person_id'])
 
-        filtered_trips_inside.to_csv(os.path.join(analysis_zone_path, "microzensus", "trips_inside_O_and_D_Mic.csv"))
+            # The ids of the people who have trips outside the area
+            ids_rest = set(rest_of_trips['person_id'])
 
-        filtered_trips_inside_outside = trips[
-            trips['origin_point'].apply(lambda point: point.within(area_polygon)) |
-            trips['destination_point'].apply(lambda point: point.within(area_polygon))
-            ]
+            # The ids of the people who have trips inside the area but not outside
+            unique_ids = ids_inside.difference(ids_rest)
+                                                                                      
+             
 
-        filtered_trips_inside_outside.to_csv(os.path.join(analysis_zone_path, "microzensus", "trips_inside_O_or_D_Mic.csv"), index=False)
+            filtered_trips_inside.to_csv(os.path.join(analysis_zone_path, "microzensus", "trips_inside_O_and_D_Mic.csv"))
 
-        # Create activity chains
-        df_activity_chains = filtered_trips_inside.groupby(['person_id']).apply(create_activity_chain).reset_index()
+            filtered_trips_inside_outside = trips[
+                trips['origin_point'].apply(lambda point: point.within(area_polygon)) |
+                trips['destination_point'].apply(lambda point: point.within(area_polygon))
+                ]
 
-        all_population = pd.read_csv(os.path.join(analysis_zone_path, "microzensus", "all_population.csv"))
-        # Recreate population_home_inside.csv if want to analyse w home inside
-        # population_home_inside = pd.read_csv(os.path.join(analysis_zone_path, "microzensus", "population_home_inside.csv"))
-        # trips_population_home_inside = trips[trips['person_id'].isin(population_home_inside['person_id'])]
-        # trips_population_home_inside.to_csv(os.path.join(analysis_zone_path, "microzensus", "trips_population_home_inside_Mic.csv"), index=False)
+            filtered_trips_inside_outside.to_csv(os.path.join(analysis_zone_path, "microzensus", "trips_inside_O_or_D_Mic.csv"), index=False)
+        except Exception as e:
+            logging.error("There is an error in Filtering inside outside trips: " + str(e))
+                                                                                                            
+                                                                                                                                                   
 
-        # Filter the population to include only those with trips inside the area
-        population_with_trips_O_and_D = all_population[all_population['person_id'].isin(unique_ids)]
+        try:
+            # Convert home coordinate columns to numeric (they're currently strings due to dtype=str)
+            trips['home_x'] = pd.to_numeric(trips['home_x'], errors='coerce')
+            trips['home_y'] = pd.to_numeric(trips['home_y'], errors='coerce')
 
-        population_with_trips_O_and_D.to_csv(os.path.join(analysis_zone_path, "microzensus", "population_all_activities_inside_Mic.csv"), index=False)
+            # Remove rows with missing coordinates
+            trips_without_null = trips.dropna(subset=['home_x', 'home_y'])
 
-        # Filter the population to include only those with trips origin inside or destination inside the area
-        population_with_trips_O_or_D = all_population[all_population['person_id'].isin(filtered_trips_inside_outside['person_id'])]
+            # Create geometry from coordinates
+            mic_trips_geometry = [Point(xy) for xy in zip(trips_without_null['home_x'],
+                                                trips_without_null['home_y'])]
 
-        population_with_trips_O_or_D.to_csv(os.path.join(analysis_zone_path, "microzensus", "population_at_least_one_activity_inside_Mic.csv"), index=False)
+            # Create GeoDataFrame from persons data
+            gdf_trips_mic = gpd.GeoDataFrame(trips_without_null, geometry=mic_trips_geometry)
 
-        trips = trips.merge(all_population[['person_id', 'person_weight']], on='person_id', how='left')
+            # Set the CRS to match your shapefile (adjust if needed - common Swiss CRS is EPSG:2056)
+            # Check gdf_boundary.crs to see what CRS your shapefile uses
+            gdf_trips_mic.crs = gdf.crs
 
-        # Filter the trips to include only those with origin inside or destination inside the area
-        trips_inside = trips[trips['person_id'].isin(population_with_trips_O_and_D['person_id'])]
+            # Spatial join to filter points inside the polygon
+            trips_home_inside = gpd.sjoin(gdf_trips_mic, gdf, how='inner', predicate='within')
 
-        trips_inside.to_csv(os.path.join(analysis_zone_path, "microzensus", "trips_all_activities_inside_Mic.csv"), index=False)
+            # Drop the geometry column if you want to work with a regular DataFrame
+            trips_home_inside = pd.DataFrame(trips_home_inside.drop(columns='geometry'))
 
-        # Filter the trips to include only those with origin inside or destination inside the area
-        trips_inside_outside = trips[trips['person_id'].isin(population_with_trips_O_or_D['person_id'])]
+            trips_home_inside.to_csv(os.path.join(analysis_zone_path, "microzensus", "trips_home_inside_mic.csv"))
+                                                                                                        
 
-        trips_inside_outside.to_csv(os.path.join(analysis_zone_path, "microzensus", "trips_at_least_one_activity_inside_Mic.csv"), index=False)
+        except Exception as e:
+            logging.error("There is an error in Filtering home inside trips: " + str(e))
 
-        # Capitalize and remove underscores from mode names
-        filtered_trips_inside['mode'] = filtered_trips_inside['mode'].str.replace('_', ' ').str.upper()
+        try:
+            # Create activity chains
+            df_activity_chains = filtered_trips_inside.groupby(['person_id']).apply(create_activity_chain).reset_index()
 
-        # Calculate total counts for each mode
-        mode_counts = filtered_trips_inside['mode'].value_counts().reset_index()
-        mode_counts.columns = ['Mode', 'Count']
+            all_population = pd.read_csv(os.path.join(analysis_zone_path, "microzensus", "all_population.csv"))
+            # Recreate population_home_inside.csv if want to analyse w home inside
+            # population_home_inside = pd.read_csv(os.path.join(analysis_zone_path, "microzensus", "population_home_inside.csv"))
+            # trips_population_home_inside = trips[trips['person_id'].isin(population_home_inside['person_id'])]
+            # trips_population_home_inside.to_csv(os.path.join(analysis_zone_path, "microzensus", "trips_population_home_inside_Mic.csv"), index=False)
 
-        # Calculate percentage distribution for each mode
-        mode_counts['Percentage'] = (mode_counts['Count'] / mode_counts['Count'].sum()) * 100
+            all_population['home_x'] = pd.to_numeric(all_population['home_x'], errors='coerce')
+            all_population['home_y'] = pd.to_numeric(all_population['home_y'], errors='coerce')
 
-        # Convert seconds to datetime and resample times to 15-minute bins
-        filtered_trips_inside['departure_time'] = pd.to_datetime(filtered_trips_inside['departure_time'], unit='s').dt.floor('30T').dt.time
-        filtered_trips_inside['arrival_time'] = pd.to_datetime(filtered_trips_inside['arrival_time'], unit='s').dt.floor('30T').dt.time
-        logging.info("The departure and arrival times are converted to datetime and resampled into bins successfully")
+            # Remove rows with missing coordinates
+            all_population_without_null = all_population.dropna(subset=['home_x', 'home_y'])
+                                                                                                                                       
+                                                                                                                      
 
-        # Count occurrences in each 15-minute bin
-        departure_counts = filtered_trips_inside.groupby('departure_time').size().reset_index(name='Count')
-        departure_counts['Type'] = 'Departures'
-        departure_counts = departure_counts.rename(columns={'departure_time': 'Time'})
+            # Create geometry from coordinates
+            mic_all_population_geometry = [Point(xy) for xy in zip(all_population_without_null['home_x'],
+                                                          all_population_without_null['home_y'])]
+                                                                                      
 
-        arrival_counts = filtered_trips_inside.groupby('arrival_time').size().reset_index(name='Count')
-        arrival_counts['Type'] = 'Arrivals'
-        arrival_counts = arrival_counts.rename(columns={'arrival_time': 'Time'})
-        logging.info("The arrival_counts and departure_counts are calculated successfully")
+            # Create GeoDataFrame from persons data
+            gdf_all_population_mic = gpd.GeoDataFrame(all_population_without_null, geometry=mic_all_population_geometry)
+                                                                                
+                                                                                           
 
-        # Combine data
-        time_counts = pd.concat([departure_counts, arrival_counts], axis=0)
+            # Set the CRS to match your shapefile (adjust if needed - common Swiss CRS is EPSG:2056)
+            # Check gdf_boundary.crs to see what CRS your shapefile uses
+            gdf_all_population_mic.crs = gdf.crs
 
-        # Capitalize and remove underscores from purpose names
-        filtered_trips_inside['purpose'] = filtered_trips_inside['purpose'].str.replace('_', ' ').str.upper()
+            # Spatial join to filter points inside the polygon
+            people_home_inside_mic = gpd.sjoin(gdf_all_population_mic, gdf, how='inner', predicate='within')
 
-        # Calculate total counts for each purpose
-        purpose_counts = filtered_trips_inside['purpose'].value_counts().reset_index()
-        purpose_counts.columns = ['Purpose', 'Count']
+            # Drop the geometry column if you want to work with a regular DataFrame
+            people_home_inside_mic = pd.DataFrame(people_home_inside_mic.drop(columns='geometry'))
+
+            people_home_inside_mic.to_csv(os.path.join(analysis_zone_path, "microzensus", "population_home_inside_mic.csv"))
+        except Exception as e:
+            logging.error("There is an error in Filtering population home inside: " + str(e))
+
+        try:
+            # Filter the population to include only those with trips inside the area
+            population_with_trips_O_and_D = all_population[all_population['person_id'].isin(unique_ids)]
+
+            population_with_trips_O_and_D.to_csv(os.path.join(analysis_zone_path, "microzensus", "population_all_activities_inside_Mic.csv"), index=False)
+
+            # Filter the population to include only those with trips origin inside or destination inside the area
+            population_with_trips_O_or_D = all_population[all_population['person_id'].isin(filtered_trips_inside_outside['person_id'])]
+
+            population_with_trips_O_or_D.to_csv(os.path.join(analysis_zone_path, "microzensus", "population_at_least_one_activity_inside_Mic.csv"), index=False)
+
+            trips = trips.merge(all_population[['person_id', 'person_weight']], on='person_id', how='left')
+
+            # Filter the trips to include only those with origin inside or destination inside the area
+            trips_inside = trips[trips['person_id'].isin(population_with_trips_O_and_D['person_id'])]
+
+            trips_inside.to_csv(os.path.join(analysis_zone_path, "microzensus", "trips_all_activities_inside_Mic.csv"), index=False)
+
+            # Filter the trips to include only those with origin inside or destination inside the area
+            trips_inside_outside = trips[trips['person_id'].isin(population_with_trips_O_or_D['person_id'])]
+
+            trips_inside_outside.to_csv(os.path.join(analysis_zone_path, "microzensus", "trips_at_least_one_activity_inside_Mic.csv"), index=False)
+
+            # Capitalize and remove underscores from mode names
+            filtered_trips_inside['mode'] = filtered_trips_inside['mode'].str.replace('_', ' ').str.upper()
+
+            # Calculate total counts for each mode
+            mode_counts = filtered_trips_inside['mode'].value_counts().reset_index()
+            mode_counts.columns = ['Mode', 'Count']
+
+            # Calculate percentage distribution for each mode
+            mode_counts['Percentage'] = (mode_counts['Count'] / mode_counts['Count'].sum()) * 100
+
+            # Convert seconds to datetime and resample times to 15-minute bins
+            filtered_trips_inside['departure_time'] = pd.to_datetime(filtered_trips_inside['departure_time'], unit='s').dt.floor('30T').dt.time
+            filtered_trips_inside['arrival_time'] = pd.to_datetime(filtered_trips_inside['arrival_time'], unit='s').dt.floor('30T').dt.time
+            logging.info("The departure and arrival times are converted to datetime and resampled into bins successfully")
+        except Exception as e:
+            logging.error("There is an error in departure and arrival times: " + str(e))
+
+        try:
+            # Count occurrences in each 15-minute bin
+            departure_counts = filtered_trips_inside.groupby('departure_time').size().reset_index(name='Count')
+            departure_counts['Type'] = 'Departures'
+            departure_counts = departure_counts.rename(columns={'departure_time': 'Time'})
+
+            arrival_counts = filtered_trips_inside.groupby('arrival_time').size().reset_index(name='Count')
+            arrival_counts['Type'] = 'Arrivals'
+            arrival_counts = arrival_counts.rename(columns={'arrival_time': 'Time'})
+            logging.info("The arrival_counts and departure_counts are calculated successfully")
+
+            # Combine data
+            time_counts = pd.concat([departure_counts, arrival_counts], axis=0)
+
+            # Capitalize and remove underscores from purpose names
+            filtered_trips_inside['purpose'] = filtered_trips_inside['purpose'].str.replace('_', ' ').str.upper()
+
+            # Calculate total counts for each purpose
+            purpose_counts = filtered_trips_inside['purpose'].value_counts().reset_index()
+            purpose_counts.columns = ['Purpose', 'Count']
+        except Exception as e:
+            logging.error("There is an error in purpose counts: " + str(e))
 
         # Plot total counts
         directory = os.getcwd()

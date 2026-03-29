@@ -334,7 +334,7 @@ if __name__ == '__main__':
         filtered_trips_inside = output_trips_sim[
             origin_points.within(area_polygon) &
             destination_points.within(area_polygon)
-        ]
+            ]
         logging.info(f"O and D Trips filtered: {len(filtered_trips_inside)} of {len(output_trips_sim)} trips retained")
     except Exception as e:
         logging.error("Error in filtering O and D Trips: " + str(e))
@@ -345,154 +345,218 @@ if __name__ == '__main__':
         filtered_trips_inside_outside = output_trips_sim[
             origin_points.within(area_polygon) |
             destination_points.within(area_polygon)
-        ]
+            ]
         logging.info(f"O or D Trips filtered: {len(filtered_trips_inside_outside)} of {len(output_trips_sim)} trips retained")
     except Exception as e:
         logging.error("Error in filtering O or D Trips: " + str(e))
         sys.exit()
 
-    # =========================================================================
-    # STEP 7: Identify persons with all activities inside vs at least one inside
-    # =========================================================================
-    rest_of_trips = output_trips_sim.drop(filtered_trips_inside.index)
-
-    # The ids of the people who have trips inside the area
-    ids_inside = set(filtered_trips_inside['person'])
-    # The ids of the people who have trips outside the area
-    ids_rest = set(rest_of_trips['person'])
-    # The ids of the people who have trips inside the area but not outside
-    unique_ids = ids_inside.difference(ids_rest)
-
-    # Save intermediate filtered trips (needed by other scripts)
-    filtered_trips_inside.to_csv(os.path.join(cfg.pre_processed_data_path, "trips_inside_O_and_D_sim.csv"), index=False)
-    filtered_trips_inside_outside.to_csv(os.path.join(cfg.pre_processed_data_path, "trips_inside_O_or_D_sim.csv"), index=False)
-    logging.info("Both Filtered trips saved successfully")
-
-    # =========================================================================
-    # STEP 8: Load simulation persons data
-    # =========================================================================
-    df_persons_sim = pd.read_csv(
-        os.path.join(cfg.output_folder_path, "output_persons.csv.gz"),
-        sep=';', low_memory=False, encoding='utf-8', dtype=str,
-        compression='gzip', nrows=cfg.nrows
-    )
-    logging.info("Output persons data loaded successfully")
-
-    # =========================================================================
-    # STEP 9: Filter population based on trip locations
-    # =========================================================================
-    # Population with ALL trips inside the area
-    population_with_trips_O_and_D = df_persons_sim[df_persons_sim['person'].isin(unique_ids)]
-    logging.info("Population with all trips inside the area filtered successfully")
-
-    # Population with at least one trip inside the area
-    population_with_trips_O_or_D = df_persons_sim[
-        df_persons_sim['person'].isin(filtered_trips_inside_outside['person'])
-    ]
-    logging.info("Population with at least one trip inside filtered successfully")
-
-    # =========================================================================
-    # STEP 10: Create trip datasets for each population filter
-    # =========================================================================
-    # All trips for persons with ALL activities inside
-    trips_all_activities_inside = output_trips_sim[
-        output_trips_sim['person'].isin(population_with_trips_O_and_D['person'])
-    ]
-
-    # All trips for persons with at least one activity inside
-    trips_at_least_one_activity_inside = output_trips_sim[
-        output_trips_sim['person'].isin(population_with_trips_O_or_D['person'])
-    ]
-
-    # Save to pre-processed path (needed by other scripts)
-    population_with_trips_O_and_D.to_csv(
-        os.path.join(cfg.pre_processed_data_path, "population_all_activities_inside_sim.csv"), index=False
-    )
-    population_with_trips_O_or_D.to_csv(
-        os.path.join(cfg.pre_processed_data_path, "population_at_least_one_activity_inside_sim.csv"), index=False
-    )
-    trips_all_activities_inside.to_csv(
-        os.path.join(cfg.pre_processed_data_path, "trips_all_activities_inside_sim.csv"), index=False
-    )
-    trips_at_least_one_activity_inside.to_csv(
-        os.path.join(cfg.pre_processed_data_path, "trips_at_least_one_activity_inside_sim.csv"), index=False
-    )
-    logging.info("Population and trips CSVs saved to pre-processed path")
-
-    # =========================================================================
-    # STEP 11: Load activity data (from original script 03 output)
-    # =========================================================================
     try:
-        df_activity_sim = pd.read_csv(
-            os.path.join(cfg.pre_processed_data_path, "df_activity_sim.csv"), low_memory=False
-        )
-        logging.info("Activity data loaded successfully")
+        # =========================================================================
+        # STEP 7: Identify persons with all activities inside vs at least one inside
+        # =========================================================================
+        rest_of_trips = output_trips_sim.drop(filtered_trips_inside.index)
+
+        # The ids of the people who have trips inside the area
+        ids_inside = set(filtered_trips_inside['person'])
+        # The ids of the people who have trips outside the area
+        ids_rest = set(rest_of_trips['person'])
+        # The ids of the people who have trips inside the area but not outside
+        unique_ids = ids_inside.difference(ids_rest)
+
+        # Save intermediate filtered trips (needed by other scripts)
+        filtered_trips_inside.to_csv(os.path.join(cfg.pre_processed_data_path, "trips_inside_O_and_D_sim.csv"), index=False)
+        filtered_trips_inside_outside.to_csv(os.path.join(cfg.pre_processed_data_path, "trips_inside_O_or_D_sim.csv"), index=False)
+        logging.info("Both Filtered trips saved successfully")
     except Exception as e:
-        logging.error("Error reading df_activity_sim.csv: " + str(e))
-        sys.exit()
+        logging.error("Error in filtering trips_inside_O_or_D_sim.csv: " + str(e))                                                                          
+    try:
+        # =========================================================================
+        # STEP 8: Load simulation persons data
+        # =========================================================================
+        df_persons_sim = pd.read_csv(
+            os.path.join(cfg.output_folder_path, "output_persons.csv.gz"),
+            sep=';', low_memory=False, encoding='utf-8', dtype=str,
+            compression='gzip', nrows=cfg.nrows
+        )
+        logging.info("Output persons data loaded successfully")
 
-    # =========================================================================
-    # STEP 12: Load optional synthetic population data
-    # =========================================================================
-    if cfg.read_SynPop:
+        df_persons_sim['home_x'] = pd.to_numeric(df_persons_sim['home_x'], errors='coerce')
+        df_persons_sim['home_y'] = pd.to_numeric(df_persons_sim['home_y'], errors='coerce')
+
+        # Remove rows with missing coordinates
+        df_persons_sim = df_persons_sim.dropna(subset=['home_x', 'home_y'])
+
+        # Create geometry from coordinates
+        sim_geometry = [Point(xy) for xy in zip(df_persons_sim['home_x'],
+                                                df_persons_sim['home_y'])]
+
+        # Create GeoDataFrame from persons data
+        sim_gdf_persons = gpd.GeoDataFrame(df_persons_sim, geometry=sim_geometry)
+
+        sim_gdf_persons.crs = sim_gdf_persons.crs
+
+        # Spatial join to filter points inside the polygon
+        population_home_inside_sim = gpd.sjoin(sim_gdf_persons, gdf, how='inner', predicate='within')
+        logging.info(f"The columns of the population_home_inside_sim are {population_home_inside_sim.columns}")
+
+        df_population_home_inside_sim = clean_population_df(
+            population_home_inside_sim, person_col='person', min_age=6
+        )
+
+        all_trips_population_home_inside = output_trips_sim[
+            output_trips_sim['person'].isin(df_population_home_inside_sim['person_id'])
+        ]
+
+        filtered_trips_population_home_inside_sim = all_trips_population_home_inside[[
+            "person", "start_link", "end_link", "dep_time", "trav_time", "euclidean_distance",
+            "main_mode", "modes", "start_x", "start_y", "end_x", "end_y"
+        ]].copy()
+
+        df_population_home_inside_sim.to_csv(os.path.join(cfg.data_path_clean, "population_home_inside_sim.csv"),
+                                             index=False)
+
+        filtered_trips_population_home_inside_sim.to_csv(
+            os.path.join(cfg.data_path_clean, "trips_population_home_inside_sim.csv"), index=False)
+
+    except Exception as e:
+        logging.error("Error in filtering population_home_inside_sim.csv: " + str(e))
+
+    try:
+        # =========================================================================
+        # STEP 9: Filter population based on trip locations
+        # =========================================================================
+        # Population with ALL trips inside the area
+        population_with_trips_O_and_D = df_persons_sim[df_persons_sim['person'].isin(unique_ids)]
+        logging.info("Population with all trips inside the area filtered successfully")
+
+        # Population with at least one trip inside the area
+        population_with_trips_O_or_D = df_persons_sim[
+            df_persons_sim['person'].isin(filtered_trips_inside_outside['person'])
+        ]
+        logging.info("Population with at least one trip inside filtered successfully")
+
+    except Exception as e:
+        logging.error("Error in filtering population_with_trips_O_or_D.csv: " + str(e))
+
+    try:
+        # =========================================================================
+        # STEP 10: Create trip datasets for each population filter
+        # =========================================================================
+        # All trips for persons with ALL activities inside
+        trips_all_activities_inside = output_trips_sim[
+            output_trips_sim['person'].isin(population_with_trips_O_and_D['person'])
+        ]
+
+        # All trips for persons with at least one activity inside
+        trips_at_least_one_activity_inside = output_trips_sim[
+            output_trips_sim['person'].isin(population_with_trips_O_or_D['person'])
+        ]
+
+        # Save to pre-processed path (needed by other scripts)
+        population_with_trips_O_and_D.to_csv(
+            os.path.join(cfg.pre_processed_data_path, "population_all_activities_inside_sim.csv"), index=False
+        )
+        population_with_trips_O_or_D.to_csv(
+            os.path.join(cfg.pre_processed_data_path, "population_at_least_one_activity_inside_sim.csv"), index=False
+        )
+        trips_all_activities_inside.to_csv(
+            os.path.join(cfg.pre_processed_data_path, "trips_all_activities_inside_sim.csv"), index=False
+        )
+        trips_at_least_one_activity_inside.to_csv(
+            os.path.join(cfg.pre_processed_data_path, "trips_at_least_one_activity_inside_sim.csv"), index=False
+        )
+        logging.info("Population and trips CSVs saved to pre-processed path")
+
+    except Exception as e:
+        logging.error("Error in filtering trips_at_least_one_activity_inside.csv: " + str(e))
+
+    try:
+        # =========================================================================
+        # STEP 11: Load activity data (from original script 03 output)
+        # =========================================================================
         try:
-            df_households_synt = pd.read_csv(os.path.join(cfg.pre_processed_data_path, "df_households_synt.csv"), low_memory=False)
-            df_activity_synt = pd.read_csv(os.path.join(cfg.pre_processed_data_path, "df_activity_synt.csv"), low_memory=False)
-            df_legs_synt = pd.read_csv(os.path.join(cfg.pre_processed_data_path, "df_legs_synt.csv"), low_memory=False)
-            df_persons_synt = pd.read_csv(os.path.join(cfg.pre_processed_data_path, "df_persons_synt.csv"), low_memory=False)
-            df_routes_synt = pd.read_csv(os.path.join(cfg.pre_processed_data_path, "df_routes_synt.csv"), low_memory=False)
-            logging.info("Synthetic population data loaded successfully")
+            df_activity_sim = pd.read_csv(
+                os.path.join(cfg.pre_processed_data_path, "df_activity_sim.csv"), low_memory=False
+            )
+            logging.info("Activity data loaded successfully")
         except Exception as e:
-            logging.error("Error reading synthetic population files: " + str(e))
+            logging.error("Error reading df_activity_sim.csv: " + str(e))
             sys.exit()
+    except Exception as e:
+        logging.error("Error in filtering df_activity_sim.csv: " + str(e))
 
-    # =========================================================================
-    # STEP 13: Load optional microcensus data
-    # =========================================================================
-    if cfg.read_microcensus:
-        try:
-            df_population_all_activities_inside_mic = pd.read_csv(
-                os.path.join(cfg.microcensus_path, "population_all_activities_inside_Mic.csv")
-            )
-            df_population_at_least_one_activity_inside_mic = pd.read_csv(
-                os.path.join(cfg.microcensus_path, "population_at_least_one_activity_inside_Mic.csv")
-            )
-            df_trips_all_activities_inside_mic = pd.read_csv(
-                os.path.join(cfg.microcensus_path, "trips_all_activities_inside_Mic.csv")
-            )
-            df_trips_at_least_one_activity_inside_mic = pd.read_csv(
-                os.path.join(cfg.microcensus_path, "trips_at_least_one_activity_inside_Mic.csv")
-            )
-            logging.info("Microcensus data loaded successfully")
-        except Exception as e:
-            logging.error("Error reading microcensus files: " + str(e))
-            sys.exit()
+    try:
+        # =========================================================================
+        # STEP 12: Load optional synthetic population data
+        # =========================================================================
+        if cfg.read_SynPop:
+            try:
+                df_households_synt = pd.read_csv(os.path.join(cfg.pre_processed_data_path, "df_households_synt.csv"), low_memory=False)
+                df_activity_synt = pd.read_csv(os.path.join(cfg.pre_processed_data_path, "df_activity_synt.csv"), low_memory=False)
+                df_legs_synt = pd.read_csv(os.path.join(cfg.pre_processed_data_path, "df_legs_synt.csv"), low_memory=False)
+                df_persons_synt = pd.read_csv(os.path.join(cfg.pre_processed_data_path, "df_persons_synt.csv"), low_memory=False)
+                df_routes_synt = pd.read_csv(os.path.join(cfg.pre_processed_data_path, "df_routes_synt.csv"), low_memory=False)
+                logging.info("Synthetic population data loaded successfully")
+            except Exception as e:
+                logging.error("Error reading synthetic population files: " + str(e))
+                sys.exit()
 
-    # =========================================================================
-    # STEP 14: Process time data for trips
-    # =========================================================================
-    # Keep references to DataFrames in memory (already loaded above)
-    df_trips_all_activities_inside_sim = trips_all_activities_inside.copy()
-    df_trips_at_least_one_activity_inside_sim = trips_at_least_one_activity_inside.copy()
+        # =========================================================================
+        # STEP 13: Load optional microcensus data
+        # =========================================================================
+        if cfg.read_microcensus:
+            try:
+                df_population_all_activities_inside_mic = pd.read_csv(
+                    os.path.join(cfg.microcensus_path, "population_all_activities_inside_Mic.csv")
+                )
+                df_population_at_least_one_activity_inside_mic = pd.read_csv(
+                    os.path.join(cfg.microcensus_path, "population_at_least_one_activity_inside_Mic.csv")
+                )
+                df_trips_all_activities_inside_mic = pd.read_csv(
+                    os.path.join(cfg.microcensus_path, "trips_all_activities_inside_Mic.csv")
+                )
+                df_trips_at_least_one_activity_inside_mic = pd.read_csv(
+                    os.path.join(cfg.microcensus_path, "trips_at_least_one_activity_inside_Mic.csv")
+                )
+                df_population_home_inside_mic = pd.read_csv(
+                    os.path.join(cfg.microcensus_path, "population_home_inside_mic.csv"))
+                df_trips_home_inside_mic = pd.read_csv(os.path.join(cfg.microcensus_path, "trips_home_inside_mic.csv"))
+                logging.info("Microcensus data loaded successfully")
+            except Exception as e:
+                logging.error("Error reading microcensus files: " + str(e))
+                sys.exit()
+    except Exception as e:
+        logging.error("Error reading microcensus files: " + str(e))
 
-    df_trips_all_activities_inside_sim = process_time_data(df_trips_all_activities_inside_sim)
-    df_trips_at_least_one_activity_inside_sim = process_time_data(df_trips_at_least_one_activity_inside_sim)
+    try:
+        # =========================================================================
+        # STEP 14: Process time data for trips
+        # =========================================================================
+        # Keep references to DataFrames in memory (already loaded above)
+        df_trips_all_activities_inside_sim = trips_all_activities_inside.copy()
+        df_trips_at_least_one_activity_inside_sim = trips_at_least_one_activity_inside.copy()
 
-    if cfg.read_SynPop:
-        df_legs_synt = process_time_data(df_legs_synt)
+        df_trips_all_activities_inside_sim = process_time_data(df_trips_all_activities_inside_sim)
+        df_trips_at_least_one_activity_inside_sim = process_time_data(df_trips_at_least_one_activity_inside_sim)
 
-    logging.info("Time data processed successfully")
+        if cfg.read_SynPop:
+            df_legs_synt = process_time_data(df_legs_synt)
 
-    # =========================================================================
-    # STEP 15: Clean population DataFrames (using common function)
-    # =========================================================================
-    # Use the common helper function instead of repeating code
-    df_population_all_activities_inside_sim = clean_population_df(
-        population_with_trips_O_and_D, person_col='person', min_age=6
-    )
-    df_population_at_least_one_activity_inside_sim = clean_population_df(
-        population_with_trips_O_or_D, person_col='person', min_age=6
-    )
+        logging.info("Time data processed successfully")
+
+        # =========================================================================
+        # STEP 15: Clean population DataFrames (using common function)
+        # =========================================================================
+        # Use the common helper function instead of repeating code
+        df_population_all_activities_inside_sim = clean_population_df(
+            population_with_trips_O_and_D, person_col='person', min_age=6
+        )
+        df_population_at_least_one_activity_inside_sim = clean_population_df(
+            population_with_trips_O_or_D, person_col='person', min_age=6
+        )
+    except Exception as e:
+        logging.error("Error reading synthetic population files: " + str(e))
 
     if cfg.read_SynPop:
         df_persons_synt = df_persons_synt.rename(columns={'id': 'hh_id'})
@@ -512,156 +576,191 @@ if __name__ == '__main__':
         logging.error("Error loading output_households.xml.gz: " + str(e))
         sys.exit()
 
-    # Set of relevant person_ids
-    valid_person_ids = set(df_population_at_least_one_activity_inside_sim['person_id'].unique())
+    try:
+        # Set of relevant person_ids
+        valid_person_ids = set(df_population_at_least_one_activity_inside_sim['person_id'].unique())
 
-    # Filter households where at least one person is in valid_person_ids
-    df_households_sim['members'] = df_households_sim['members'].apply(
-        lambda x: eval(x) if isinstance(x, str) else x
-    )
-    df_households_sim_filtered = df_households_sim[
-        df_households_sim['members'].apply(lambda members: any(pid in valid_person_ids for pid in members))
-    ]
-    df_households_sim_filtered.to_csv(
-        os.path.join(cfg.data_path_clean, "households_all_activities_inside_sim.csv"), index=False
-    )
-    logging.info("Filtered households saved successfully")
-
-    # =========================================================================
-    # STEP 17: Map person IDs to activities
-    # =========================================================================
-    df_activity_population_all_activities_inside_sim = map_person_id_to_activities(
-        df_activity_sim, df_population_all_activities_inside_sim
-    )
-
-    if cfg.read_SynPop:
-        df_activity_synt_filtered = map_person_id_to_activities(df_activity_synt, df_persons_synt)
-
-    logging.info("Person IDs mapped to activities successfully")
-
-    # =========================================================================
-    # STEP 18: Process and filter activity/legs data
-    # =========================================================================
-    values_to_remove = ['freight_unloading', 'freight_loading', 'pt interaction']
-    modes_to_remove = ['truck', 'outside']
-
-    # Process simulation data
-    # Note: Use df_activity_population_all_activities_inside_sim which has person_id mapped
-    df_activity_population_all_activities_inside_sim_filtered, df_trips_all_activities_inside_sim_filtered = \
-        process_activity_and_legs_data(
-            df_activity_population_all_activities_inside_sim, df_trips_all_activities_inside_sim,
-            values_to_remove, modes_to_remove
+        # Filter households where at least one person is in valid_person_ids
+        df_households_sim['members'] = df_households_sim['members'].apply(
+            lambda x: eval(x) if isinstance(x, str) else x
         )
-
-    df_activity_population_all_activities_inside_sim = df_activity_population_all_activities_inside_sim_filtered
-    df_activity_population_all_activities_inside_sim = normalize_type_column(
-        df_activity_population_all_activities_inside_sim
-    )
-    logging.info("Activity DataFrame cleaned successfully")
-
-    if cfg.read_SynPop:
-        df_activity_synt_filtered, df_legs_synt_filtered = process_activity_and_legs_data(
-            df_activity_synt, df_legs_synt, values_to_remove, modes_to_remove
+        df_households_sim_filtered = df_households_sim[
+            df_households_sim['members'].apply(lambda members: any(pid in valid_person_ids for pid in members))
+        ]
+        df_households_sim_filtered.to_csv(
+            os.path.join(cfg.data_path_clean, "households_all_activities_inside_sim.csv"), index=False
         )
-        df_activity_synt = normalize_type_column(df_activity_synt_filtered)
-        df_activity_chains_syn = df_activity_synt.groupby(['plan_id']).apply(create_activity_chain_syn).reset_index()
-        logging.info("Activity Chains synt cleaned successfully")
+        logging.info("Filtered households saved successfully")
+    except Exception as e:
+        logging.error("Error filtering households_all_activities_inside_sim.csv: " + str(e))
 
-        df_legs_synt = normalize_mode_column(df_legs_synt_filtered)
-
-        df_trips_synt = create_trips_dataframe(df_activity_synt)
-        df_trips_synt = df_trips_synt.dropna()
-        df_trips_synt['departure_time'] = df_trips_synt['departure_time'].apply(safe_convert_time)
-        df_trips_synt['arrival_time'] = df_trips_synt['arrival_time'].apply(safe_convert_time)
-
-    logging.info("Activity and legs data processed successfully")
-
-    # =========================================================================
-    # STEP 19: Process microcensus data (if enabled)
-    # =========================================================================
-    if cfg.read_microcensus:
-        # Process trips - at least one activity inside
-        df_trips_at_least_one_activity_inside_mic = df_trips_at_least_one_activity_inside_mic.dropna()
-        df_trips_at_least_one_activity_inside_mic['departure_time'] = \
-            df_trips_at_least_one_activity_inside_mic['departure_time'].apply(safe_convert_time)
-        df_trips_at_least_one_activity_inside_mic['arrival_time'] = \
-            df_trips_at_least_one_activity_inside_mic['arrival_time'].apply(safe_convert_time)
-        df_trips_at_least_one_activity_inside_mic['departure_time'] = \
-            pd.to_datetime(df_trips_at_least_one_activity_inside_mic['departure_time'], unit='s').dt.floor('30T').dt.time
-        df_trips_at_least_one_activity_inside_mic['arrival_time'] = \
-            pd.to_datetime(df_trips_at_least_one_activity_inside_mic['arrival_time'], unit='s').dt.floor('30T').dt.time
-        df_trips_at_least_one_activity_inside_mic = normalize_mode_column(df_trips_at_least_one_activity_inside_mic)
-
-        # Process trips - all activities inside
-        df_trips_all_activities_inside_mic = df_trips_all_activities_inside_mic.dropna()
-        df_trips_all_activities_inside_mic['departure_time'] = \
-            df_trips_all_activities_inside_mic['departure_time'].apply(safe_convert_time)
-        df_trips_all_activities_inside_mic['arrival_time'] = \
-            df_trips_all_activities_inside_mic['arrival_time'].apply(safe_convert_time)
-        df_trips_all_activities_inside_mic['departure_time'] = \
-            pd.to_datetime(df_trips_all_activities_inside_mic['departure_time'], unit='s').dt.floor('30T').dt.time
-        df_trips_all_activities_inside_mic['arrival_time'] = \
-            pd.to_datetime(df_trips_all_activities_inside_mic['arrival_time'], unit='s').dt.floor('30T').dt.time
-        df_trips_all_activities_inside_mic = normalize_mode_column(df_trips_all_activities_inside_mic)
-
-        # Process population data using common functions
-        df_population_at_least_one_activity_inside_mic['number_of_cars'] = \
-            df_population_at_least_one_activity_inside_mic['number_of_cars'].apply(group_cars)
-        df_population_at_least_one_activity_inside_mic = normalize_sex_column(
-            df_population_at_least_one_activity_inside_mic
+    try:
+        # =========================================================================
+        # STEP 17: Map person IDs to activities
+        # =========================================================================
+        df_activity_population_all_activities_inside_sim = map_person_id_to_activities(
+            df_activity_sim, df_population_all_activities_inside_sim
         )
-        df_population_all_activities_inside_mic['number_of_cars'] = \
-            df_population_all_activities_inside_mic['number_of_cars'].apply(group_cars)
-        df_population_all_activities_inside_mic = normalize_sex_column(df_population_all_activities_inside_mic)
-
-        # Create activity chains
-        df_activity_chains_at_least_one_activity_mic = \
-            df_trips_at_least_one_activity_inside_mic.groupby(['person_id']).apply(create_activity_chain_mic).reset_index()
-        df_activity_chains_all_activities_inside_mic = \
-            df_trips_all_activities_inside_mic.groupby(['person_id']).apply(create_activity_chain_mic).reset_index()
-
-        logging.info("Microcensus data processed successfully")
-
-    # =========================================================================
-    # STEP 20: Create activity chains for simulation data
-    # =========================================================================
-    df_activity_chains_sim = df_activity_sim.groupby(['plan_id']).apply(create_activity_chain_syn).reset_index()
-    logging.info("Activity chains created successfully")
-
-    # =========================================================================
-    # STEP 21: Save all output files
-    # =========================================================================
-    if cfg.read_microcensus:
-        # Microcensus outputs
-        df_trips_at_least_one_activity_inside_mic.to_csv(
-            os.path.join(cfg.data_path_clean, "trips_at_least_one_activity_inside_mic.csv"), index=False
-        )
-        df_trips_all_activities_inside_mic.to_csv(
-            os.path.join(cfg.data_path_clean, "trips_all_activities_inside_mic.csv"), index=False
-        )
-        df_activity_chains_at_least_one_activity_mic.to_csv(
-            os.path.join(cfg.data_path_clean, "activity_chains_at_least_one_activity_inside_mic.csv"), index=False
-        )
-        df_activity_chains_all_activities_inside_mic.to_csv(
-            os.path.join(cfg.data_path_clean, "activity_chains_all_activities_inside_mic.csv"), index=False
-        )
-        df_population_all_activities_inside_mic.to_csv(
-            os.path.join(cfg.data_path_clean, "population_all_activities_inside_mic.csv"), index=False
-        )
-        df_population_at_least_one_activity_inside_mic.to_csv(
-            os.path.join(cfg.data_path_clean, "population_at_least_one_activity_inside_mic.csv"), index=False
-        )
-        logging.info("Microcensus outputs saved successfully")
 
         if cfg.read_SynPop:
-            # Synthetic population outputs
-            df_trips_synt.to_csv(os.path.join(cfg.data_path_clean, "trips_synt.csv"), index=False)
-            df_activity_chains_syn.to_csv(os.path.join(cfg.data_path_clean, "activity_chains_syn.csv"), index=False)
-            df_persons_synt.to_csv(os.path.join(cfg.data_path_clean, "population_clean_synth.csv"), index=False)
-            df_legs_synt.to_csv(os.path.join(cfg.data_path_clean, "legs_clean_synt.csv"), index=False)
-            logging.info("Synthetic population outputs saved successfully")
+            df_activity_synt_filtered = map_person_id_to_activities(df_activity_synt, df_persons_synt)
+
+        logging.info("Person IDs mapped to activities successfully")
+
+        # =========================================================================
+        # STEP 18: Process and filter activity/legs data
+        # =========================================================================
+        values_to_remove = ['freight_unloading', 'freight_loading', 'pt interaction']
+        modes_to_remove = ['truck', 'outside']
+
+        # Process simulation data
+        # Note: Use df_activity_population_all_activities_inside_sim which has person_id mapped
+        df_activity_population_all_activities_inside_sim_filtered, df_trips_all_activities_inside_sim_filtered = \
+            process_activity_and_legs_data(
+                df_activity_population_all_activities_inside_sim, df_trips_all_activities_inside_sim,
+                values_to_remove, modes_to_remove
+            )
+
+        df_activity_population_all_activities_inside_sim = df_activity_population_all_activities_inside_sim_filtered
+        df_activity_population_all_activities_inside_sim = normalize_type_column(
+            df_activity_population_all_activities_inside_sim
+        )
+        logging.info("Activity DataFrame cleaned successfully")
+
+        if cfg.read_SynPop:
+            df_activity_synt_filtered, df_legs_synt_filtered = process_activity_and_legs_data(
+                df_activity_synt, df_legs_synt, values_to_remove, modes_to_remove
+            )
+            df_activity_synt = normalize_type_column(df_activity_synt_filtered)
+            df_activity_chains_syn = df_activity_synt.groupby(['plan_id']).apply(create_activity_chain_syn).reset_index()
+            logging.info("Activity Chains synt cleaned successfully")
+
+            df_legs_synt = normalize_mode_column(df_legs_synt_filtered)
+
+            df_trips_synt = create_trips_dataframe(df_activity_synt)
+            df_trips_synt = df_trips_synt.dropna()
+            df_trips_synt['departure_time'] = df_trips_synt['departure_time'].apply(safe_convert_time)
+            df_trips_synt['arrival_time'] = df_trips_synt['arrival_time'].apply(safe_convert_time)
+
+        logging.info("Activity and legs data processed successfully")
+
+    except Exception as e:
+        logging.error("Error cleaning activity and legs data: " + str(e))
+
+    try:
+        # =========================================================================
+        # STEP 19: Process microcensus data (if enabled)
+        # =========================================================================
+        if cfg.read_microcensus:
+            # Process trips - at least one activity inside
+            df_trips_at_least_one_activity_inside_mic = df_trips_at_least_one_activity_inside_mic.dropna()
+            df_trips_at_least_one_activity_inside_mic['departure_time'] = \
+                df_trips_at_least_one_activity_inside_mic['departure_time'].apply(safe_convert_time)
+            df_trips_at_least_one_activity_inside_mic['arrival_time'] = \
+                df_trips_at_least_one_activity_inside_mic['arrival_time'].apply(safe_convert_time)
+            df_trips_at_least_one_activity_inside_mic['departure_time'] = \
+                pd.to_datetime(df_trips_at_least_one_activity_inside_mic['departure_time'], unit='s').dt.floor(
+                    '30T').dt.time
+            df_trips_at_least_one_activity_inside_mic['arrival_time'] = \
+                pd.to_datetime(df_trips_at_least_one_activity_inside_mic['arrival_time'], unit='s').dt.floor(
+                    '30T').dt.time
+            df_trips_at_least_one_activity_inside_mic = normalize_mode_column(df_trips_at_least_one_activity_inside_mic)
+
+            # Process trips - all activities inside
+            df_trips_all_activities_inside_mic = df_trips_all_activities_inside_mic.dropna()
+            df_trips_all_activities_inside_mic['departure_time'] = \
+                df_trips_all_activities_inside_mic['departure_time'].apply(safe_convert_time)
+            df_trips_all_activities_inside_mic['arrival_time'] = \
+                df_trips_all_activities_inside_mic['arrival_time'].apply(safe_convert_time)
+            df_trips_all_activities_inside_mic['departure_time'] = \
+                pd.to_datetime(df_trips_all_activities_inside_mic['departure_time'], unit='s').dt.floor('30T').dt.time
+            df_trips_all_activities_inside_mic['arrival_time'] = \
+                pd.to_datetime(df_trips_all_activities_inside_mic['arrival_time'], unit='s').dt.floor('30T').dt.time
+            df_trips_all_activities_inside_mic = normalize_mode_column(df_trips_all_activities_inside_mic)
+
+            df_trips_home_inside_mic = df_trips_home_inside_mic.dropna()
+            df_trips_home_inside_mic['departure_time'] = df_trips_home_inside_mic[
+                'departure_time'].apply(safe_convert_time)
+            df_trips_home_inside_mic['arrival_time'] = df_trips_home_inside_mic[
+                'arrival_time'].apply(safe_convert_time)
+            df_trips_home_inside_mic['departure_time'] = \
+                pd.to_datetime(df_trips_home_inside_mic['departure_time'], unit='s').dt.floor('30T').dt.time
+            df_trips_home_inside_mic['arrival_time'] = \
+                pd.to_datetime(df_trips_home_inside_mic['arrival_time'], unit='s').dt.floor('30T').dt.time
+            df_trips_home_inside_mic = normalize_mode_column(df_trips_home_inside_mic)
+
+            # Process population data using common functions
+            df_population_at_least_one_activity_inside_mic['number_of_cars'] = \
+                df_population_at_least_one_activity_inside_mic['number_of_cars'].apply(group_cars)
+            df_population_at_least_one_activity_inside_mic = normalize_sex_column(
+                df_population_at_least_one_activity_inside_mic
+            )
+            df_population_all_activities_inside_mic['number_of_cars'] = \
+                df_population_all_activities_inside_mic['number_of_cars'].apply(group_cars)
+            df_population_all_activities_inside_mic = normalize_sex_column(df_population_all_activities_inside_mic)
+
+            df_population_home_inside_mic['number_of_cars'] = df_population_home_inside_mic['number_of_cars'].apply(
+                group_cars)
+            df_population_home_inside_mic = normalize_sex_column(df_population_home_inside_mic)
+
+            # Create activity chains
+            df_activity_chains_at_least_one_activity_mic = \
+                df_trips_at_least_one_activity_inside_mic.groupby(['person_id']).apply(
+                    create_activity_chain_mic).reset_index()
+            df_activity_chains_all_activities_inside_mic = \
+                df_trips_all_activities_inside_mic.groupby(['person_id']).apply(create_activity_chain_mic).reset_index()
+
+            logging.info("Microcensus data processed successfully")
+
+    except Exception as e:
+        logging.error("Error in Process microcensus data" + str(e))
+
+    try:
+        # =========================================================================
+        # STEP 20: Create activity chains for simulation data
+        # =========================================================================
+        df_activity_chains_sim = df_activity_sim.groupby(['plan_id']).apply(create_activity_chain_syn).reset_index()
+        logging.info("Activity chains created successfully")
+
+        # =========================================================================
+        # STEP 21: Save all output files
+        # =========================================================================
+        if cfg.read_microcensus:
+            # Microcensus outputs
+            df_trips_at_least_one_activity_inside_mic.to_csv(
+                os.path.join(cfg.data_path_clean, "trips_at_least_one_activity_inside_mic.csv"), index=False
+            )
+            df_trips_all_activities_inside_mic.to_csv(
+                os.path.join(cfg.data_path_clean, "trips_all_activities_inside_mic.csv"), index=False
+            )
+            df_activity_chains_at_least_one_activity_mic.to_csv(
+                os.path.join(cfg.data_path_clean, "activity_chains_at_least_one_activity_inside_mic.csv"), index=False
+            )
+            df_activity_chains_all_activities_inside_mic.to_csv(
+                os.path.join(cfg.data_path_clean, "activity_chains_all_activities_inside_mic.csv"), index=False
+            )
+            df_population_all_activities_inside_mic.to_csv(
+                os.path.join(cfg.data_path_clean, "population_all_activities_inside_mic.csv"), index=False
+            )
+            df_population_at_least_one_activity_inside_mic.to_csv(
+                os.path.join(cfg.data_path_clean, "population_at_least_one_activity_inside_mic.csv"), index=False
+            )
+            df_population_home_inside_mic.to_csv(os.path.join(cfg.data_path_clean, "population_home_inside_mic.csv"))
+
+            df_trips_home_inside_mic.to_csv(os.path.join(cfg.data_path_clean, "trips_home_inside_mic.csv"))
+
+            logging.info("Microcensus outputs saved successfully")
+
+            if cfg.read_SynPop:
+                # Synthetic population outputs
+                df_trips_synt.to_csv(os.path.join(cfg.data_path_clean, "trips_synt.csv"), index=False)
+                df_activity_chains_syn.to_csv(os.path.join(cfg.data_path_clean, "activity_chains_syn.csv"), index=False)
+                df_persons_synt.to_csv(os.path.join(cfg.data_path_clean, "population_clean_synth.csv"), index=False)
+                df_legs_synt.to_csv(os.path.join(cfg.data_path_clean, "legs_clean_synt.csv"), index=False)
+                logging.info("Synthetic population outputs saved successfully")
 
         # Simulation outputs
+        logging.info("Simulation Population is started to save in csv files.")
         df_activity_chains_sim.to_csv(os.path.join(cfg.data_path_clean, "activity_chains_sim.csv"), index=False)
         df_population_all_activities_inside_sim.to_csv(
             os.path.join(cfg.data_path_clean, "population_all_activities_inside_sim.csv"), index=False
@@ -669,48 +768,55 @@ if __name__ == '__main__':
         df_population_at_least_one_activity_inside_sim.to_csv(
             os.path.join(cfg.data_path_clean, "population_at_least_one_activity_inside_sim.csv"), index=False
         )
+        logging.info("Simulation Population is finished to save in csv files.")
+    except Exception as e:
+        logging.error("Error in Process synthetic population data" + str(e))
 
-    # =========================================================================
-    # STEP 22: Create final filtered trips output
-    # =========================================================================
-    # All activities inside
-    # Include main_mode (for modal split) and modes (legs sequence like "walk-car-walk")
-    filtered_trips_all_activities_inside_sim = df_trips_all_activities_inside_sim[[
-        "person", "start_link", "end_link", "dep_time", "trav_time", "euclidean_distance",
-        "main_mode", "modes", "start_x", "start_y", "end_x", "end_y"
-    ]].copy()
+    try:
+        # =========================================================================
+        # STEP 22: Create final filtered trips output
+        # =========================================================================
+        # All activities inside
+        # Include main_mode (for modal split) and modes (legs sequence like "walk-car-walk")
+        filtered_trips_all_activities_inside_sim = df_trips_all_activities_inside_sim[[
+            "person", "trip_number", "start_link", "end_link", "dep_time", "trav_time", "euclidean_distance",
+            "main_mode", "modes", "start_x", "start_y", "end_x", "end_y", "start_activity_type", "end_activity_type"
+        ]].copy()
 
-    filtered_trips_all_activities_inside_sim.rename(
-        columns={'trav_time': 'travel_time', 'euclidean_distance': 'distance'},
-        inplace=True
-    )
-    filtered_trips_all_activities_inside_sim.dropna(subset=['main_mode'], inplace=True)
-    filtered_trips_all_activities_inside_sim = filtered_trips_all_activities_inside_sim[
-        ~filtered_trips_all_activities_inside_sim['main_mode'].isin(['truck'])
-    ]
+        filtered_trips_all_activities_inside_sim.rename(
+            columns={'trav_time': 'travel_time', 'euclidean_distance': 'distance'},
+            inplace=True
+        )
+        filtered_trips_all_activities_inside_sim.dropna(subset=['main_mode'], inplace=True)
+        filtered_trips_all_activities_inside_sim = filtered_trips_all_activities_inside_sim[
+            ~filtered_trips_all_activities_inside_sim['main_mode'].isin(['truck'])
+        ]
 
-    # At least one activity inside
-    filtered_trips_at_least_one_activity_inside_sim = df_trips_at_least_one_activity_inside_sim[[
-        "person", "start_link", "end_link", "dep_time", "trav_time", "euclidean_distance",
-        "main_mode", "modes", "start_x", "start_y", "end_x", "end_y"
-    ]].copy()
+        # At least one activity inside
+        filtered_trips_at_least_one_activity_inside_sim = df_trips_at_least_one_activity_inside_sim[[
+            "person", "start_link", "end_link", "dep_time", "trav_time", "euclidean_distance",
+            "main_mode", "modes", "start_x", "start_y", "end_x", "end_y"
+        ]].copy()
 
-    filtered_trips_at_least_one_activity_inside_sim.rename(
-        columns={'trav_time': 'travel_time', 'euclidean_distance': 'distance'},
-        inplace=True
-    )
-    filtered_trips_at_least_one_activity_inside_sim.dropna(subset=['main_mode'], inplace=True)
-    filtered_trips_at_least_one_activity_inside_sim = filtered_trips_at_least_one_activity_inside_sim[
-        ~filtered_trips_at_least_one_activity_inside_sim['main_mode'].isin(['truck'])
-    ]
+        filtered_trips_at_least_one_activity_inside_sim.rename(
+            columns={'trav_time': 'travel_time', 'euclidean_distance': 'distance'},
+            inplace=True
+        )
+        filtered_trips_at_least_one_activity_inside_sim.dropna(subset=['main_mode'], inplace=True)
+        filtered_trips_at_least_one_activity_inside_sim = filtered_trips_at_least_one_activity_inside_sim[
+            ~filtered_trips_at_least_one_activity_inside_sim['main_mode'].isin(['truck'])
+        ]
 
-    # Save final trip outputs
-    filtered_trips_at_least_one_activity_inside_sim.to_csv(
-        os.path.join(cfg.data_path_clean, "trips_at_least_one_activity_inside_sim.csv"), index=False
-    )
-    filtered_trips_all_activities_inside_sim.to_csv(
-        os.path.join(cfg.data_path_clean, "trips_all_activities_inside_sim.csv"), index=False
-    )
+        # Save final trip outputs
+        filtered_trips_at_least_one_activity_inside_sim.to_csv(
+            os.path.join(cfg.data_path_clean, "trips_at_least_one_activity_inside_sim.csv"), index=False
+        )
+        filtered_trips_all_activities_inside_sim.to_csv(
+            os.path.join(cfg.data_path_clean, "trips_all_activities_inside_sim.csv"), index=False
+        )
 
-    logging.info("All output files saved successfully")
-    logging.info("Script completed successfully")
+        logging.info("All output files saved successfully")
+        logging.info("Script completed successfully")
+
+    except Exception as e:
+        logging.error("Error in Process synthetic population data" + str(e))
