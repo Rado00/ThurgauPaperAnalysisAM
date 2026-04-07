@@ -33,7 +33,8 @@ import warnings
 import os
 import sys
 import logging
-
+from pathlib import Path
+from datetime import datetime
 warnings.filterwarnings('ignore')
 pd.set_option('display.max_columns', None)
 pd.set_option('display.max_rows', None)
@@ -814,6 +815,11 @@ if __name__ == '__main__':
         filtered_trips_all_activities_inside_sim.to_csv(
             os.path.join(cfg.data_path_clean, "trips_all_activities_inside_sim.csv"), index=False
         )
+        
+        trips_all_activities_inside_dir = Path(__file__).resolve().parent.parent.parent / 'trips_all_activities_inside'
+        trips_all_activities_inside_dir.mkdir(parents=True, exist_ok=True)
+        timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
+        filtered_trips_all_activities_inside_sim.to_csv(trips_all_activities_inside_dir / f'{timestamp}_{cfg.sim_output_folder.split("/")[-1]}_trips_all_activities_inside_sim.csv', index=False)
 
         logging.info("All output files saved successfully")
         logging.info("Script completed successfully")
