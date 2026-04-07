@@ -1,45 +1,95 @@
 #!/bin/bash
-#SBATCH --job-name=thurgau_analysis
-#SBATCH --output=logs/analysis_%j.out
-#SBATCH --error=logs/analysis_%j.err
-#SBATCH --time=04:00:00
-#SBATCH --mem=32G
-#SBATCH --cpus-per-task=4
-
 USER_NAME=$(whoami)
-
 if [[ "$USER_NAME" == "comura" ]]; then
     SCRIPTS_DIR="/home/comura/ThurgauPaperAnalysisAM/scripts"
-    CONFIG_FILE="/home/comura/ThurgauPaperAnalysisAM/config/config.ini"
+    CONFIG_DIR="/home/comura/ThurgauPaperAnalysisAM/config"
+    PARTITION="standard"
+    USE_SLURM=true
 elif [[ "$USER_NAME" == "muaa" ]]; then
     SCRIPTS_DIR="/home/muaa/ThurgauPaperAnalysisAM/scripts"
-    CONFIG_FILE="/home/muaa/ThurgauPaperAnalysisAM/config/config.ini"
+    CONFIG_DIR="/home/muaa/ThurgauPaperAnalysisAM/config"
+    PARTITION="gpu"
+    USE_SLURM=true
 elif [[ "$USER_NAME" == "gsangiovanni" ]]; then
     SCRIPTS_DIR="/lustre/home/gsangiovanni/Rado/ThurgauPaperAnalysisAM/scripts"
-    CONFIG_FILE="/lustre/home/gsangiovanni/Rado/ThurgauPaperAnalysisAM/config/config.ini"
+    CONFIG_DIR="/lustre/home/gsangiovanni/Rado/ThurgauPaperAnalysisAM/config"
+    PARTITION="standard"
+    USE_SLURM=true
+elif [[ "$USER_NAME" == "root" ]]; then
+    SCRIPTS_DIR="/project/corrado_paper/ThurgauPaperAnalysisAM/scripts"
+    CONFIG_DIR="/project/corrado_paper/ThurgauPaperAnalysisAM/config"
+    PARTITION="standard"
+    USE_SLURM=false
 else
     echo "Unsupported user: $USER_NAME"
     exit 1
 fi
-
-SIM_OUTPUT_FOLDER="${SIM_OUTPUT_FOLDER:-$1}"
+SIMULATIONS_FILE="${SCRIPTS_DIR}/simulationsToBeAnalysed.txt"
+SBATCH_SCRIPT="${SCRIPTS_DIR}/sbatch_run_analysis.sh"
+CONFIG_FILE="${CONFIG_DIR}/config.ini"
 mkdir -p "${SCRIPTS_DIR}/logs"
-
-echo "Job started at $(date)"
-echo "Running on node: $(hostname)"
-echo "Job ID: $SLURM_JOB_ID"
-echo "User: $USER_NAME"
-
-if [ -n "$SIM_OUTPUT_FOLDER" ]; then
-    echo "Updating config.ini with sim_output_folder = $SIM_OUTPUT_FOLDER"
-    sed -i "s|^sim_output_folder = .*|sim_output_folder = ${SIM_OUTPUT_FOLDER}|" "$CONFIG_FILE"
+if [ ! -f "$SIMULATIONS_FILE" ]; then
+    echo "Error: $SIMULATIONS_FILE not found!"
+    exit 1
 fi
-
-echo "Current sim_output_folder in config:"
-grep "sim_output_folder" "$CONFIG_FILE"
+if [ ! -f "$CONFIG_FILE" ]; then
+    echo "Error: $CONFIG_FILE not found!"
+    exit 1
+fi
+echo "========================================"
+echo "BATCH SUBMISSION - $(date)"
+echo "User: $USER_NAME"
+echo "SLURM: $USE_SLURM"
+echo "========================================"
+COUNT=0
+TOTAL=$(grep -cv '^\s*$\|^\s*#' "$SIMULATIONS_FILE")
+PREV_JOB_ID=""
+echo "Found $TOTAL simulation(s) to submit"
 echo ""
-
-cd "$SCRIPTS_DIR"
-bash run_all_scripts.sh
-
-echo "Job finished at $(date)"
+while IFS= read -r line || [ -n "$line" ]; do
+    line=$(echo "$line" | xargs)
+    if [ -z "$line" ] || [[ "$line" == \#* ]]; then
+        continue
+    fi
+    COUNT=$((COUNT + 1))
+    # Parse: check if line contains a comma
+    if [[ "$line" == *","* ]]; then
+        SIM_FOLDER=$(echo "$line" | cut -d',' -f1 | xargs)
+        SHAPEFILE=$(echo "$line" | cut -d',' -f2 | xargs)
+    else
+        SIM_FOLDER="$line"
+        SHAPEFILE=""
+    fi
+    SIM_NAME=$(basename "$SIM_FOLDER")
+    # If a shapefile was specified, update target_area in config.ini
+    if [ -n "$SHAPEFILE" ]; then
+        echo "  Updating target_area in config.ini to: $SHAPEFILE"
+        sed -i "s/^target_area\s*=.*/target_area = ${SHAPEFILE}/" "$CONFIG_FILE"
+    fi
+    # Update sim_output_folder in config.ini
+    echo "  Updating sim_output_folder in config.ini to: $SIM_FOLDER"
+    sed -i "s|^sim_output_folder = .*|sim_output_folder = ${SIM_FOLDER}|" "$CONFIG_FILE"
+    echo "[$COUNT/$TOTAL] Running: $SIM_NAME"
+    if [ "$USE_SLURM" = true ]; then
+        if [ -z "$PREV_JOB_ID" ]; then
+            SUBMIT_OUTPUT=$(sbatch --export=SIM_OUTPUT_FOLDER="$SIM_FOLDER" --job-name="analysis_${SIM_NAME}" "$SBATCH_SCRIPT")
+        else
+            SUBMIT_OUTPUT=$(sbatch --dependency=afterany:${PREV_JOB_ID} --export=SIM_OUTPUT_FOLDER="$SIM_FOLDER" --job-name="analysis_${SIM_NAME}" "$SBATCH_SCRIPT")
+        fi
+        PREV_JOB_ID=$(echo "$SUBMIT_OUTPUT" | awk '{print $NF}')
+        echo "  $SUBMIT_OUTPUT"
+    else
+        LOG_FILE="${SCRIPTS_DIR}/logs/analysis_${SIM_NAME}_${COUNT}_$(date +%Y%m%d_%H%M%S).log"
+        echo "  Log file: $LOG_FILE"
+        cd "$SCRIPTS_DIR"
+        bash run_all_scripts.sh > "$LOG_FILE" 2>&1
+        echo "  Finished with exit code: $?"
+    fi
+    echo ""
+done < "$SIMULATIONS_FILE"
+echo "========================================"
+echo "All $COUNT job(s) completed."
+if [ "$USE_SLURM" = true ]; then
+    echo "Use 'squeue -u $USER_NAME' to check job status."
+fi
+echo "========================================"
