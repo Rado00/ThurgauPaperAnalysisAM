@@ -1,0 +1,3 @@
+Prende le simulazioni dalla prima colonna di simulationsToBeAnalysed.txt
+Se nella seconda colonna c'è lo Shape file ("," separator) lo usa nel config.ini
+Se non c'è lo shape file, usa lo shape file che stava nel config.ini prima di runnare questo sbatch_iterate...
