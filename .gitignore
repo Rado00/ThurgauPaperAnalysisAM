@@ -17,3 +17,4 @@ config/
 __pycache__/
 .vscode/
 sample_data/
+data/
