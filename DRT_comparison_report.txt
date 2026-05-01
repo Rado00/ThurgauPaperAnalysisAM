@@ -1,0 +1,210 @@
+# Report: logica di confronto attuale tra due simulazioni MATSim e definizione delle transizioni di modo
+
+## Contesto
+
+Repo: `ThurgauPaperAnalysisAM` (analisi post-processing di simulazioni MATSim Thurgau, scenari DRT vs baseline).
+
+Stiamo valutando come quantificare, per ogni trip che contiene **DRT** (standalone o multimodal PT+DRT-feeder), se è un **trip nuovo** rispetto alla baseline o se ha **sostituito un trip con un altro modo** (e in tal caso quale modo). Lavoriamo su 125 simulazioni MATSim DRT (5 flotte x 25 zone) confrontate ciascuna con la baseline.
+
+Lo script di confronto attualmente esistente nel repo e' **`scripts/05_2_compare_outputs.py`**. Dopo averlo letto, e' risultato **non adatto** allo scopo. Questo report spiega come funziona, perche' non funziona per noi, e cosa va costruito al suo posto.
+
+
+## File di input
+
+I due file confrontati sono entrambi `trips_all_activities_inside_sim.csv`, prodotti da `scripts/04_05_synPop_sim_trips_and_clean.py:815-816`. Schema delle colonne dopo la pulizia (`04_05_synPop_sim_trips_and_clean.py:782-790`):
+
+    person, trip_number, start_link, end_link, dep_time, travel_time,
+    distance, main_mode, modes, start_x, start_y, end_x, end_y,
+    start_activity_type, end_activity_type
+
+Note importanti:
+
+- `person` e' l'unico ID condiviso tra le due simulazioni.
+- **Non esistono trip-ID stabili** tra baseline e scenario DRT - MATSim rigenera i piani.
+- `trip_number` e' stabile per persona **solo se la sequenza di attivita' non cambia**. In scenari DRT che alterano la catena di attivita' (poco comune ma possibile), `trip_number` puo' non bastare.
+- `main_mode` contiene il modo principale del trip (es. `car`, `pt`, `bike`, `walk`, `drt`, `car_passenger`).
+- `modes` contiene la lista dei leg-mode separati (es. `walk,drt,walk` per un DRT con accesso pedonale, o `walk,pt,walk,drt,walk` per multimodal PT+DRT feeder).
+- I trip `freight` e `outside` vengono gia' filtrati dalla pipeline (`05_2_compare_outputs.py:373-403`).
+
+
+## Lo script `05_2_compare_outputs.py` - cosa fa
+
+**Punto chiave: NON fa matching trip-per-trip.** Lavora interamente con conteggi aggregati `(person, mode)`.
+
+Pipeline (vedi `analyze_transport_modes` a `05_2_compare_outputs.py:341-495`):
+
+### 1. Filtri base
+
+    df1_post_freight = df1.loc[df1['mode'] != 'freight'].copy()  # riga 375
+    df1_clean = df1.loc[df1['mode'] != 'outside'].copy()         # riga 402
+    # stesso per df2
+
+Nota: lo script si aspetta una colonna chiamata **`mode`**, non `main_mode`. Sui CSV puliti da `04_05` la colonna e' `main_mode` -> lo script cosi' com'e' va in KeyError, va adattato.
+
+### 2. Conteggio coppie `(person, mode)` (riga 416-417)
+
+    df1_counts = df1_clean.groupby(['person', 'mode'], observed=True).size().reset_index(name='count_1')
+    df2_counts = df2_clean.groupby(['person', 'mode'], observed=True).size().reset_index(name='count_2')
+
+### 3. "Drop del minimo comune" - neutralizza i trip considerati uguali (riga 422-423)
+
+    merged_counts = pd.merge(df1_counts, df2_counts, on=['person', 'mode'], how='inner')
+    merged_counts['to_drop'] = merged_counts[['count_1', 'count_2']].min(axis=1)
+
+Logica: se la persona X ha 3 trip `car` nel file 1 e 2 trip `car` nel file 2, ne droppa 2 da entrambi - i 2 droppati sono interpretati come "stessi trip rimasti car in entrambi gli scenari". I rimanenti (1 car nel file 1) sono candidati a transizione.
+
+### 4. Tracking dei rimanenti via `cumcount` (riga 436-448)
+
+    df1_clean['rank'] = df1_clean.groupby(['person', 'mode'], observed=True).cumcount()
+    df2_clean['rank'] = df2_clean.groupby(['person', 'mode'], observed=True).cumcount()
+    df1_filtered = df1_f.loc[df1_f['rank'] >= df1_f['to_drop'], ['person', 'mode']]
+    df2_filtered = df2_f.loc[df2_f['rank'] >= df2_f['to_drop'], ['person', 'mode']]
+
+`df1_filtered` e `df2_filtered` contengono ora solo i trip "rimanenti" da spiegare come transizioni.
+
+### 5. Definizione delle "transizioni di modo" - il punto critico
+
+Qui sta la logica che il nuovo script deve **non** replicare. Vedi `generate_summary_file` a `05_2_compare_outputs.py:163-273`.
+
+**Per persone presenti in entrambi i dataset filtrati** (riga 163-173):
+
+    common = c1.merge(c2, on='person', how='inner', suffixes=('_first', '_second'))
+    common['cnt'] = (common['n1'] * common['n2']).astype('int64')
+    common['display'] = left.str.cat(right, sep='_')   # es. "Car_Drt"
+
+Cioe' **prodotto cartesiano** dei mode rimanenti per persona. Esempio: persona X ha 1 `car` rimasta nel file 1 e 1 `drt` rimasta nel file 2 -> contributo `1*1 = 1` alla transizione `Car_Drt`. Ma se persona Y ha 2 `car` rimaste nel file 1 e 1 `drt` + 1 `pt` rimaste nel file 2 -> contributo `2*1=2` a `Car_Drt` e `2*1=2` a `Car_Pt`, totale 4 "transizioni" per ricondurre 2 trip a 2 trip. **I conteggi vengono gonfiati** e non c'e' modo di dire quale `car` e' diventato `drt` e quale `pt`.
+
+**Per persone presenti solo in uno dei due** (riga 178-191) -> transizione `Mode_None` o `None_Mode`.
+
+**Per persone con record extra** in dataset 2 (riga 199-273) -> distribuzione **proporzionale** della differenza sui modi:
+
+    has_extra_but_exists['extra_for_mode'] = (has_extra_but_exists['diff'] *
+                                              has_extra_but_exists['mode_proportion']).round().astype('int64')
+
+### 6. Output
+
+In `../plots/Compare_simulations/`, due file:
+
+- `{prefix}_summary_report.txt` - testo con sezioni "Same Modes" e "Mode Transitions"
+- `{prefix}_summary_report.csv` (sep `;`) con colonne: `Mode Transition; Records; Pct Value; Pct Value with Comma`. Esempi di righe: `Car_Car`, `Car_Drt`, `None_Drt`, `Bike_None`.
+
+Nessun output per-persona, nessun output per-trip, nessun grafico. I DataFrame intermedi `common_per_person` e `right_only_per_person` sono calcolati ma **non salvati** (riga 173, 188, 265-269).
+
+
+## Perche' questo non basta per il nostro problema
+
+1. **Non aggancia trip a trip**. Per dire "questo trip DRT specifico ha sostituito un trip car" serve un matching 1-a-1, non un prodotto cartesiano aggregato.
+2. **Gonfia i conteggi** quando una persona ha piu' mode rimanenti diversi nei due dataset.
+3. **Distribuisce i record extra proporzionalmente** invece di identificare quali sono nuovi.
+4. **Non filtra le trip-chain con DRT** - confronta tutti i mode di tutti gli utenti.
+5. **Non distingue DRT standalone da DRT-feeder** in catena multimodale (la colonna `modes` non viene letta, solo `main_mode`).
+6. Dipende da `config.ini` e da naming Windows-only (`split('\\')` riga 532, 538) - non e' standalone.
+
+
+## Cosa serve costruire
+
+Uno script standalone che, dati due CSV `trips_all_activities_inside_sim.csv` (baseline e scenario DRT), produca un **CSV di classificazione per-trip** dei soli trip che contengono DRT nello scenario, con per ciascuno:
+
+- identificazione del trip baseline corrispondente (se esiste)
+- classificazione: `new_trip` / `drt_in_baseline_too` / `substituted_from_<mode>`
+- modo originario sostituito (se applicabile)
+- distinzione DRT standalone vs DRT-feeder (presenza di `pt` nella colonna `modes` insieme a `drt`)
+
+### Logica di matching proposta
+
+Chiave primaria: **`(person, trip_number)`**. Razionale: in MATSim `trip_number` e' l'indice ordinato dei trip di una persona dentro il piano giornaliero ed e' stabile finche' la sequenza di attivita' non cambia.
+
+Chiave di fallback per robustezza, da usare se il `trip_number` da solo da' collisioni o mismatch sospetti: **`(person, start_activity_type, end_activity_type, trip_number)`**, eventualmente con tolleranza temporale su `dep_time` (es. +/-30 min) per identificare trip "equivalenti" anche se MATSim ha leggermente shiftato l'orario.
+
+Verifica preliminare consigliata sul dataset: `df.groupby('person').size()` su entrambi i CSV e controllare la frazione di persone con stesso numero di trip. Se >95% match, `(person, trip_number)` basta. Se <95%, attivare fallback.
+
+### Filtraggio DRT (sullo scenario)
+
+Un trip e' "con DRT" se:
+
+    drt_mask = (
+        s['main_mode'].eq('drt') |
+        s['modes'].fillna('').str.contains(r'\bdrt\b|drt_access|drt_egress|drt_walk', regex=True)
+    )
+
+Sotto-classificazione:
+
+- **DRT standalone**: `main_mode == 'drt'` e nessun `pt` in `modes`
+- **DRT-feeder PT**: `main_mode == 'pt'` (o `drt`) con `modes` che contiene sia `pt` sia `drt` (in qualunque ordine)
+
+### Classificazione
+
+    joined = s_drt.merge(
+        b[['person','trip_number','main_mode','modes','start_activity_type','end_activity_type','dep_time']],
+        on=['person','trip_number'], how='left', suffixes=('_scenario','_baseline')
+    )
+
+    joined['classification'] = np.select(
+        [
+            joined['main_mode_baseline'].isna(),                      # trip non esisteva in baseline
+            joined['main_mode_baseline'].eq('drt'),                   # gia' DRT in baseline
+            joined['modes_baseline'].fillna('').str.contains('drt'),  # DRT come leg in baseline
+        ],
+        ['new_trip', 'drt_in_baseline_too', 'drt_in_baseline_leg'],
+        default='substituted'
+    )
+    joined['substituted_from_mode'] = np.where(
+        joined['classification'].eq('substituted'),
+        joined['main_mode_baseline'],
+        None
+    )
+
+### Output suggerito
+
+CSV per-trip `drt_trip_classification.csv` con colonne:
+
+    person, trip_number,
+    main_mode_scenario, modes_scenario, drt_subtype (standalone | feeder_pt),
+    main_mode_baseline, modes_baseline,
+    classification (new_trip | drt_in_baseline_too | drt_in_baseline_leg | substituted),
+    substituted_from_mode,
+    distance_scenario, distance_baseline, distance_delta,
+    travel_time_scenario, travel_time_baseline,
+    start_activity_type, end_activity_type,
+    dep_time_scenario, dep_time_baseline
+
+Piu' due CSV aggregati di summary:
+
+- `drt_classification_summary.csv` - count e % per `classification x drt_subtype x substituted_from_mode`
+- `drt_per_person_summary.csv` - per ogni persona: numero trip DRT, breakdown per classificazione
+
+### Performance
+
+125 sim x ~2.3 M righe a 100 % e' grosso. Strategie:
+
+- Caricare solo le colonne necessarie (`usecols=[...]`)
+- `dtype={'person': 'int32', 'trip_number': 'int16', 'main_mode': 'category', ...}`
+- Filtrare DRT prima del merge: tipicamente <30 % delle righe -> join molto piu' leggero
+- Eseguire le 125 comparazioni in parallelo con `multiprocessing.Pool` (ogni confronto e' indipendente)
+- Su cluster ZHAW: nodo singolo dovrebbe bastare per una comparazione, parallelizzare le 125 con SLURM array job
+
+### Standalone
+
+Lo script nuovo deve accettare CLI args, no `config.ini`:
+
+    python compare_drt_substitution.py \
+        --baseline /path/baseline/trips_all_activities_inside_sim.csv \
+        --scenario /path/scenario_drt/trips_all_activities_inside_sim.csv \
+        --output-dir /path/out \
+        [--match-strategy trip_number|trip_number_with_activity_fallback] \
+        [--time-tolerance-min 30]
+
+Niente dipendenze da `functions/commonFunctions.py`, niente shapefile, niente config - solo `pandas`, `numpy`, `argparse`, `pathlib`.
+
+
+## File di riferimento nel repo
+
+- `scripts/05_2_compare_outputs.py:341-495` - funzione `analyze_transport_modes` (logica vecchia, aggregata, NON da replicare)
+- `scripts/05_2_compare_outputs.py:163-273` - definizione delle transizioni via prodotto cartesiano
+- `scripts/04_05_synPop_sim_trips_and_clean.py:782-816` - schema/colonne del CSV `trips_all_activities_inside_sim.csv`
+- `scripts/07_plot_mode_share.py:83` - esempio di lettura del CSV con `mode_col='main_mode'`
+
+
+## Task
+
+Scrivere `scripts/compare_drt_substitution.py` standalone secondo le specifiche sopra. Riusare nulla da `05_2_compare_outputs.py`: la logica e' incompatibile.
