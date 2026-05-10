@@ -92,9 +92,11 @@ def main():
         return
 
     # DISTANCE MIC - Create weighted_distance column first
-    if 'person_weight' in df_mic.columns:
-        df_mic['weighted_distance'] = df_mic['crowfly_distance'] * df_mic['person_weight']
-        logging.info(f"weighted_distance column created in Mic Data")
+    if 'person_weight' not in df_mic.columns:
+        df_mic['person_weight'] = 1.0
+        logging.info("person_weight missing in Mic Data, defaulting to 1.0 (unweighted)")
+    df_mic['weighted_distance'] = df_mic['crowfly_distance'] * df_mic['person_weight']
+    logging.info(f"weighted_distance column created in Mic Data")
 
     if 'person_weight' in df_mic.columns:
         # weighted_distance already created above
