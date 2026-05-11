@@ -57,15 +57,38 @@ COLUMN_ORDER = [
 ]
 
 
-# modeOutputs_<YYYYMMDD>_<HHMMSS>_DRT_<zone>_ShapeFile_<SIM>_<target>_ShapeFile.shp_reordered.csv
+# modeOutputs_[<YYYYMMDD>_<HHMMSS>_]DRT_<zone>_ShapeFile_<CANDIDATE>_<target>_ShapeFile.shp_reordered.csv
+# Il timestamp e' opzionale: alcuni file non lo hanno (es. quelli con suffisso _PhD).
 SIM_NAME_RE = re.compile(
-    r"^modeOutputs_\d{8}_\d{6}_DRT_\d+_ShapeFile_(?P<sim>.+?)_\d+_ShapeFile\.shp_reordered\.csv$"
+    r"^modeOutputs_"
+    r"(?:\d{8}_\d{6}_)?"
+    r"DRT_\d+_ShapeFile_"
+    r"(?P<candidate>.+?)"
+    r"_\d+_ShapeFile\.shp_reordered\.csv$"
 )
 
 
-def extract_sim_name(filename: str) -> str | None:
+def resolve_sim_name(candidate: str, column_order: list[str]) -> str:
+    """Match il candidato contro COLUMN_ORDER tramite match esatto o longest-prefix.
+
+    Esempi:
+      '25_drt_70_8_Service_Zone_25_Fvero' -> match esatto.
+      '01_drt_1_8_01_4_PhD' -> prefix '01_drt_1_8_01_4' seguito da '_PhD' -> '01_drt_1_8_01_4'.
+      '00_drt_1_8_Baseline_Final_PhD_FIX' -> nessun match -> ritorna invariato (finira' in extras).
+    """
+    if candidate in column_order:
+        return candidate
+    matches = [name for name in column_order if candidate.startswith(name + "_")]
+    if matches:
+        return max(matches, key=len)
+    return candidate
+
+
+def extract_sim_name(filename: str, column_order: list[str]) -> str | None:
     m = SIM_NAME_RE.match(filename)
-    return m.group("sim") if m else None
+    if not m:
+        return None
+    return resolve_sim_name(m.group("candidate"), column_order)
 
 
 def main() -> int:
@@ -105,7 +128,7 @@ def main() -> int:
     duplicates: list[tuple[str, str, str]] = []
 
     for csv_file in csv_files:
-        sim = extract_sim_name(csv_file.name)
+        sim = extract_sim_name(csv_file.name, column_order)
         if not sim:
             skipped.append((csv_file.name, "regex non match"))
             continue
